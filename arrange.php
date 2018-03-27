@@ -430,11 +430,137 @@ require './init.php';
 			{td0:"化妆",td1:"",td1p:"",td2:"",td2p:"",td3:"",td3p:"",td4:"",td4p:"",td5:"",td5p:"",td6:"",td6p:"",td7:"",td7p:""},
 			{td0:"摄影",td1:"",td1p:"",td2:"",td2p:"",td3:"",td3p:"",td4:"",td4p:"",td5:"",td5p:"",td6:"",td6p:"",td7:"",td7p:""},
 			{td0:"后期",td1:"",td1p:"",td2:"",td2p:"",td3:"",td3p:"",td4:"",td4p:"",td5:"",td5p:"",td6:"",td6p:"",td7:"",td7p:""},
+			["1","2","3","4","5","6","7"]
 		];
 
+		$scope.ArrTest=[
+			["1","2","3","4","5","6","7"],
+			["1","2","3","4","5","6","7"],
+			["1","2","3","4","5","6","7"],
+		];
 		$scope.changeappear=function()
 		{
 			$scope.radioclass="";
+		}
+
+		function day1add(pos)
+		{
+			if ($scope.ArrObj[pos].td1=="")
+			{
+				$scope.ArrObj[pos].td1=$scope.changename;
+				if ($scope.radioclass=="radioday")
+				{
+					$scope.Style[14*pos]={
+						"color":"orange",
+						"display":"inline"
+					};
+				}
+				else if($scope.radioclass=="radionight")
+				{
+					$scope.Style[14*pos]={
+						"color":"green",
+						"display":"inline"
+					};								
+				}
+				else
+				{}	
+			}
+			else
+			{
+				if ($scope.ArrObj[pos].td1p!="")
+				{
+					alert("人数达到上限，无法继续添加");
+					return;
+				}
+				if (($scope.ArrObj[pos].td1+$scope.ArrObj[pos].td1p).search($scope.changename)!=-1)
+				{
+					alert("请勿重复添加");
+					return;
+				}
+				$scope.ArrObj[pos].td1p=$scope.changename;
+
+				if ($scope.radioclass=="radioday")
+				{
+					$scope.Style[14*pos+1]={
+						"color":"orange",
+						"display":"inline"
+					};
+				}
+				else if($scope.radioclass=="radionight")
+				{
+					$scope.Style[14*pos+1]={
+						"color":"green",
+						"display":"inline"
+					};								
+				}
+				else
+				{
+					$scope.Style[14*pos+1]={
+						"color":"black",
+						"display":"inline"
+					};										
+				}
+			}	
+		}
+
+		function day2add(pos)
+		{
+			if ($scope.ArrObj[pos].td2=="")
+			{
+				$scope.ArrObj[pos].td2=$scope.changename;
+				if ($scope.radioclass=="radioday")
+				{
+					$scope.Style[14*pos+2]={
+						"color":"orange",
+						"display":"inline"
+					};
+				}
+				else if($scope.radioclass=="radionight")
+				{
+					$scope.Style[14*pos+2]={
+						"color":"green",
+						"display":"inline"
+					};								
+				}
+				else
+				{}	
+			}
+			else
+			{
+				if ($scope.ArrObj[pos].td2p!="")
+				{
+					alert("人数达到上限，无法继续添加");
+					return;
+				}
+				if (($scope.ArrObj[pos].td2+$scope.ArrObj[pos].td2p).search($scope.changename)!=-1)
+				{
+					alert("请勿重复添加");
+					return;
+				}
+				$scope.ArrObj[pos].td2p=$scope.changename;
+
+				if ($scope.radioclass=="radioday")
+				{
+					$scope.Style[14*pos+3]={
+						"color":"orange",
+						"display":"inline"
+					};
+				}
+				else if($scope.radioclass=="radionight")
+				{
+					$scope.Style[14*pos+3]={
+						"color":"green",
+						"display":"inline"
+					};								
+				}
+				else
+				{
+					$scope.Style[14*pos+3]={
+						"color":"black",
+						"display":"inline"
+					};										
+				}
+			}	
 		}
 
 		//排班表添加内容
@@ -457,202 +583,16 @@ require './init.php';
 					switch($scope.radioposi)
 					{
 						case "radiorec":
-							//当前职位在当天无人员安排
-							if ($scope.ArrObj[0].td1=="")
-							{
-								$scope.ArrObj[0].td1=$scope.ArrObj[0].td1+$scope.changename;
-								//alert(typeof($scope.ArrObj[0].td1));
-							}
-							else//当前职位在当天人员安排人数若达到三人，则无法继续添加
-							{
-								var temparr=$scope.ArrObj[0].td1.split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[0].td1.search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[0].td1=$scope.ArrObj[0].td1+','+$scope.changename;
-							}
+							day1add(0);
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1].td1=="")
-							{
-								$scope.ArrObj[1].td1=$scope.changename;
-								if ($scope.radioclass=="radioday")
-								{
-									$scope.Style[14]={
-										"color":"orange",
-										"display":"inline"
-									};
-								}
-								else if($scope.radioclass=="radionight")
-								{
-									$scope.Style[14]={
-										"color":"green",
-										"display":"inline"
-									};								
-								}
-								else
-								{}	
-							}
-							else
-							{
-								if ($scope.ArrObj[1].td1p!="")
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								if (($scope.ArrObj[1].td1+$scope.ArrObj[1].td1p).search($scope.changename)!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[1].td1p=$scope.changename;
-
-								if ($scope.radioclass=="radioday")
-								{
-									$scope.Style[15]={
-										"color":"orange",
-										"display":"inline"
-									};
-								}
-								else if($scope.radioclass=="radionight")
-								{
-									$scope.Style[15]={
-										"color":"green",
-										"display":"inline"
-									};								
-								}
-								else
-								{
-									$scope.Style[15]={
-										"color":"black",
-										"display":"inline"
-									};										
-								}
-							}						
+							day1add(1);					
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2].td1=="")
-							{
-								$scope.ArrObj[2].td1=$scope.changename;
-								if ($scope.radioclass=="radioday")
-								{
-									$scope.Style[28]={
-										"color":"orange",
-										"display":"inline"
-									};
-								}
-								else if($scope.radioclass=="radionight")
-								{
-									$scope.Style[28]={
-										"color":"green",
-										"display":"inline"
-									};								
-								}
-								else
-								{}	
-							}
-							else
-							{
-								if ($scope.ArrObj[2].td1p!="")
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								if (($scope.ArrObj[2].td1+$scope.ArrObj[2].td1p).search($scope.changename)!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[2].td1p=$scope.changename;
-
-								if ($scope.radioclass=="radioday")
-								{
-									$scope.Style[29]={
-										"color":"orange",
-										"display":"inline"
-									};
-								}
-								else if($scope.radioclass=="radionight")
-								{
-									$scope.Style[29]={
-										"color":"green",
-										"display":"inline"
-									};								
-								}
-								else
-								{
-									$scope.Style[29]={
-										"color":"black",
-										"display":"inline"
-									};										
-								}
-							}							
+							day1add(2);						
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3].td1=="")
-							{
-								$scope.ArrObj[3].td1=$scope.changename;
-								if ($scope.radioclass=="radioday")
-								{
-									$scope.Style[42]={
-										"color":"orange",
-										"display":"inline"
-									};
-								}
-								else if($scope.radioclass=="radionight")
-								{
-									$scope.Style[42]={
-										"color":"green",
-										"display":"inline"
-									};								
-								}
-								else
-								{}								
-							}
-							else
-							{
-								if ($scope.ArrObj[3].td1p!="")
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								if (($scope.ArrObj[3].td1+$scope.ArrObj[3].td1p).search($scope.changename)!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[3].td1p=$scope.changename;
-
-								if ($scope.radioclass=="radioday")
-								{
-									$scope.Style[43]={
-										"color":"orange",
-										"display":"inline"
-									};
-								}
-								else if($scope.radioclass=="radionight")
-								{
-									$scope.Style[43]={
-										"color":"green",
-										"display":"inline"
-									};								
-								}
-								else
-								{
-									$scope.Style[43]={
-										"color":"black",
-										"display":"inline"
-									};										
-								}
-							}							
+							day1add(3);	
 							break;
 						default:
 							break;
@@ -663,94 +603,16 @@ require './init.php';
 					switch($scope.radioposi)
 					{
 						case "radiorec":
-							//当前职位在当天无人员安排
-							if ($scope.ArrObj[0].td2=="")
-							{
-								$scope.ArrObj[0].td2=$scope.ArrObj[0].td2+$scope.changename;
-								//alert(typeof($scope.ArrObj[0].td1));
-							}
-							else//当前职位在当天人员安排人数若达到三人，则无法继续添加
-							{
-								var temparr=$scope.ArrObj[0].td2.split(',');
-								if (temparr.length==2)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[0].td2.search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[0].td2=$scope.ArrObj[0].td2+','+$scope.changename;
-							}
+							day2add(0);
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1].td2=="")
-							{
-								$scope.ArrObj[1].td2=$scope.ArrObj[1].td2+$scope.changename;
-							}
-							else
-							{
-								var temparr=$scope.ArrObj[1].td2.split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[1].td2.search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[1].td2=$scope.ArrObj[1].td2+','+$scope.changename;
-							}						
+							day2add(1);
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2].td2=="")
-							{
-								$scope.ArrObj[2].td2=$scope.ArrObj[2].td2+$scope.changename;
-							}
-							else
-							{
-								var temparr=$scope.ArrObj[2].td2.split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[2].td2.search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[2].td2=$scope.ArrObj[2].td2+','+$scope.changename;
-							}							
+							day2add(2);	
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3].td2=="")
-							{
-								$scope.ArrObj[3].td2=$scope.ArrObj[3].td2+$scope.changename;
-							}
-							else
-							{
-								var temparr=$scope.ArrObj[3].td2.split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[3].td2.search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[3].td2=$scope.ArrObj[3].td2+','+$scope.changename;
-							}							
+							day2add(3);			
 							break;
 						default:
 							break;
@@ -2360,65 +2222,7 @@ require './init.php';
 			}
 		}
 
-		$scope.day1add=function(pos)
-		{
-			if ($scope.ArrObj[pos].td1=="")
-			{
-				$scope.ArrObj[pos].td1=$scope.changename;
-				if ($scope.radioclass=="radioday")
-				{
-					$scope.Style[14*pos]={
-						"color":"orange",
-						"display":"inline"
-					};
-				}
-				else if($scope.radioclass=="radionight")
-				{
-					$scope.Style[14*pos]={
-						"color":"green",
-						"display":"inline"
-					};								
-				}
-				else
-				{}	
-			}
-			else
-			{
-				if ($scope.ArrObj[pos].td1p!="")
-				{
-					alert("人数达到上限，无法继续添加");
-					return;
-				}
-				if (($scope.ArrObj[pos].td1+$scope.ArrObj[pos].td1p).search($scope.changename)!=-1)
-				{
-					alert("请勿重复添加");
-					return;
-				}
-				$scope.ArrObj[pos].td1p=$scope.changename;
-
-				if ($scope.radioclass=="radioday")
-				{
-					$scope.Style[14*pos+1]={
-						"color":"orange",
-						"display":"inline"
-					};
-				}
-				else if($scope.radioclass=="radionight")
-				{
-					$scope.Style[14*pos+1]={
-						"color":"green",
-						"display":"inline"
-					};								
-				}
-				else
-				{
-					$scope.Style[14*pos+1]={
-						"color":"black",
-						"display":"inline"
-					};										
-				}
-			}	
-		}		
+		
 
 		//当选择的职位发生变化时相应的人员选择也发生变化
 		$scope.posichoose=function()
@@ -2598,6 +2402,7 @@ require './init.php';
 					typereset();
 					objreset();		
 				}
+				alert($scope.ArrObj[4][6]);
 			});			
 		}
 
