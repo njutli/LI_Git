@@ -160,125 +160,125 @@ require './init.php';
 				<tr>
 					<td>前台</td>
 					<td>
-						<div ng-style="Style[0]">{{ArrObj[0].td1}}</div>
-						<div ng-style="Style[1]">{{ArrObj[0].td1p}}</div>						
+						<div ng-style="Style[0]">{{ArrObj[0][0]}}</div>
+						<div ng-style="Style[1]">{{ArrObj[0][1]}}</div>						
 					</td>
 					<td>
-						<div ng-style="Style[2]">{{ArrObj[0].td2}}</div>
-						<div ng-style="Style[3]">{{ArrObj[0].td2p}}</div>	
+						<div ng-style="Style[2]">{{ArrObj[0][2]}}</div>
+						<div ng-style="Style[3]">{{ArrObj[0][3]}}</div>	
 					</td>
 					<td>
-						<div ng-style="Style[4]">{{ArrObj[0].td3}}</div>
-						<div ng-style="Style[5]">{{ArrObj[0].td3p}}</div>	
+						<div ng-style="Style[4]">{{ArrObj[0][4]}}</div>
+						<div ng-style="Style[5]">{{ArrObj[0][5]}}</div>	
 					</td>
 					<td>
-						<div ng-style="Style[6]">{{ArrObj[0].td4}}</div>
-						<div ng-style="Style[7]">{{ArrObj[0].td4p}}</div>	
+						<div ng-style="Style[6]">{{ArrObj[0][6]}}</div>
+						<div ng-style="Style[7]">{{ArrObj[0][7]}}</div>	
 					</td>
 					<td>
-						<div ng-style="Style[8]">{{ArrObj[0].td5}}</div>
-						<div ng-style="Style[9]">{{ArrObj[0].td5p}}</div>	
+						<div ng-style="Style[8]">{{ArrObj[0][8]}}</div>
+						<div ng-style="Style[9]">{{ArrObj[0][9]}}</div>	
 					</td>
 					<td>
-						<div ng-style="Style[10]">{{ArrObj[0].td6}}</div>
-						<div ng-style="Style[11]">{{ArrObj[0].td6p}}</div>	
+						<div ng-style="Style[10]">{{ArrObj[0][10]}}</div>
+						<div ng-style="Style[11]">{{ArrObj[0][11]}}</div>	
 					</td>
 					<td>
-						<div ng-style="Style[12]">{{ArrObj[0].td7}}</div>
-						<div ng-style="Style[13]">{{ArrObj[0].td7p}}</div>	
+						<div ng-style="Style[12]">{{ArrObj[0][12]}}</div>
+						<div ng-style="Style[13]">{{ArrObj[0][13]}}</div>	
 					</td>
 				</tr>
 				<tr>
 					<td>化妆</td>
 					<td>
-						<div ng-style="Style[14]">{{ArrObj[1].td1}}</div>
-						<div ng-style="Style[15]">{{ArrObj[1].td1p}}</div>	
+						<div ng-style="Style[14]">{{ArrObj[1][0]}}</div>
+						<div ng-style="Style[15]">{{ArrObj[1][1]}}</div>	
 					</td>
 					<td>
-						<div ng-style="Style[16]">{{ArrObj[1].td2}}</div>
-						<div ng-style="Style[17]">{{ArrObj[1].td2p}}</div>	
+						<div ng-style="Style[16]">{{ArrObj[1][2]}}</div>
+						<div ng-style="Style[17]">{{ArrObj[1][3]}}</div>	
 					</td>
 					<td>
-						<div ng-style="Style[18]">{{ArrObj[1].td3}}</div>
-						<div ng-style="Style[19]">{{ArrObj[1].td3p}}</div>	
+						<div ng-style="Style[18]">{{ArrObj[1][4]}}</div>
+						<div ng-style="Style[19]">{{ArrObj[1][5]}}</div>	
 					</td>
 					<td>
-						<div ng-style="Style[20]">{{ArrObj[1].td4}}</div>
-						<div ng-style="Style[21]">{{ArrObj[1].td4p}}</div>	
+						<div ng-style="Style[20]">{{ArrObj[1][6]}}</div>
+						<div ng-style="Style[21]">{{ArrObj[1][7]}}</div>	
 					</td>
 					<td>
-						<div ng-style="Style[22]">{{ArrObj[1].td5}}</div>
-						<div ng-style="Style[23]">{{ArrObj[1].td5p}}</div>	
+						<div ng-style="Style[22]">{{ArrObj[1][8]}}</div>
+						<div ng-style="Style[23]">{{ArrObj[1][9]}}</div>	
 					</td>
 					<td>
-						<div ng-style="Style[24]">{{ArrObj[1].td6}}</div>
-						<div ng-style="Style[25]">{{ArrObj[1].td6p}}</div>	
+						<div ng-style="Style[24]">{{ArrObj[1][10]}}</div>
+						<div ng-style="Style[25]">{{ArrObj[1][11]}}</div>	
 					</td>
 					<td>
-						<div ng-style="Style[26]">{{ArrObj[1].td7}}</div>
-						<div ng-style="Style[27]">{{ArrObj[1].td7p}}</div>	
+						<div ng-style="Style[26]">{{ArrObj[1][12]}}</div>
+						<div ng-style="Style[27]">{{ArrObj[1][13]}}</div>	
 					</td>															
 				</tr>
 				<tr>
 					<td>摄影</td>
 					<td>
-						<div ng-style="Style[28]">{{ArrObj[2].td1}}</div>
-						<div ng-style="Style[29]">{{ArrObj[2].td1p}}</div>
+						<div ng-style="Style[28]">{{ArrObj[2][0]}}</div>
+						<div ng-style="Style[29]">{{ArrObj[2][1]}}</div>
 					</td>
 					<td>
-						<div ng-style="Style[30]">{{ArrObj[2].td2}}</div>
-						<div ng-style="Style[31]">{{ArrObj[2].td2p}}</div>
+						<div ng-style="Style[30]">{{ArrObj[2][2]}}</div>
+						<div ng-style="Style[31]">{{ArrObj[2][3]}}</div>
 					</td>
 					<td>
-						<div ng-style="Style[32]">{{ArrObj[2].td3}}</div>
-						<div ng-style="Style[33]">{{ArrObj[2].td3p}}</div>
+						<div ng-style="Style[32]">{{ArrObj[2][4]}}</div>
+						<div ng-style="Style[33]">{{ArrObj[2][5]}}</div>
 					</td>
 					<td>
-						<div ng-style="Style[34]">{{ArrObj[2].td4}}</div>
-						<div ng-style="Style[35]">{{ArrObj[2].td4p}}</div>
+						<div ng-style="Style[34]">{{ArrObj[2][6]}}</div>
+						<div ng-style="Style[35]">{{ArrObj[2][7]}}</div>
 					</td>
 					<td>
-						<div ng-style="Style[36]">{{ArrObj[2].td5}}</div>
-						<div ng-style="Style[37]">{{ArrObj[2].td5p}}</div>
+						<div ng-style="Style[36]">{{ArrObj[2][8]}}</div>
+						<div ng-style="Style[37]">{{ArrObj[2][9]}}</div>
 					</td>
 					<td>
-						<div ng-style="Style[38]">{{ArrObj[2].td6}}</div>
-						<div ng-style="Style[39]">{{ArrObj[2].td6p}}</div>
+						<div ng-style="Style[38]">{{ArrObj[2][10]}}</div>
+						<div ng-style="Style[39]">{{ArrObj[2][11]}}</div>
 					</td>
 					<td>
-						<div ng-style="Style[40]">{{ArrObj[2].td7}}</div>
-						<div ng-style="Style[41]">{{ArrObj[2].td7p}}</div>
+						<div ng-style="Style[40]">{{ArrObj[2][12]}}</div>
+						<div ng-style="Style[41]">{{ArrObj[2][13]}}</div>
 					</td>					
 				</tr>
 				<tr>
 					<td>后期</td>
 					<td>
-						<div ng-style="Style[42]">{{ArrObj[3].td1}}</div>
-						<div ng-style="Style[43]">{{ArrObj[3].td1p}}</div>
+						<div ng-style="Style[42]">{{ArrObj[3][0]}}</div>
+						<div ng-style="Style[43]">{{ArrObj[3][1]}}</div>
 					</td>
 					<td>
-						<div ng-style="Style[44]">{{ArrObj[3].td2}}</div>
-						<div ng-style="Style[45]">{{ArrObj[3].td2p}}</div>
+						<div ng-style="Style[44]">{{ArrObj[3][2]}}</div>
+						<div ng-style="Style[45]">{{ArrObj[3][3]}}</div>
 					</td>
 					<td>
-						<div ng-style="Style[46]">{{ArrObj[3].td3}}</div>
-						<div ng-style="Style[47]">{{ArrObj[3].td3p}}</div>
+						<div ng-style="Style[46]">{{ArrObj[3][4]}}</div>
+						<div ng-style="Style[47]">{{ArrObj[3][5]}}</div>
 					</td>
 					<td>
-						<div ng-style="Style[48]">{{ArrObj[3].td4}}</div>
-						<div ng-style="Style[49]">{{ArrObj[3].td4p}}</div>
+						<div ng-style="Style[48]">{{ArrObj[3][6]}}</div>
+						<div ng-style="Style[49]">{{ArrObj[3][7]}}</div>
 					</td>
 					<td>
-						<div ng-style="Style[50]">{{ArrObj[3].td5}}</div>
-						<div ng-style="Style[51]">{{ArrObj[3].td5p}}</div>
+						<div ng-style="Style[50]">{{ArrObj[3][8]}}</div>
+						<div ng-style="Style[51]">{{ArrObj[3][9]}}</div>
 					</td>
 					<td>
-						<div ng-style="Style[52]">{{ArrObj[3].td6}}</div>
-						<div ng-style="Style[53]">{{ArrObj[3].td6p}}</div>
+						<div ng-style="Style[52]">{{ArrObj[3][10]}}</div>
+						<div ng-style="Style[53]">{{ArrObj[3][11]}}</div>
 					</td>
 					<td>
-						<div ng-style="Style[54]">{{ArrObj[3].td7}}</div>
-						<div ng-style="Style[55]">{{ArrObj[3].td7p}}</div>
+						<div ng-style="Style[54]">{{ArrObj[3][12]}}</div>
+						<div ng-style="Style[55]">{{ArrObj[3][13]}}</div>
 					</td>										
 				</tr>											
 			</table>
@@ -426,18 +426,18 @@ require './init.php';
 		typereset();
 		//初始化排班表
 		$scope.ArrObj=[
+		/*
 			{td0:"前台",td1:"",td1p:"",td2:"",td2p:"",td3:"",td3p:"",td4:"",td4p:"",td5:"",td5p:"",td6:"",td6p:"",td7:"",td7p:""},
 			{td0:"化妆",td1:"",td1p:"",td2:"",td2p:"",td3:"",td3p:"",td4:"",td4p:"",td5:"",td5p:"",td6:"",td6p:"",td7:"",td7p:""},
 			{td0:"摄影",td1:"",td1p:"",td2:"",td2p:"",td3:"",td3p:"",td4:"",td4p:"",td5:"",td5p:"",td6:"",td6p:"",td7:"",td7p:""},
 			{td0:"后期",td1:"",td1p:"",td2:"",td2p:"",td3:"",td3p:"",td4:"",td4p:"",td5:"",td5p:"",td6:"",td6p:"",td7:"",td7p:""},
-			["1","2","3","4","5","6","7"]
+			*/
+			["0","1","2","3","4","5","6","7","8","9","10","11","12","13"],
+			["0","1","2","3","4","5","6","7","8","9","10","11","12","13"],
+			["0","1","2","3","4","5","6","7","8","9","10","11","12","13"],
+			["0","1","2","3","4","5","6","7","8","9","10","11","12","13"],
 		];
 
-		$scope.ArrTest=[
-			["1","2","3","4","5","6","7"],
-			["1","2","3","4","5","6","7"],
-			["1","2","3","4","5","6","7"],
-		];
 		$scope.changeappear=function()
 		{
 			$scope.radioclass="";
@@ -445,9 +445,9 @@ require './init.php';
 
 		function day1add(pos)
 		{
-			if ($scope.ArrObj[pos].td1=="")
+			if ($scope.ArrObj[pos][0]=="")
 			{
-				$scope.ArrObj[pos].td1=$scope.changename;
+				$scope.ArrObj[pos][0]=$scope.changename;
 				if ($scope.radioclass=="radioday")
 				{
 					$scope.Style[14*pos]={
@@ -467,17 +467,17 @@ require './init.php';
 			}
 			else
 			{
-				if ($scope.ArrObj[pos].td1p!="")
+				if ($scope.ArrObj[pos][1]!="")
 				{
 					alert("人数达到上限，无法继续添加");
 					return;
 				}
-				if (($scope.ArrObj[pos].td1+$scope.ArrObj[pos].td1p).search($scope.changename)!=-1)
+				if (($scope.ArrObj[pos][0]+$scope.ArrObj[pos][1]).search($scope.changename)!=-1)
 				{
 					alert("请勿重复添加");
 					return;
 				}
-				$scope.ArrObj[pos].td1p=$scope.changename;
+				$scope.ArrObj[pos][1]=$scope.changename;
 
 				if ($scope.radioclass=="radioday")
 				{
@@ -505,9 +505,9 @@ require './init.php';
 
 		function day2add(pos)
 		{
-			if ($scope.ArrObj[pos].td2=="")
+			if ($scope.ArrObj[pos][2]=="")
 			{
-				$scope.ArrObj[pos].td2=$scope.changename;
+				$scope.ArrObj[pos][2]=$scope.changename;
 				if ($scope.radioclass=="radioday")
 				{
 					$scope.Style[14*pos+2]={
@@ -527,17 +527,17 @@ require './init.php';
 			}
 			else
 			{
-				if ($scope.ArrObj[pos].td2p!="")
+				if ($scope.ArrObj[pos][3]!="")
 				{
 					alert("人数达到上限，无法继续添加");
 					return;
 				}
-				if (($scope.ArrObj[pos].td2+$scope.ArrObj[pos].td2p).search($scope.changename)!=-1)
+				if (($scope.ArrObj[pos][2]+$scope.ArrObj[pos][3]).search($scope.changename)!=-1)
 				{
 					alert("请勿重复添加");
 					return;
 				}
-				$scope.ArrObj[pos].td2p=$scope.changename;
+				$scope.ArrObj[pos][3]=$scope.changename;
 
 				if ($scope.radioclass=="radioday")
 				{
@@ -624,92 +624,92 @@ require './init.php';
 					{
 						case "radiorec":
 							//当前职位在当天无人员安排
-							if ($scope.ArrObj[0].td3=="")
+							if ($scope.ArrObj[0][4]=="")
 							{
-								$scope.ArrObj[0].td3=$scope.ArrObj[0].td3+$scope.changename;
-								//alert(typeof($scope.ArrObj[0].td1));
+								$scope.ArrObj[0][4]=$scope.ArrObj[0][4]+$scope.changename;
+								//alert(typeof($scope.ArrObj[0][0]));
 							}
 							else//当前职位在当天人员安排人数若达到三人，则无法继续添加
 							{
-								var temparr=$scope.ArrObj[0].td3.split(',');
+								var temparr=$scope.ArrObj[0][4].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[0].td3.search($scope.changename);
+								var searchres=$scope.ArrObj[0][4].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[0].td3=$scope.ArrObj[0].td3+','+$scope.changename;
+								$scope.ArrObj[0][4]=$scope.ArrObj[0][4]+','+$scope.changename;
 							}
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1].td3=="")
+							if ($scope.ArrObj[1][4]=="")
 							{
-								$scope.ArrObj[1].td3=$scope.ArrObj[1].td3+$scope.changename;
+								$scope.ArrObj[1][4]=$scope.ArrObj[1][4]+$scope.changename;
 							}
 							else
 							{
-								var temparr=$scope.ArrObj[1].td3.split(',');
+								var temparr=$scope.ArrObj[1][4].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[1].td3.search($scope.changename);
+								var searchres=$scope.ArrObj[1][4].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[1].td3=$scope.ArrObj[1].td3+','+$scope.changename;
+								$scope.ArrObj[1][4]=$scope.ArrObj[1][4]+','+$scope.changename;
 							}						
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2].td3=="")
+							if ($scope.ArrObj[2][4]=="")
 							{
-								$scope.ArrObj[2].td3=$scope.ArrObj[2].td3+$scope.changename;
+								$scope.ArrObj[2][4]=$scope.ArrObj[2][4]+$scope.changename;
 							}
 							else
 							{
-								var temparr=$scope.ArrObj[2].td3.split(',');
+								var temparr=$scope.ArrObj[2][4].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[2].td3.search($scope.changename);
+								var searchres=$scope.ArrObj[2][4].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[2].td3=$scope.ArrObj[2].td3+','+$scope.changename;
+								$scope.ArrObj[2][4]=$scope.ArrObj[2][4]+','+$scope.changename;
 							}							
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3].td3=="")
+							if ($scope.ArrObj[3][4]=="")
 							{
-								$scope.ArrObj[3].td3=$scope.ArrObj[3].td3+$scope.changename;
+								$scope.ArrObj[3][4]=$scope.ArrObj[3][4]+$scope.changename;
 							}
 							else
 							{
-								var temparr=$scope.ArrObj[3].td3.split(',');
+								var temparr=$scope.ArrObj[3][4].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[3].td3.search($scope.changename);
+								var searchres=$scope.ArrObj[3][4].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[3].td3=$scope.ArrObj[3].td3+','+$scope.changename;
+								$scope.ArrObj[3][4]=$scope.ArrObj[3][4]+','+$scope.changename;
 							}							
 							break;
 						default:
@@ -722,92 +722,92 @@ require './init.php';
 					{
 						case "radiorec":
 							//当前职位在当天无人员安排
-							if ($scope.ArrObj[0].td4=="")
+							if ($scope.ArrObj[0][6]=="")
 							{
-								$scope.ArrObj[0].td4=$scope.ArrObj[0].td4+$scope.changename;
-								//alert(typeof($scope.ArrObj[0].td1));
+								$scope.ArrObj[0][6]=$scope.ArrObj[0][6]+$scope.changename;
+								//alert(typeof($scope.ArrObj[0][0]));
 							}
 							else//当前职位在当天人员安排人数若达到三人，则无法继续添加
 							{
-								var temparr=$scope.ArrObj[0].td4.split(',');
+								var temparr=$scope.ArrObj[0][6].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[0].td4.search($scope.changename);
+								var searchres=$scope.ArrObj[0][6].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[0].td4=$scope.ArrObj[0].td4+','+$scope.changename;
+								$scope.ArrObj[0][6]=$scope.ArrObj[0][6]+','+$scope.changename;
 							}
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1].td4=="")
+							if ($scope.ArrObj[1][6]=="")
 							{
-								$scope.ArrObj[1].td4=$scope.ArrObj[1].td4+$scope.changename;
+								$scope.ArrObj[1][6]=$scope.ArrObj[1][6]+$scope.changename;
 							}
 							else
 							{
-								var temparr=$scope.ArrObj[1].td4.split(',');
+								var temparr=$scope.ArrObj[1][6].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[1].td4.search($scope.changename);
+								var searchres=$scope.ArrObj[1][6].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[1].td4=$scope.ArrObj[1].td4+','+$scope.changename;
+								$scope.ArrObj[1][6]=$scope.ArrObj[1][6]+','+$scope.changename;
 							}						
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2].td4=="")
+							if ($scope.ArrObj[2][6]=="")
 							{
-								$scope.ArrObj[2].td4=$scope.ArrObj[2].td4+$scope.changename;
+								$scope.ArrObj[2][6]=$scope.ArrObj[2][6]+$scope.changename;
 							}
 							else
 							{
-								var temparr=$scope.ArrObj[2].td4.split(',');
+								var temparr=$scope.ArrObj[2][6].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[2].td4.search($scope.changename);
+								var searchres=$scope.ArrObj[2][6].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[2].td4=$scope.ArrObj[2].td4+','+$scope.changename;
+								$scope.ArrObj[2][6]=$scope.ArrObj[2][6]+','+$scope.changename;
 							}							
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3].td4=="")
+							if ($scope.ArrObj[3][6]=="")
 							{
-								$scope.ArrObj[3].td4=$scope.ArrObj[3].td4+$scope.changename;
+								$scope.ArrObj[3][6]=$scope.ArrObj[3][6]+$scope.changename;
 							}
 							else
 							{
-								var temparr=$scope.ArrObj[3].td4.split(',');
+								var temparr=$scope.ArrObj[3][6].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[3].td4.search($scope.changename);
+								var searchres=$scope.ArrObj[3][6].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[3].td4=$scope.ArrObj[3].td4+','+$scope.changename;
+								$scope.ArrObj[3][6]=$scope.ArrObj[3][6]+','+$scope.changename;
 							}							
 							break;
 						default:
@@ -820,92 +820,92 @@ require './init.php';
 					{
 						case "radiorec":
 							//当前职位在当天无人员安排
-							if ($scope.ArrObj[0].td5=="")
+							if ($scope.ArrObj[0][8]=="")
 							{
-								$scope.ArrObj[0].td5=$scope.ArrObj[0].td5+$scope.changename;
-								//alert(typeof($scope.ArrObj[0].td1));
+								$scope.ArrObj[0][8]=$scope.ArrObj[0][8]+$scope.changename;
+								//alert(typeof($scope.ArrObj[0][0]));
 							}
 							else//当前职位在当天人员安排人数若达到三人，则无法继续添加
 							{
-								var temparr=$scope.ArrObj[0].td5.split(',');
+								var temparr=$scope.ArrObj[0][8].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[0].td5.search($scope.changename);
+								var searchres=$scope.ArrObj[0][8].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[0].td5=$scope.ArrObj[0].td5+','+$scope.changename;
+								$scope.ArrObj[0][8]=$scope.ArrObj[0][8]+','+$scope.changename;
 							}
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1].td5=="")
+							if ($scope.ArrObj[1][8]=="")
 							{
-								$scope.ArrObj[1].td5=$scope.ArrObj[1].td5+$scope.changename;
+								$scope.ArrObj[1][8]=$scope.ArrObj[1][8]+$scope.changename;
 							}
 							else
 							{
-								var temparr=$scope.ArrObj[1].td5.split(',');
+								var temparr=$scope.ArrObj[1][8].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[1].td5.search($scope.changename);
+								var searchres=$scope.ArrObj[1][8].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[1].td5=$scope.ArrObj[1].td5+','+$scope.changename;
+								$scope.ArrObj[1][8]=$scope.ArrObj[1][8]+','+$scope.changename;
 							}						
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2].td5=="")
+							if ($scope.ArrObj[2][8]=="")
 							{
-								$scope.ArrObj[2].td5=$scope.ArrObj[2].td5+$scope.changename;
+								$scope.ArrObj[2][8]=$scope.ArrObj[2][8]+$scope.changename;
 							}
 							else
 							{
-								var temparr=$scope.ArrObj[2].td5.split(',');
+								var temparr=$scope.ArrObj[2][8].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[2].td5.search($scope.changename);
+								var searchres=$scope.ArrObj[2][8].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[2].td5=$scope.ArrObj[2].td5+','+$scope.changename;
+								$scope.ArrObj[2][8]=$scope.ArrObj[2][8]+','+$scope.changename;
 							}							
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3].td5=="")
+							if ($scope.ArrObj[3][8]=="")
 							{
-								$scope.ArrObj[3].td5=$scope.ArrObj[3].td5+$scope.changename;
+								$scope.ArrObj[3][8]=$scope.ArrObj[3][8]+$scope.changename;
 							}
 							else
 							{
-								var temparr=$scope.ArrObj[3].td5.split(',');
+								var temparr=$scope.ArrObj[3][8].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[3].td5.search($scope.changename);
+								var searchres=$scope.ArrObj[3][8].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[3].td5=$scope.ArrObj[3].td5+','+$scope.changename;
+								$scope.ArrObj[3][8]=$scope.ArrObj[3][8]+','+$scope.changename;
 							}							
 							break;
 						default:
@@ -918,92 +918,92 @@ require './init.php';
 					{
 						case "radiorec":
 							//当前职位在当天无人员安排
-							if ($scope.ArrObj[0].td6=="")
+							if ($scope.ArrObj[0][10]=="")
 							{
-								$scope.ArrObj[0].td6=$scope.ArrObj[0].td6+$scope.changename;
-								//alert(typeof($scope.ArrObj[0].td1));
+								$scope.ArrObj[0][10]=$scope.ArrObj[0][10]+$scope.changename;
+								//alert(typeof($scope.ArrObj[0][0]));
 							}
 							else//当前职位在当天人员安排人数若达到三人，则无法继续添加
 							{
-								var temparr=$scope.ArrObj[0].td6.split(',');
+								var temparr=$scope.ArrObj[0][10].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[0].td6.search($scope.changename);
+								var searchres=$scope.ArrObj[0][10].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[0].td6=$scope.ArrObj[0].td6+','+$scope.changename;
+								$scope.ArrObj[0][10]=$scope.ArrObj[0][10]+','+$scope.changename;
 							}
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1].td6=="")
+							if ($scope.ArrObj[1][10]=="")
 							{
-								$scope.ArrObj[1].td6=$scope.ArrObj[1].td6+$scope.changename;
+								$scope.ArrObj[1][10]=$scope.ArrObj[1][10]+$scope.changename;
 							}
 							else
 							{
-								var temparr=$scope.ArrObj[1].td6.split(',');
+								var temparr=$scope.ArrObj[1][10].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[1].td6.search($scope.changename);
+								var searchres=$scope.ArrObj[1][10].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[1].td6=$scope.ArrObj[1].td6+','+$scope.changename;
+								$scope.ArrObj[1][10]=$scope.ArrObj[1][10]+','+$scope.changename;
 							}						
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2].td6=="")
+							if ($scope.ArrObj[2][10]=="")
 							{
-								$scope.ArrObj[2].td6=$scope.ArrObj[2].td6+$scope.changename;
+								$scope.ArrObj[2][10]=$scope.ArrObj[2][10]+$scope.changename;
 							}
 							else
 							{
-								var temparr=$scope.ArrObj[2].td6.split(',');
+								var temparr=$scope.ArrObj[2][10].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[2].td6.search($scope.changename);
+								var searchres=$scope.ArrObj[2][10].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[2].td6=$scope.ArrObj[2].td6+','+$scope.changename;
+								$scope.ArrObj[2][10]=$scope.ArrObj[2][10]+','+$scope.changename;
 							}							
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3].td6=="")
+							if ($scope.ArrObj[3][10]=="")
 							{
-								$scope.ArrObj[3].td6=$scope.ArrObj[3].td6+$scope.changename;
+								$scope.ArrObj[3][10]=$scope.ArrObj[3][10]+$scope.changename;
 							}
 							else
 							{
-								var temparr=$scope.ArrObj[3].td6.split(',');
+								var temparr=$scope.ArrObj[3][10].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[3].td6.search($scope.changename);
+								var searchres=$scope.ArrObj[3][10].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[3].td6=$scope.ArrObj[3].td6+','+$scope.changename;
+								$scope.ArrObj[3][10]=$scope.ArrObj[3][10]+','+$scope.changename;
 							}							
 							break;
 						default:
@@ -1016,92 +1016,92 @@ require './init.php';
 					{
 						case "radiorec":
 							//当前职位在当天无人员安排
-							if ($scope.ArrObj[0].td7=="")
+							if ($scope.ArrObj[0][12]=="")
 							{
-								$scope.ArrObj[0].td7=$scope.ArrObj[0].td7+$scope.changename;
-								//alert(typeof($scope.ArrObj[0].td1));
+								$scope.ArrObj[0][12]=$scope.ArrObj[0][12]+$scope.changename;
+								//alert(typeof($scope.ArrObj[0][0]));
 							}
 							else//当前职位在当天人员安排人数若达到三人，则无法继续添加
 							{
-								var temparr=$scope.ArrObj[0].td7.split(',');
+								var temparr=$scope.ArrObj[0][12].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[0].td7.search($scope.changename);
+								var searchres=$scope.ArrObj[0][12].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[0].td7=$scope.ArrObj[0].td7+','+$scope.changename;
+								$scope.ArrObj[0][12]=$scope.ArrObj[0][12]+','+$scope.changename;
 							}
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1].td7=="")
+							if ($scope.ArrObj[1][12]=="")
 							{
-								$scope.ArrObj[1].td7=$scope.ArrObj[1].td7+$scope.changename;
+								$scope.ArrObj[1][12]=$scope.ArrObj[1][12]+$scope.changename;
 							}
 							else
 							{
-								var temparr=$scope.ArrObj[1].td7.split(',');
+								var temparr=$scope.ArrObj[1][12].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[1].td7.search($scope.changename);
+								var searchres=$scope.ArrObj[1][12].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[1].td7=$scope.ArrObj[1].td7+','+$scope.changename;
+								$scope.ArrObj[1][12]=$scope.ArrObj[1][12]+','+$scope.changename;
 							}						
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2].td7=="")
+							if ($scope.ArrObj[2][12]=="")
 							{
-								$scope.ArrObj[2].td7=$scope.ArrObj[2].td7+$scope.changename;
+								$scope.ArrObj[2][12]=$scope.ArrObj[2][12]+$scope.changename;
 							}
 							else
 							{
-								var temparr=$scope.ArrObj[2].td7.split(',');
+								var temparr=$scope.ArrObj[2][12].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[2].td7.search($scope.changename);
+								var searchres=$scope.ArrObj[2][12].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[2].td7=$scope.ArrObj[2].td7+','+$scope.changename;
+								$scope.ArrObj[2][12]=$scope.ArrObj[2][12]+','+$scope.changename;
 							}							
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3].td7=="")
+							if ($scope.ArrObj[3][12]=="")
 							{
-								$scope.ArrObj[3].td7=$scope.ArrObj[3].td7+$scope.changename;
+								$scope.ArrObj[3][12]=$scope.ArrObj[3][12]+$scope.changename;
 							}
 							else
 							{
-								var temparr=$scope.ArrObj[3].td7.split(',');
+								var temparr=$scope.ArrObj[3][12].split(',');
 								if (temparr.length==3)
 								{
 									alert("人数达到上限，无法继续添加");
 									return;
 								}
-								var searchres=$scope.ArrObj[3].td7.search($scope.changename);
+								var searchres=$scope.ArrObj[3][12].search($scope.changename);
 								if (searchres!=-1)
 								{
 									alert("请勿重复添加");
 									return;
 								}
-								$scope.ArrObj[3].td7=$scope.ArrObj[3].td7+','+$scope.changename;
+								$scope.ArrObj[3][12]=$scope.ArrObj[3][12]+','+$scope.changename;
 							}							
 							break;
 						default:
@@ -1134,13 +1134,13 @@ require './init.php';
 					{
 						case "radiorec":
 							//当前想要删除的人员名单为空
-							if ($scope.ArrObj[0].td1=="")
+							if ($scope.ArrObj[0][0]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[0].td1.search($scope.changename);
+							var searchres=$scope.ArrObj[0][0].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1148,37 +1148,37 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[0].td1.split(',');
+							var temparr=$scope.ArrObj[0][0].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[0].td1="";
+								$scope.ArrObj[0][0]="";
 							}
 							else
 							{
-								$scope.ArrObj[0].td1="";
+								$scope.ArrObj[0][0]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[0].td1=="")
+										if ($scope.ArrObj[0][0]=="")
 										{
-											$scope.ArrObj[0].td1=temparr[i];
+											$scope.ArrObj[0][0]=temparr[i];
 										}
 										else
-											$scope.ArrObj[0].td1=$scope.ArrObj[0].td1+','+temparr[i];
+											$scope.ArrObj[0][0]=$scope.ArrObj[0][0]+','+temparr[i];
 									}
 								}
 							}
 
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1].td1=="")
+							if ($scope.ArrObj[1][0]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[1].td1.search($scope.changename);
+							var searchres=$scope.ArrObj[1][0].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1186,81 +1186,81 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[1].td1.split(',');
+							var temparr=$scope.ArrObj[1][0].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[1].td1="";
+								$scope.ArrObj[1][0]="";
 							}
 							else
 							{
-								$scope.ArrObj[1].td1="";
+								$scope.ArrObj[1][0]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[1].td1=="")
+										if ($scope.ArrObj[1][0]=="")
 										{
-											$scope.ArrObj[1].td1=temparr[i];
+											$scope.ArrObj[1][0]=temparr[i];
 										}
 										else
-											$scope.ArrObj[1].td1=$scope.ArrObj[1].td1+','+temparr[i];
+											$scope.ArrObj[1][0]=$scope.ArrObj[1][0]+','+temparr[i];
 									}
 								}
 							}						
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2].td1=="")
+							if ($scope.ArrObj[2][0]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
 							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (($scope.ArrObj[2].td1+$scope.ArrObj[2].td1p).search($scope.changename)==-1)
+							if (($scope.ArrObj[2][0]+$scope.ArrObj[2][1]).search($scope.changename)==-1)
 							{
 								alert("无法删除，欲删除人员不在名单中");
 								return;
 							}
 						
 							//若想要删除的人员为第一个，则将第二个前移，并清空第二个
-							if ($scope.ArrObj[2].td1.search($scope.changename)!=-1)
+							if ($scope.ArrObj[2][0].search($scope.changename)!=-1)
 							{
-								$scope.ArrObj[2].td1=$scope.ArrObj[2].td1p;
+								$scope.ArrObj[2][0]=$scope.ArrObj[2][1];
 								$scope.Style[28].color=$scope.Style[29].color;
 							}
 							else//若想要删除的人员为第二个，则直接删除
 							{
 						
 							}
-							$scope.ArrObj[2].td1p="";
+							$scope.ArrObj[2][1]="";
 							$scope.Style[29].color="black";							
 							
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3].td1=="")
+							if ($scope.ArrObj[3][0]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
 							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (($scope.ArrObj[3].td1+$scope.ArrObj[3].td1p).search($scope.changename)==-1)
+							if (($scope.ArrObj[3][0]+$scope.ArrObj[3][1]).search($scope.changename)==-1)
 							{
 								alert("无法删除，欲删除人员不在名单中");
 								return;
 							}
 						
 							//若想要删除的人员为第一个，则将第二个前移，并清空第二个
-							if ($scope.ArrObj[3].td1.search($scope.changename)!=-1)
+							if ($scope.ArrObj[3][0].search($scope.changename)!=-1)
 							{
-								$scope.ArrObj[3].td1=$scope.ArrObj[3].td1p;
+								$scope.ArrObj[3][0]=$scope.ArrObj[3][1];
 								$scope.Style[42].color=$scope.Style[43].color;
 							}
 							else//若想要删除的人员为第二个，则直接删除
 							{
 						
 							}
-							$scope.ArrObj[3].td1p="";
+							$scope.ArrObj[3][1]="";
 							$scope.Style[43].color="black";							
 							
 							break;
@@ -1274,13 +1274,13 @@ require './init.php';
 					{
 						case "radiorec":
 							//当前想要删除的人员名单为空
-							if ($scope.ArrObj[0].td2=="")
+							if ($scope.ArrObj[0][2]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[0].td2.search($scope.changename);
+							var searchres=$scope.ArrObj[0][2].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1288,37 +1288,37 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[0].td2.split(',');
+							var temparr=$scope.ArrObj[0][2].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[0].td2="";
+								$scope.ArrObj[0][2]="";
 							}
 							else
 							{
-								$scope.ArrObj[0].td2="";
+								$scope.ArrObj[0][2]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[0].td2=="")
+										if ($scope.ArrObj[0][2]=="")
 										{
-											$scope.ArrObj[0].td2=temparr[i];
+											$scope.ArrObj[0][2]=temparr[i];
 										}
 										else
-											$scope.ArrObj[0].td2=$scope.ArrObj[0].td2+','+temparr[i];
+											$scope.ArrObj[0][2]=$scope.ArrObj[0][2]+','+temparr[i];
 									}
 								}
 							}
 
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1].td2=="")
+							if ($scope.ArrObj[1][2]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[1].td2.search($scope.changename);
+							var searchres=$scope.ArrObj[1][2].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1326,36 +1326,36 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[1].td2.split(',');
+							var temparr=$scope.ArrObj[1][2].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[1].td2="";
+								$scope.ArrObj[1][2]="";
 							}
 							else
 							{
-								$scope.ArrObj[1].td2="";
+								$scope.ArrObj[1][2]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[1].td2=="")
+										if ($scope.ArrObj[1][2]=="")
 										{
-											$scope.ArrObj[1].td2=temparr[i];
+											$scope.ArrObj[1][2]=temparr[i];
 										}
 										else
-											$scope.ArrObj[1].td2=$scope.ArrObj[1].td2+','+temparr[i];
+											$scope.ArrObj[1][2]=$scope.ArrObj[1][2]+','+temparr[i];
 									}
 								}
 							}						
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2].td2=="")
+							if ($scope.ArrObj[2][2]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[2].td2.search($scope.changename);
+							var searchres=$scope.ArrObj[2][2].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1363,36 +1363,36 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[2].td2.split(',');
+							var temparr=$scope.ArrObj[2][2].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[2].td2="";
+								$scope.ArrObj[2][2]="";
 							}
 							else
 							{
-								$scope.ArrObj[2].td2="";
+								$scope.ArrObj[2][2]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[2].td2=="")
+										if ($scope.ArrObj[2][2]=="")
 										{
-											$scope.ArrObj[2].td2=temparr[i];
+											$scope.ArrObj[2][2]=temparr[i];
 										}
 										else
-											$scope.ArrObj[2].td2=$scope.ArrObj[2].td2+','+temparr[i];
+											$scope.ArrObj[2][2]=$scope.ArrObj[2][2]+','+temparr[i];
 									}
 								}
 							}						
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3].td2=="")
+							if ($scope.ArrObj[3][2]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[3].td2.search($scope.changename);
+							var searchres=$scope.ArrObj[3][2].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1400,24 +1400,24 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[3].td2.split(',');
+							var temparr=$scope.ArrObj[3][2].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[3].td2="";
+								$scope.ArrObj[3][2]="";
 							}
 							else
 							{
-								$scope.ArrObj[3].td2="";
+								$scope.ArrObj[3][2]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[3].td2=="")
+										if ($scope.ArrObj[3][2]=="")
 										{
-											$scope.ArrObj[3].td2=temparr[i];
+											$scope.ArrObj[3][2]=temparr[i];
 										}
 										else
-											$scope.ArrObj[3].td2=$scope.ArrObj[3].td2+','+temparr[i];
+											$scope.ArrObj[3][2]=$scope.ArrObj[3][2]+','+temparr[i];
 									}
 								}
 							}						
@@ -1432,13 +1432,13 @@ require './init.php';
 					{
 						case "radiorec":
 							//当前想要删除的人员名单为空
-							if ($scope.ArrObj[0].td3=="")
+							if ($scope.ArrObj[0][4]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[0].td3.search($scope.changename);
+							var searchres=$scope.ArrObj[0][4].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1446,37 +1446,37 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[0].td3.split(',');
+							var temparr=$scope.ArrObj[0][4].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[0].td3="";
+								$scope.ArrObj[0][4]="";
 							}
 							else
 							{
-								$scope.ArrObj[0].td3="";
+								$scope.ArrObj[0][4]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[0].td3=="")
+										if ($scope.ArrObj[0][4]=="")
 										{
-											$scope.ArrObj[0].td3=temparr[i];
+											$scope.ArrObj[0][4]=temparr[i];
 										}
 										else
-											$scope.ArrObj[0].td3=$scope.ArrObj[0].td3+','+temparr[i];
+											$scope.ArrObj[0][4]=$scope.ArrObj[0][4]+','+temparr[i];
 									}
 								}
 							}
 
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1].td3=="")
+							if ($scope.ArrObj[1][4]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[1].td3.search($scope.changename);
+							var searchres=$scope.ArrObj[1][4].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1484,36 +1484,36 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[1].td3.split(',');
+							var temparr=$scope.ArrObj[1][4].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[1].td3="";
+								$scope.ArrObj[1][4]="";
 							}
 							else
 							{
-								$scope.ArrObj[1].td3="";
+								$scope.ArrObj[1][4]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[1].td3=="")
+										if ($scope.ArrObj[1][4]=="")
 										{
-											$scope.ArrObj[1].td3=temparr[i];
+											$scope.ArrObj[1][4]=temparr[i];
 										}
 										else
-											$scope.ArrObj[1].td3=$scope.ArrObj[1].td3+','+temparr[i];
+											$scope.ArrObj[1][4]=$scope.ArrObj[1][4]+','+temparr[i];
 									}
 								}
 							}						
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2].td3=="")
+							if ($scope.ArrObj[2][4]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[2].td3.search($scope.changename);
+							var searchres=$scope.ArrObj[2][4].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1521,36 +1521,36 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[2].td3.split(',');
+							var temparr=$scope.ArrObj[2][4].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[2].td3="";
+								$scope.ArrObj[2][4]="";
 							}
 							else
 							{
-								$scope.ArrObj[2].td3="";
+								$scope.ArrObj[2][4]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[2].td3=="")
+										if ($scope.ArrObj[2][4]=="")
 										{
-											$scope.ArrObj[2].td3=temparr[i];
+											$scope.ArrObj[2][4]=temparr[i];
 										}
 										else
-											$scope.ArrObj[2].td3=$scope.ArrObj[2].td3+','+temparr[i];
+											$scope.ArrObj[2][4]=$scope.ArrObj[2][4]+','+temparr[i];
 									}
 								}
 							}						
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3].td3=="")
+							if ($scope.ArrObj[3][4]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[3].td3.search($scope.changename);
+							var searchres=$scope.ArrObj[3][4].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1558,24 +1558,24 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[3].td3.split(',');
+							var temparr=$scope.ArrObj[3][4].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[3].td3="";
+								$scope.ArrObj[3][4]="";
 							}
 							else
 							{
-								$scope.ArrObj[3].td3="";
+								$scope.ArrObj[3][4]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[3].td3=="")
+										if ($scope.ArrObj[3][4]=="")
 										{
-											$scope.ArrObj[3].td3=temparr[i];
+											$scope.ArrObj[3][4]=temparr[i];
 										}
 										else
-											$scope.ArrObj[3].td3=$scope.ArrObj[3].td3+','+temparr[i];
+											$scope.ArrObj[3][4]=$scope.ArrObj[3][4]+','+temparr[i];
 									}
 								}
 							}						
@@ -1590,13 +1590,13 @@ require './init.php';
 					{
 						case "radiorec":
 							//当前想要删除的人员名单为空
-							if ($scope.ArrObj[0].td4=="")
+							if ($scope.ArrObj[0][6]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[0].td4.search($scope.changename);
+							var searchres=$scope.ArrObj[0][6].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1604,37 +1604,37 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[0].td4.split(',');
+							var temparr=$scope.ArrObj[0][6].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[0].td4="";
+								$scope.ArrObj[0][6]="";
 							}
 							else
 							{
-								$scope.ArrObj[0].td4="";
+								$scope.ArrObj[0][6]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[0].td4=="")
+										if ($scope.ArrObj[0][6]=="")
 										{
-											$scope.ArrObj[0].td4=temparr[i];
+											$scope.ArrObj[0][6]=temparr[i];
 										}
 										else
-											$scope.ArrObj[0].td4=$scope.ArrObj[0].td4+','+temparr[i];
+											$scope.ArrObj[0][6]=$scope.ArrObj[0][6]+','+temparr[i];
 									}
 								}
 							}
 
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1].td4=="")
+							if ($scope.ArrObj[1][6]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[1].td4.search($scope.changename);
+							var searchres=$scope.ArrObj[1][6].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1642,36 +1642,36 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[1].td4.split(',');
+							var temparr=$scope.ArrObj[1][6].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[1].td4="";
+								$scope.ArrObj[1][6]="";
 							}
 							else
 							{
-								$scope.ArrObj[1].td4="";
+								$scope.ArrObj[1][6]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[1].td4=="")
+										if ($scope.ArrObj[1][6]=="")
 										{
-											$scope.ArrObj[1].td4=temparr[i];
+											$scope.ArrObj[1][6]=temparr[i];
 										}
 										else
-											$scope.ArrObj[1].td4=$scope.ArrObj[1].td4+','+temparr[i];
+											$scope.ArrObj[1][6]=$scope.ArrObj[1][6]+','+temparr[i];
 									}
 								}
 							}						
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2].td4=="")
+							if ($scope.ArrObj[2][6]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[2].td4.search($scope.changename);
+							var searchres=$scope.ArrObj[2][6].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1679,36 +1679,36 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[2].td4.split(',');
+							var temparr=$scope.ArrObj[2][6].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[2].td4="";
+								$scope.ArrObj[2][6]="";
 							}
 							else
 							{
-								$scope.ArrObj[2].td4="";
+								$scope.ArrObj[2][6]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[2].td4=="")
+										if ($scope.ArrObj[2][6]=="")
 										{
-											$scope.ArrObj[2].td4=temparr[i];
+											$scope.ArrObj[2][6]=temparr[i];
 										}
 										else
-											$scope.ArrObj[2].td4=$scope.ArrObj[2].td4+','+temparr[i];
+											$scope.ArrObj[2][6]=$scope.ArrObj[2][6]+','+temparr[i];
 									}
 								}
 							}						
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3].td4=="")
+							if ($scope.ArrObj[3][6]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[3].td4.search($scope.changename);
+							var searchres=$scope.ArrObj[3][6].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1716,24 +1716,24 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[3].td4.split(',');
+							var temparr=$scope.ArrObj[3][6].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[3].td4="";
+								$scope.ArrObj[3][6]="";
 							}
 							else
 							{
-								$scope.ArrObj[3].td4="";
+								$scope.ArrObj[3][6]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[3].td4=="")
+										if ($scope.ArrObj[3][6]=="")
 										{
-											$scope.ArrObj[3].td4=temparr[i];
+											$scope.ArrObj[3][6]=temparr[i];
 										}
 										else
-											$scope.ArrObj[3].td4=$scope.ArrObj[3].td4+','+temparr[i];
+											$scope.ArrObj[3][6]=$scope.ArrObj[3][6]+','+temparr[i];
 									}
 								}
 							}						
@@ -1748,13 +1748,13 @@ require './init.php';
 					{
 						case "radiorec":
 							//当前想要删除的人员名单为空
-							if ($scope.ArrObj[0].td5=="")
+							if ($scope.ArrObj[0][8]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[0].td5.search($scope.changename);
+							var searchres=$scope.ArrObj[0][8].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1762,37 +1762,37 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[0].td5.split(',');
+							var temparr=$scope.ArrObj[0][8].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[0].td5="";
+								$scope.ArrObj[0][8]="";
 							}
 							else
 							{
-								$scope.ArrObj[0].td5="";
+								$scope.ArrObj[0][8]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[0].td5=="")
+										if ($scope.ArrObj[0][8]=="")
 										{
-											$scope.ArrObj[0].td5=temparr[i];
+											$scope.ArrObj[0][8]=temparr[i];
 										}
 										else
-											$scope.ArrObj[0].td5=$scope.ArrObj[0].td5+','+temparr[i];
+											$scope.ArrObj[0][8]=$scope.ArrObj[0][8]+','+temparr[i];
 									}
 								}
 							}
 
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1].td5=="")
+							if ($scope.ArrObj[1][8]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[1].td5.search($scope.changename);
+							var searchres=$scope.ArrObj[1][8].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1800,36 +1800,36 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[1].td5.split(',');
+							var temparr=$scope.ArrObj[1][8].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[1].td5="";
+								$scope.ArrObj[1][8]="";
 							}
 							else
 							{
-								$scope.ArrObj[1].td5="";
+								$scope.ArrObj[1][8]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[1].td5=="")
+										if ($scope.ArrObj[1][8]=="")
 										{
-											$scope.ArrObj[1].td5=temparr[i];
+											$scope.ArrObj[1][8]=temparr[i];
 										}
 										else
-											$scope.ArrObj[1].td5=$scope.ArrObj[1].td5+','+temparr[i];
+											$scope.ArrObj[1][8]=$scope.ArrObj[1][8]+','+temparr[i];
 									}
 								}
 							}						
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2].td5=="")
+							if ($scope.ArrObj[2][8]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[2].td5.search($scope.changename);
+							var searchres=$scope.ArrObj[2][8].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1837,36 +1837,36 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[2].td5.split(',');
+							var temparr=$scope.ArrObj[2][8].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[2].td5="";
+								$scope.ArrObj[2][8]="";
 							}
 							else
 							{
-								$scope.ArrObj[2].td5="";
+								$scope.ArrObj[2][8]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[2].td5=="")
+										if ($scope.ArrObj[2][8]=="")
 										{
-											$scope.ArrObj[2].td5=temparr[i];
+											$scope.ArrObj[2][8]=temparr[i];
 										}
 										else
-											$scope.ArrObj[2].td5=$scope.ArrObj[2].td5+','+temparr[i];
+											$scope.ArrObj[2][8]=$scope.ArrObj[2][8]+','+temparr[i];
 									}
 								}
 							}						
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3].td5=="")
+							if ($scope.ArrObj[3][8]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[3].td5.search($scope.changename);
+							var searchres=$scope.ArrObj[3][8].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1874,24 +1874,24 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[3].td5.split(',');
+							var temparr=$scope.ArrObj[3][8].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[3].td5="";
+								$scope.ArrObj[3][8]="";
 							}
 							else
 							{
-								$scope.ArrObj[3].td5="";
+								$scope.ArrObj[3][8]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[3].td5=="")
+										if ($scope.ArrObj[3][8]=="")
 										{
-											$scope.ArrObj[3].td5=temparr[i];
+											$scope.ArrObj[3][8]=temparr[i];
 										}
 										else
-											$scope.ArrObj[3].td5=$scope.ArrObj[3].td5+','+temparr[i];
+											$scope.ArrObj[3][8]=$scope.ArrObj[3][8]+','+temparr[i];
 									}
 								}
 							}						
@@ -1906,13 +1906,13 @@ require './init.php';
 					{
 						case "radiorec":
 							//当前想要删除的人员名单为空
-							if ($scope.ArrObj[0].td6=="")
+							if ($scope.ArrObj[0][10]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[0].td6.search($scope.changename);
+							var searchres=$scope.ArrObj[0][10].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1920,37 +1920,37 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[0].td6.split(',');
+							var temparr=$scope.ArrObj[0][10].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[0].td6="";
+								$scope.ArrObj[0][10]="";
 							}
 							else
 							{
-								$scope.ArrObj[0].td6="";
+								$scope.ArrObj[0][10]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[0].td6=="")
+										if ($scope.ArrObj[0][10]=="")
 										{
-											$scope.ArrObj[0].td6=temparr[i];
+											$scope.ArrObj[0][10]=temparr[i];
 										}
 										else
-											$scope.ArrObj[0].td6=$scope.ArrObj[0].td6+','+temparr[i];
+											$scope.ArrObj[0][10]=$scope.ArrObj[0][10]+','+temparr[i];
 									}
 								}
 							}
 
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1].td6=="")
+							if ($scope.ArrObj[1][10]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[1].td6.search($scope.changename);
+							var searchres=$scope.ArrObj[1][10].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1958,36 +1958,36 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[1].td6.split(',');
+							var temparr=$scope.ArrObj[1][10].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[1].td6="";
+								$scope.ArrObj[1][10]="";
 							}
 							else
 							{
-								$scope.ArrObj[1].td6="";
+								$scope.ArrObj[1][10]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[1].td6=="")
+										if ($scope.ArrObj[1][10]=="")
 										{
-											$scope.ArrObj[1].td6=temparr[i];
+											$scope.ArrObj[1][10]=temparr[i];
 										}
 										else
-											$scope.ArrObj[1].td6=$scope.ArrObj[1].td6+','+temparr[i];
+											$scope.ArrObj[1][10]=$scope.ArrObj[1][10]+','+temparr[i];
 									}
 								}
 							}						
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2].td6=="")
+							if ($scope.ArrObj[2][10]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[2].td6.search($scope.changename);
+							var searchres=$scope.ArrObj[2][10].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -1995,36 +1995,36 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[2].td6.split(',');
+							var temparr=$scope.ArrObj[2][10].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[2].td6="";
+								$scope.ArrObj[2][10]="";
 							}
 							else
 							{
-								$scope.ArrObj[2].td6="";
+								$scope.ArrObj[2][10]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[2].td6=="")
+										if ($scope.ArrObj[2][10]=="")
 										{
-											$scope.ArrObj[2].td6=temparr[i];
+											$scope.ArrObj[2][10]=temparr[i];
 										}
 										else
-											$scope.ArrObj[2].td6=$scope.ArrObj[2].td6+','+temparr[i];
+											$scope.ArrObj[2][10]=$scope.ArrObj[2][10]+','+temparr[i];
 									}
 								}
 							}						
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3].td6=="")
+							if ($scope.ArrObj[3][10]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[3].td6.search($scope.changename);
+							var searchres=$scope.ArrObj[3][10].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -2032,24 +2032,24 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[3].td6.split(',');
+							var temparr=$scope.ArrObj[3][10].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[3].td6="";
+								$scope.ArrObj[3][10]="";
 							}
 							else
 							{
-								$scope.ArrObj[3].td6="";
+								$scope.ArrObj[3][10]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[3].td6=="")
+										if ($scope.ArrObj[3][10]=="")
 										{
-											$scope.ArrObj[3].td6=temparr[i];
+											$scope.ArrObj[3][10]=temparr[i];
 										}
 										else
-											$scope.ArrObj[3].td6=$scope.ArrObj[3].td6+','+temparr[i];
+											$scope.ArrObj[3][10]=$scope.ArrObj[3][10]+','+temparr[i];
 									}
 								}
 							}						
@@ -2064,13 +2064,13 @@ require './init.php';
 					{
 						case "radiorec":
 							//当前想要删除的人员名单为空
-							if ($scope.ArrObj[0].td7=="")
+							if ($scope.ArrObj[0][12]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[0].td7.search($scope.changename);
+							var searchres=$scope.ArrObj[0][12].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -2078,37 +2078,37 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[0].td7.split(',');
+							var temparr=$scope.ArrObj[0][12].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[0].td7="";
+								$scope.ArrObj[0][12]="";
 							}
 							else
 							{
-								$scope.ArrObj[0].td7="";
+								$scope.ArrObj[0][12]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[0].td7=="")
+										if ($scope.ArrObj[0][12]=="")
 										{
-											$scope.ArrObj[0].td7=temparr[i];
+											$scope.ArrObj[0][12]=temparr[i];
 										}
 										else
-											$scope.ArrObj[0].td7=$scope.ArrObj[0].td7+','+temparr[i];
+											$scope.ArrObj[0][12]=$scope.ArrObj[0][12]+','+temparr[i];
 									}
 								}
 							}
 
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1].td7=="")
+							if ($scope.ArrObj[1][12]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[1].td7.search($scope.changename);
+							var searchres=$scope.ArrObj[1][12].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -2116,36 +2116,36 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[1].td7.split(',');
+							var temparr=$scope.ArrObj[1][12].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[1].td7="";
+								$scope.ArrObj[1][12]="";
 							}
 							else
 							{
-								$scope.ArrObj[1].td7="";
+								$scope.ArrObj[1][12]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[1].td7=="")
+										if ($scope.ArrObj[1][12]=="")
 										{
-											$scope.ArrObj[1].td7=temparr[i];
+											$scope.ArrObj[1][12]=temparr[i];
 										}
 										else
-											$scope.ArrObj[1].td7=$scope.ArrObj[1].td7+','+temparr[i];
+											$scope.ArrObj[1][12]=$scope.ArrObj[1][12]+','+temparr[i];
 									}
 								}
 							}						
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2].td7=="")
+							if ($scope.ArrObj[2][12]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[2].td7.search($scope.changename);
+							var searchres=$scope.ArrObj[2][12].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -2153,36 +2153,36 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[2].td7.split(',');
+							var temparr=$scope.ArrObj[2][12].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[2].td7="";
+								$scope.ArrObj[2][12]="";
 							}
 							else
 							{
-								$scope.ArrObj[2].td7="";
+								$scope.ArrObj[2][12]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[2].td7=="")
+										if ($scope.ArrObj[2][12]=="")
 										{
-											$scope.ArrObj[2].td7=temparr[i];
+											$scope.ArrObj[2][12]=temparr[i];
 										}
 										else
-											$scope.ArrObj[2].td7=$scope.ArrObj[2].td7+','+temparr[i];
+											$scope.ArrObj[2][12]=$scope.ArrObj[2][12]+','+temparr[i];
 									}
 								}
 							}						
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3].td7=="")
+							if ($scope.ArrObj[3][12]=="")
 							{
 								alert("无可删除人员");
 								return;
 							}
 
-							var searchres=$scope.ArrObj[3].td7.search($scope.changename);
+							var searchres=$scope.ArrObj[3][12].search($scope.changename);
 							//若想要删除的人员不在名单中，则报错退出，否则删除
 							if (searchres==-1)
 							{
@@ -2190,24 +2190,24 @@ require './init.php';
 								return;
 							}
 
-							var temparr=$scope.ArrObj[3].td7.split(',');
+							var temparr=$scope.ArrObj[3][12].split(',');
 							if (temparr.length==1)
 							{
-								$scope.ArrObj[3].td7="";
+								$scope.ArrObj[3][12]="";
 							}
 							else
 							{
-								$scope.ArrObj[3].td7="";
+								$scope.ArrObj[3][12]="";
 								for(var i=0;i<temparr.length;i++)
 								{
 									if (temparr[i]!=$scope.changename)
 									{
-										if ($scope.ArrObj[3].td7=="")
+										if ($scope.ArrObj[3][12]=="")
 										{
-											$scope.ArrObj[3].td7=temparr[i];
+											$scope.ArrObj[3][12]=temparr[i];
 										}
 										else
-											$scope.ArrObj[3].td7=$scope.ArrObj[3].td7+','+temparr[i];
+											$scope.ArrObj[3][12]=$scope.ArrObj[3][12]+','+temparr[i];
 									}
 								}
 							}						
@@ -2310,99 +2310,98 @@ require './init.php';
 				if (res.length!=0)
 				{
 					TempData=getdatatran(0,1,res[0]['rec']);
-					$scope.ArrObj[0].td1=TempData.split(",")[0];
-					$scope.ArrObj[0].td1p=TempData.split(",")[1];
+					$scope.ArrObj[0][0]=TempData.split(",")[0];
+					$scope.ArrObj[0][1]=TempData.split(",")[1];
 					TempData=getdatatran(2,3,res[1]['rec']);
-					$scope.ArrObj[0].td2=TempData.split(",")[0];
-					$scope.ArrObj[0].td2p=TempData.split(",")[1];
+					$scope.ArrObj[0][2]=TempData.split(",")[0];
+					$scope.ArrObj[0][3]=TempData.split(",")[1];
 					TempData=getdatatran(4,5,res[2]['rec']);
-					$scope.ArrObj[0].td3=TempData.split(",")[0];
-					$scope.ArrObj[0].td3p=TempData.split(",")[1];
+					$scope.ArrObj[0][4]=TempData.split(",")[0];
+					$scope.ArrObj[0][5]=TempData.split(",")[1];
 					TempData=getdatatran(6,7,res[3]['rec']);
-					$scope.ArrObj[0].td4=TempData.split(",")[0];
-					$scope.ArrObj[0].td4p=TempData.split(",")[1];
+					$scope.ArrObj[0][6]=TempData.split(",")[0];
+					$scope.ArrObj[0][7]=TempData.split(",")[1];
 					TempData=getdatatran(8,9,res[4]['rec']);
-					$scope.ArrObj[0].td5=TempData.split(",")[0];
-					$scope.ArrObj[0].td5p=TempData.split(",")[1];
+					$scope.ArrObj[0][8]=TempData.split(",")[0];
+					$scope.ArrObj[0][9]=TempData.split(",")[1];
 					TempData=getdatatran(10,11,res[5]['rec']);
-					$scope.ArrObj[0].td6=TempData.split(",")[0];
-					$scope.ArrObj[0].td6p=TempData.split(",")[1];
+					$scope.ArrObj[0][10]=TempData.split(",")[0];
+					$scope.ArrObj[0][11]=TempData.split(",")[1];
 					TempData=getdatatran(12,13,res[6]['rec']);
-					$scope.ArrObj[0].td7=TempData.split(",")[0];
-					$scope.ArrObj[0].td7p=TempData.split(",")[1];
+					$scope.ArrObj[0][12]=TempData.split(",")[0];
+					$scope.ArrObj[0][13]=TempData.split(",")[1];
 
 					TempData=getdatatran(14,15,res[0]['dre']);
-					$scope.ArrObj[1].td1=TempData.split(",")[0];
-					$scope.ArrObj[1].td1p=TempData.split(",")[1];
+					$scope.ArrObj[1][0]=TempData.split(",")[0];
+					$scope.ArrObj[1][1]=TempData.split(",")[1];
 					TempData=getdatatran(16,17,res[1]['dre']);
-					$scope.ArrObj[1].td2=TempData.split(",")[0];
-					$scope.ArrObj[1].td2p=TempData.split(",")[1];
+					$scope.ArrObj[1][2]=TempData.split(",")[0];
+					$scope.ArrObj[1][3]=TempData.split(",")[1];
 					TempData=getdatatran(18,19,res[2]['dre']);
-					$scope.ArrObj[1].td3=TempData.split(",")[0];
-					$scope.ArrObj[1].td3p=TempData.split(",")[1];
+					$scope.ArrObj[1][4]=TempData.split(",")[0];
+					$scope.ArrObj[1][5]=TempData.split(",")[1];
 					TempData=getdatatran(20,21,res[3]['dre']);
-					$scope.ArrObj[1].td4=TempData.split(",")[0];
-					$scope.ArrObj[1].td4p=TempData.split(",")[1];
+					$scope.ArrObj[1][6]=TempData.split(",")[0];
+					$scope.ArrObj[1][7]=TempData.split(",")[1];
 					TempData=getdatatran(22,23,res[4]['dre']);
-					$scope.ArrObj[1].td5=TempData.split(",")[0];
-					$scope.ArrObj[1].td5p=TempData.split(",")[1];
+					$scope.ArrObj[1][8]=TempData.split(",")[0];
+					$scope.ArrObj[1][9]=TempData.split(",")[1];
 					TempData=getdatatran(24,25,res[5]['dre']);
-					$scope.ArrObj[1].td6=TempData.split(",")[0];
-					$scope.ArrObj[1].td6p=TempData.split(",")[1];
+					$scope.ArrObj[1][10]=TempData.split(",")[0];
+					$scope.ArrObj[1][11]=TempData.split(",")[1];
 					TempData=getdatatran(26,27,res[6]['dre']);
-					$scope.ArrObj[1].td7=TempData.split(",")[0];
-					$scope.ArrObj[1].td7p=TempData.split(",")[1];
+					$scope.ArrObj[1][12]=TempData.split(",")[0];
+					$scope.ArrObj[1][13]=TempData.split(",")[1];
 
 					TempData=getdatatran(28,29,res[0]['car']);
-					$scope.ArrObj[2].td1=TempData.split(",")[0];
-					$scope.ArrObj[2].td1p=TempData.split(",")[1];
+					$scope.ArrObj[2][0]=TempData.split(",")[0];
+					$scope.ArrObj[2][1]=TempData.split(",")[1];
 					TempData=getdatatran(30,31,res[1]['car']);
-					$scope.ArrObj[2].td2=TempData.split(",")[0];
-					$scope.ArrObj[2].td2p=TempData.split(",")[1];
+					$scope.ArrObj[2][2]=TempData.split(",")[0];
+					$scope.ArrObj[2][3]=TempData.split(",")[1];
 					TempData=getdatatran(32,33,res[2]['car']);
-					$scope.ArrObj[2].td3=TempData.split(",")[0];
-					$scope.ArrObj[2].td3p=TempData.split(",")[1];					
+					$scope.ArrObj[2][4]=TempData.split(",")[0];
+					$scope.ArrObj[2][5]=TempData.split(",")[1];					
 					TempData=getdatatran(34,35,res[3]['car']);
-					$scope.ArrObj[2].td4=TempData.split(",")[0];
-					$scope.ArrObj[2].td4p=TempData.split(",")[1];
+					$scope.ArrObj[2][6]=TempData.split(",")[0];
+					$scope.ArrObj[2][7]=TempData.split(",")[1];
 					TempData=getdatatran(36,37,res[4]['car']);
-					$scope.ArrObj[2].td5=TempData.split(",")[0];
-					$scope.ArrObj[2].td5p=TempData.split(",")[1];
+					$scope.ArrObj[2][8]=TempData.split(",")[0];
+					$scope.ArrObj[2][9]=TempData.split(",")[1];
 					TempData=getdatatran(38,39,res[5]['car']);
-					$scope.ArrObj[2].td6=TempData.split(",")[0];
-					$scope.ArrObj[2].td6p=TempData.split(",")[1];
+					$scope.ArrObj[2][10]=TempData.split(",")[0];
+					$scope.ArrObj[2][11]=TempData.split(",")[1];
 					TempData=getdatatran(40,41,res[6]['car']);
-					$scope.ArrObj[2].td7=TempData.split(",")[0];
-					$scope.ArrObj[2].td7p=TempData.split(",")[1];
+					$scope.ArrObj[2][12]=TempData.split(",")[0];
+					$scope.ArrObj[2][13]=TempData.split(",")[1];
 
 					TempData=getdatatran(42,43,res[0]['pro']);
-					$scope.ArrObj[3].td1=TempData.split(",")[0];
-					$scope.ArrObj[3].td1p=TempData.split(",")[1];
+					$scope.ArrObj[3][0]=TempData.split(",")[0];
+					$scope.ArrObj[3][1]=TempData.split(",")[1];
 					TempData=getdatatran(44,45,res[1]['pro']);
-					$scope.ArrObj[3].td2=TempData.split(",")[0];
-					$scope.ArrObj[3].td2p=TempData.split(",")[1];
+					$scope.ArrObj[3][2]=TempData.split(",")[0];
+					$scope.ArrObj[3][3]=TempData.split(",")[1];
 					TempData=getdatatran(46,47,res[2]['pro']);
-					$scope.ArrObj[3].td3=TempData.split(",")[0];
-					$scope.ArrObj[3].td3p=TempData.split(",")[1];
+					$scope.ArrObj[3][4]=TempData.split(",")[0];
+					$scope.ArrObj[3][5]=TempData.split(",")[1];
 					TempData=getdatatran(48,49,res[3]['pro']);
-					$scope.ArrObj[3].td4=TempData.split(",")[0];
-					$scope.ArrObj[3].td4p=TempData.split(",")[1];
+					$scope.ArrObj[3][6]=TempData.split(",")[0];
+					$scope.ArrObj[3][7]=TempData.split(",")[1];
 					TempData=getdatatran(50,51,res[4]['pro']);
-					$scope.ArrObj[3].td5=TempData.split(",")[0];
-					$scope.ArrObj[3].td5p=TempData.split(",")[1];
+					$scope.ArrObj[3][8]=TempData.split(",")[0];
+					$scope.ArrObj[3][9]=TempData.split(",")[1];
 					TempData=getdatatran(52,53,res[5]['pro']);
-					$scope.ArrObj[3].td6=TempData.split(",")[0];
-					$scope.ArrObj[3].td6p=TempData.split(",")[1];
+					$scope.ArrObj[3][10]=TempData.split(",")[0];
+					$scope.ArrObj[3][11]=TempData.split(",")[1];
 					TempData=getdatatran(54,55,res[6]['pro']);
-					$scope.ArrObj[3].td7=TempData.split(",")[0];
-					$scope.ArrObj[3].td7p=TempData.split(",")[1];
+					$scope.ArrObj[3][12]=TempData.split(",")[0];
+					$scope.ArrObj[3][13]=TempData.split(",")[1];
 				}
 				else
 				{
 					typereset();
 					objreset();		
 				}
-				alert($scope.ArrObj[4][6]);
 			});			
 		}
 
@@ -2507,20 +2506,10 @@ require './init.php';
 		{
 			for(var i=0;i<4;i++)
 			{
-				$scope.ArrObj[i].td1="";
-				$scope.ArrObj[i].td2="";
-				$scope.ArrObj[i].td3="";
-				$scope.ArrObj[i].td4="";
-				$scope.ArrObj[i].td5="";
-				$scope.ArrObj[i].td6="";
-				$scope.ArrObj[i].td7="";
-				$scope.ArrObj[i].td1p="";
-				$scope.ArrObj[i].td2p="";
-				$scope.ArrObj[i].td3p="";
-				$scope.ArrObj[i].td4p="";
-				$scope.ArrObj[i].td5p="";
-				$scope.ArrObj[i].td6p="";
-				$scope.ArrObj[i].td7p="";				
+				for(var j=0;j<14;j++)
+				{
+					$scope.ArrObj[i][j]="";
+				}				
 			}
 		}
 
@@ -2532,66 +2521,66 @@ require './init.php';
 				case 1:
 					if ($scope.Style[42].color=="orange")
 					{
-						$scope.optpro1sub=$scope.ArrObj[3].td1+"+";
+						$scope.optpro1sub=$scope.ArrObj[3][0]+"+";
 					}
 					else if ($scope.Style[42].color=="green")
 					{
-						$scope.optpro1sub=$scope.ArrObj[3].td1+"-";
+						$scope.optpro1sub=$scope.ArrObj[3][0]+"-";
 					}
 					else
 					{
-						$scope.optpro1sub=$scope.ArrObj[3].td1;
+						$scope.optpro1sub=$scope.ArrObj[3][0];
 					}
 
 					if ($scope.Style[43].color=="orange")
 					{
-						$scope.optpro1sub=$scope.optpro1sub+","+$scope.ArrObj[3].td1p+"+";
+						$scope.optpro1sub=$scope.optpro1sub+","+$scope.ArrObj[3][1]+"+";
 					}
 					else if ($scope.Style[43].color=="green")
 					{
-						$scope.optpro1sub=$scope.optpro1sub+","+$scope.ArrObj[3].td1p+"-";
+						$scope.optpro1sub=$scope.optpro1sub+","+$scope.ArrObj[3][1]+"-";
 					}
 					else
 					{
-						if ($scope.ArrObj[3].td1p!="")
+						if ($scope.ArrObj[3][1]!="")
 						{
-							$scope.optpro1sub=$scope.optpro1sub+","+$scope.ArrObj[3].td1p;	
+							$scope.optpro1sub=$scope.optpro1sub+","+$scope.ArrObj[3][1];	
 						}
 					}
 
 					if ($scope.Style[28].color=="orange")
 					{
-						$scope.optcam1sub=$scope.ArrObj[2].td1+"+";
+						$scope.optcam1sub=$scope.ArrObj[2][0]+"+";
 					}
 					else if ($scope.Style[28].color=="green")
 					{
-						$scope.optcam1sub=$scope.ArrObj[2].td1+"-";
+						$scope.optcam1sub=$scope.ArrObj[2][0]+"-";
 					}
 					else
 					{
-						$scope.optcam1sub=$scope.ArrObj[2].td1;
+						$scope.optcam1sub=$scope.ArrObj[2][0];
 					}
 
 					if ($scope.Style[29].color=="orange")
 					{
-						$scope.optcam1sub=$scope.optcam1sub+","+$scope.ArrObj[2].td1p+"+";
+						$scope.optcam1sub=$scope.optcam1sub+","+$scope.ArrObj[2][1]+"+";
 					}
 					else if ($scope.Style[29].color=="green")
 					{
-						$scope.optcam1sub=$scope.optcam1sub+","+$scope.ArrObj[2].td1p+"-";
+						$scope.optcam1sub=$scope.optcam1sub+","+$scope.ArrObj[2][1]+"-";
 					}
 					else
 					{
-						if ($scope.ArrObj[2].td1p!="")
+						if ($scope.ArrObj[2][1]!="")
 						{
-							$scope.optcam1sub=$scope.optcam1sub+","+$scope.ArrObj[2].td1p;	
+							$scope.optcam1sub=$scope.optcam1sub+","+$scope.ArrObj[2][1];	
 						}
 					}
 
 					$http(
 					{
 					    method: "POST",
-					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0].td1,postdre:$scope.ArrObj[1].td1,postcam:$scope.optcam1sub,postpro:$scope.optpro1sub},
+					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0][0],postdre:$scope.ArrObj[1][0],postcam:$scope.optcam1sub,postpro:$scope.optpro1sub},
 					    url:"sqlinput2.php"
 					})
 					.success(function (response)
@@ -2606,7 +2595,7 @@ require './init.php';
 					$http(
 					{
 					    method: "POST",
-					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0].td2,postdre:$scope.ArrObj[1].td2,postcam:$scope.ArrObj[2].td2,postpro:$scope.ArrObj[3].td2},
+					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0][2],postdre:$scope.ArrObj[1][2],postcam:$scope.ArrObj[2][2],postpro:$scope.ArrObj[3][2]},
 					    url:"sqlinput2.php"
 					})
 					.success(function (response)
@@ -2621,7 +2610,7 @@ require './init.php';
 					$http(
 					{
 					    method: "POST",
-					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0].td3,postdre:$scope.ArrObj[1].td3,postcam:$scope.ArrObj[2].td3,postpro:$scope.ArrObj[3].td3},
+					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0][4],postdre:$scope.ArrObj[1][4],postcam:$scope.ArrObj[2][4],postpro:$scope.ArrObj[3][4]},
 					    url:"sqlinput2.php"
 					})
 					.success(function (response)
@@ -2636,7 +2625,7 @@ require './init.php';
 					$http(
 					{
 					    method: "POST",
-					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0].td4,postdre:$scope.ArrObj[1].td4,postcam:$scope.ArrObj[2].td4,postpro:$scope.ArrObj[3].td4},
+					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0][6],postdre:$scope.ArrObj[1][6],postcam:$scope.ArrObj[2][6],postpro:$scope.ArrObj[3][6]},
 					    url:"sqlinput2.php"
 					})
 					.success(function (response)
@@ -2651,7 +2640,7 @@ require './init.php';
 					$http(
 					{
 					    method: "POST",
-					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0].td5,postdre:$scope.ArrObj[1].td5,postcam:$scope.ArrObj[2].td5,postpro:$scope.ArrObj[3].td5},
+					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0][8],postdre:$scope.ArrObj[1][8],postcam:$scope.ArrObj[2][8],postpro:$scope.ArrObj[3][8]},
 					    url:"sqlinput2.php"
 					})
 					.success(function (response)
@@ -2666,7 +2655,7 @@ require './init.php';
 					$http(
 					{
 					    method: "POST",
-					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0].td6,postdre:$scope.ArrObj[1].td6,postcam:$scope.ArrObj[2].td6,postpro:$scope.ArrObj[3].td6},
+					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0][10],postdre:$scope.ArrObj[1][10],postcam:$scope.ArrObj[2][10],postpro:$scope.ArrObj[3][10]},
 					    url:"sqlinput2.php"
 					})
 					.success(function (response)
@@ -2681,7 +2670,7 @@ require './init.php';
 					$http(
 					{
 					    method: "POST",
-					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0].td7,postdre:$scope.ArrObj[1].td7,postcam:$scope.ArrObj[2].td7,postpro:$scope.ArrObj[3].td7},
+					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0][12],postdre:$scope.ArrObj[1][12],postcam:$scope.ArrObj[2][12],postpro:$scope.ArrObj[3][12]},
 					    url:"sqlinput2.php"
 					})
 					.success(function (response)
@@ -2706,7 +2695,7 @@ require './init.php';
 				return;
 			}
 			
-			if ((typeof($scope.ArrObj[0].td1)=="undefined")|(typeof($scope.ArrObj[0].td2)=="undefined")|(typeof($scope.ArrObj[0].td3)=="undefined")|(typeof($scope.ArrObj[0].td4)=="undefined")|(typeof($scope.ArrObj[0].td5)=="undefined")|(typeof($scope.ArrObj[0].td6)=="undefined")|(typeof($scope.ArrObj[0].td7)=="undefined")|(typeof($scope.ArrObj[1].td1)=="undefined")|(typeof($scope.ArrObj[1].td2)=="undefined")|(typeof($scope.ArrObj[1].td3)=="undefined")|(typeof($scope.ArrObj[1].td4)=="undefined")|(typeof($scope.ArrObj[1].td5)=="undefined")|(typeof($scope.ArrObj[1].td6)=="undefined")|(typeof($scope.ArrObj[1].td7)=="undefined")|(typeof($scope.ArrObj[2].td1)=="undefined")|(typeof($scope.ArrObj[2].td2)=="undefined")|(typeof($scope.ArrObj[2].td3)=="undefined")|(typeof($scope.ArrObj[2].td4)=="undefined")|(typeof($scope.ArrObj[2].td5)=="undefined")|(typeof($scope.ArrObj[2].td6)=="undefined")|(typeof($scope.ArrObj[2].td7)=="undefined")|(typeof($scope.ArrObj[3].td1)=="undefined")|(typeof($scope.ArrObj[3].td2)=="undefined")|(typeof($scope.ArrObj[3].td3)=="undefined")|(typeof($scope.ArrObj[3].td4)=="undefined")|(typeof($scope.ArrObj[3].td5)=="undefined")|(typeof($scope.ArrObj[3].td6)=="undefined")|(typeof($scope.ArrObj[3].td7)=="undefined")|($scope.ArrObj[0].td1=="")|($scope.ArrObj[0].td2=="")|($scope.ArrObj[0].td3=="")|($scope.ArrObj[0].td4=="")|($scope.ArrObj[0].td5=="")|($scope.ArrObj[0].td6=="")|($scope.ArrObj[0].td7=="")|($scope.ArrObj[1].td1=="")|($scope.ArrObj[1].td2=="")|($scope.ArrObj[1].td3=="")|($scope.ArrObj[1].td4=="")|($scope.ArrObj[1].td5=="")|($scope.ArrObj[1].td6=="")|($scope.ArrObj[1].td7=="")|($scope.ArrObj[2].td1=="")|($scope.ArrObj[2].td2=="")|($scope.ArrObj[2].td3=="")|($scope.ArrObj[2].td4=="")|($scope.ArrObj[2].td5=="")|($scope.ArrObj[2].td6=="")|($scope.ArrObj[2].td7=="")|($scope.ArrObj[3].td1=="")|($scope.ArrObj[3].td2=="")|($scope.ArrObj[3].td3=="")|($scope.ArrObj[3].td4=="")|($scope.ArrObj[3].td5=="")|($scope.ArrObj[3].td6=="")|($scope.ArrObj[3].td7==""))
+			if ((typeof($scope.ArrObj[0][0])=="undefined")|(typeof($scope.ArrObj[0][2])=="undefined")|(typeof($scope.ArrObj[0][4])=="undefined")|(typeof($scope.ArrObj[0][6])=="undefined")|(typeof($scope.ArrObj[0][8])=="undefined")|(typeof($scope.ArrObj[0][10])=="undefined")|(typeof($scope.ArrObj[0][12])=="undefined")|(typeof($scope.ArrObj[1][0])=="undefined")|(typeof($scope.ArrObj[1][2])=="undefined")|(typeof($scope.ArrObj[1][4])=="undefined")|(typeof($scope.ArrObj[1][6])=="undefined")|(typeof($scope.ArrObj[1][8])=="undefined")|(typeof($scope.ArrObj[1][10])=="undefined")|(typeof($scope.ArrObj[1][12])=="undefined")|(typeof($scope.ArrObj[2][0])=="undefined")|(typeof($scope.ArrObj[2][2])=="undefined")|(typeof($scope.ArrObj[2][4])=="undefined")|(typeof($scope.ArrObj[2][6])=="undefined")|(typeof($scope.ArrObj[2][8])=="undefined")|(typeof($scope.ArrObj[2][10])=="undefined")|(typeof($scope.ArrObj[2][12])=="undefined")|(typeof($scope.ArrObj[3][0])=="undefined")|(typeof($scope.ArrObj[3][2])=="undefined")|(typeof($scope.ArrObj[3][4])=="undefined")|(typeof($scope.ArrObj[3][6])=="undefined")|(typeof($scope.ArrObj[3][8])=="undefined")|(typeof($scope.ArrObj[3][10])=="undefined")|(typeof($scope.ArrObj[3][12])=="undefined")|($scope.ArrObj[0][0]=="")|($scope.ArrObj[0][2]=="")|($scope.ArrObj[0][4]=="")|($scope.ArrObj[0][6]=="")|($scope.ArrObj[0][8]=="")|($scope.ArrObj[0][10]=="")|($scope.ArrObj[0][12]=="")|($scope.ArrObj[1][0]=="")|($scope.ArrObj[1][2]=="")|($scope.ArrObj[1][4]=="")|($scope.ArrObj[1][6]=="")|($scope.ArrObj[1][8]=="")|($scope.ArrObj[1][10]=="")|($scope.ArrObj[1][12]=="")|($scope.ArrObj[2][0]=="")|($scope.ArrObj[2][2]=="")|($scope.ArrObj[2][4]=="")|($scope.ArrObj[2][6]=="")|($scope.ArrObj[2][8]=="")|($scope.ArrObj[2][10]=="")|($scope.ArrObj[2][12]=="")|($scope.ArrObj[3][0]=="")|($scope.ArrObj[3][2]=="")|($scope.ArrObj[3][4]=="")|($scope.ArrObj[3][6]=="")|($scope.ArrObj[3][8]=="")|($scope.ArrObj[3][10]=="")|($scope.ArrObj[3][12]==""))
 			{
 				alert("未全部选择！");
 				return;
