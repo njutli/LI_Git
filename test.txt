@@ -8,3 +8,5 @@ test filb
 test againA
 test file
 test againA
+insert
+delete
