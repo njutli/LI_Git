@@ -414,6 +414,7 @@ require './init.php';
 	});
 	app.controller('ctr', function($scope,$http)
 	{
+		//排班表各单元格式
 		$scope.Style=[];
 		for(var i=0;i<56;i++)
 		{
@@ -426,16 +427,18 @@ require './init.php';
 		typereset();
 		//初始化排班表
 		$scope.ArrObj=[
-		/*
-			{td0:"前台",td1:"",td1p:"",td2:"",td2p:"",td3:"",td3p:"",td4:"",td4p:"",td5:"",td5p:"",td6:"",td6p:"",td7:"",td7p:""},
-			{td0:"化妆",td1:"",td1p:"",td2:"",td2p:"",td3:"",td3p:"",td4:"",td4p:"",td5:"",td5p:"",td6:"",td6p:"",td7:"",td7p:""},
-			{td0:"摄影",td1:"",td1p:"",td2:"",td2p:"",td3:"",td3p:"",td4:"",td4p:"",td5:"",td5p:"",td6:"",td6p:"",td7:"",td7p:""},
-			{td0:"后期",td1:"",td1p:"",td2:"",td2p:"",td3:"",td3p:"",td4:"",td4p:"",td5:"",td5p:"",td6:"",td6p:"",td7:"",td7p:""},
-			*/
 			["0","1","2","3","4","5","6","7","8","9","10","11","12","13"],
 			["0","1","2","3","4","5","6","7","8","9","10","11","12","13"],
 			["0","1","2","3","4","5","6","7","8","9","10","11","12","13"],
 			["0","1","2","3","4","5","6","7","8","9","10","11","12","13"],
+		];
+
+		//用于提交的数据
+		$scope.ArrDataSub=[
+			["","","","","","",""],
+			["","","","","","",""],
+			["","","","","","",""],
+			["","","","","","",""],
 		];
 
 		$scope.changeappear=function()
@@ -445,19 +448,19 @@ require './init.php';
 
 		function eachdayadd(pos,day)
 		{
-			if ($scope.ArrObj[pos][0]=="")
+			if ($scope.ArrObj[pos][2*day]=="")
 			{
-				$scope.ArrObj[pos][0]=$scope.changename;
+				$scope.ArrObj[pos][2*day]=$scope.changename;
 				if ($scope.radioclass=="radioday")
 				{
-					$scope.Style[14*pos]={
+					$scope.Style[14*pos+2*day]={
 						"color":"orange",
 						"display":"inline"
 					};
 				}
 				else if($scope.radioclass=="radionight")
 				{
-					$scope.Style[14*pos]={
+					$scope.Style[14*pos+2*day]={
 						"color":"green",
 						"display":"inline"
 					};								
@@ -467,35 +470,35 @@ require './init.php';
 			}
 			else
 			{
-				if ($scope.ArrObj[pos][1]!="")
+				if ($scope.ArrObj[pos][2*day+1]!="")
 				{
 					alert("人数达到上限，无法继续添加");
 					return;
 				}
-				if (($scope.ArrObj[pos][0]+$scope.ArrObj[pos][1]).search($scope.changename)!=-1)
+				if (($scope.ArrObj[pos][2*day]+$scope.ArrObj[pos][2*day+1]).search($scope.changename)!=-1)
 				{
 					alert("请勿重复添加");
 					return;
 				}
-				$scope.ArrObj[pos][1]=$scope.changename;
+				$scope.ArrObj[pos][2*day+1]=$scope.changename;
 
 				if ($scope.radioclass=="radioday")
 				{
-					$scope.Style[14*pos+1]={
+					$scope.Style[14*pos+1+2*day]={
 						"color":"orange",
 						"display":"inline"
 					};
 				}
 				else if($scope.radioclass=="radionight")
 				{
-					$scope.Style[14*pos+1]={
+					$scope.Style[14*pos+1+2*day]={
 						"color":"green",
 						"display":"inline"
 					};								
 				}
 				else
 				{
-					$scope.Style[14*pos+1]={
+					$scope.Style[14*pos+1+2*day]={
 						"color":"black",
 						"display":"inline"
 					};										
@@ -523,16 +526,16 @@ require './init.php';
 					switch($scope.radioposi)
 					{
 						case "radiorec":
-							eachdayadd(0);
+							eachdayadd(0,0);
 							break;
 						case "radiodre":
-							eachdayadd(1);					
+							eachdayadd(1,0);					
 							break;
 						case "radiocam":
-							eachdayadd(2);						
+							eachdayadd(2,0);						
 							break;
 						case "radiopro":
-							eachdayadd(3);	
+							eachdayadd(3,0);	
 							break;
 						default:
 							break;
@@ -543,16 +546,16 @@ require './init.php';
 					switch($scope.radioposi)
 					{
 						case "radiorec":
-							//day2add(0);
+							eachdayadd(0,1);
 							break;
 						case "radiodre":
-							//day2add(1);
+							eachdayadd(1,1);
 							break;
 						case "radiocam":
-							//day2add(2);	
+							eachdayadd(2,1);
 							break;
 						case "radiopro":
-							//day2add(3);			
+							eachdayadd(3,1);			
 							break;
 						default:
 							break;
@@ -563,94 +566,16 @@ require './init.php';
 					switch($scope.radioposi)
 					{
 						case "radiorec":
-							//当前职位在当天无人员安排
-							if ($scope.ArrObj[0][4]=="")
-							{
-								$scope.ArrObj[0][4]=$scope.ArrObj[0][4]+$scope.changename;
-								//alert(typeof($scope.ArrObj[0][0]));
-							}
-							else//当前职位在当天人员安排人数若达到三人，则无法继续添加
-							{
-								var temparr=$scope.ArrObj[0][4].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[0][4].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[0][4]=$scope.ArrObj[0][4]+','+$scope.changename;
-							}
+							eachdayadd(0,2);
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1][4]=="")
-							{
-								$scope.ArrObj[1][4]=$scope.ArrObj[1][4]+$scope.changename;
-							}
-							else
-							{
-								var temparr=$scope.ArrObj[1][4].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[1][4].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[1][4]=$scope.ArrObj[1][4]+','+$scope.changename;
-							}						
+							eachdayadd(1,2);				
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2][4]=="")
-							{
-								$scope.ArrObj[2][4]=$scope.ArrObj[2][4]+$scope.changename;
-							}
-							else
-							{
-								var temparr=$scope.ArrObj[2][4].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[2][4].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[2][4]=$scope.ArrObj[2][4]+','+$scope.changename;
-							}							
+							eachdayadd(2,2);					
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3][4]=="")
-							{
-								$scope.ArrObj[3][4]=$scope.ArrObj[3][4]+$scope.changename;
-							}
-							else
-							{
-								var temparr=$scope.ArrObj[3][4].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[3][4].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[3][4]=$scope.ArrObj[3][4]+','+$scope.changename;
-							}							
+							eachdayadd(3,2);						
 							break;
 						default:
 							break;
@@ -661,94 +586,16 @@ require './init.php';
 					switch($scope.radioposi)
 					{
 						case "radiorec":
-							//当前职位在当天无人员安排
-							if ($scope.ArrObj[0][6]=="")
-							{
-								$scope.ArrObj[0][6]=$scope.ArrObj[0][6]+$scope.changename;
-								//alert(typeof($scope.ArrObj[0][0]));
-							}
-							else//当前职位在当天人员安排人数若达到三人，则无法继续添加
-							{
-								var temparr=$scope.ArrObj[0][6].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[0][6].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[0][6]=$scope.ArrObj[0][6]+','+$scope.changename;
-							}
+							eachdayadd(0,3);
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1][6]=="")
-							{
-								$scope.ArrObj[1][6]=$scope.ArrObj[1][6]+$scope.changename;
-							}
-							else
-							{
-								var temparr=$scope.ArrObj[1][6].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[1][6].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[1][6]=$scope.ArrObj[1][6]+','+$scope.changename;
-							}						
+							eachdayadd(1,3);
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2][6]=="")
-							{
-								$scope.ArrObj[2][6]=$scope.ArrObj[2][6]+$scope.changename;
-							}
-							else
-							{
-								var temparr=$scope.ArrObj[2][6].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[2][6].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[2][6]=$scope.ArrObj[2][6]+','+$scope.changename;
-							}							
+							eachdayadd(2,3);
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3][6]=="")
-							{
-								$scope.ArrObj[3][6]=$scope.ArrObj[3][6]+$scope.changename;
-							}
-							else
-							{
-								var temparr=$scope.ArrObj[3][6].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[3][6].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[3][6]=$scope.ArrObj[3][6]+','+$scope.changename;
-							}							
+							eachdayadd(3,3);	
 							break;
 						default:
 							break;
@@ -759,94 +606,16 @@ require './init.php';
 					switch($scope.radioposi)
 					{
 						case "radiorec":
-							//当前职位在当天无人员安排
-							if ($scope.ArrObj[0][8]=="")
-							{
-								$scope.ArrObj[0][8]=$scope.ArrObj[0][8]+$scope.changename;
-								//alert(typeof($scope.ArrObj[0][0]));
-							}
-							else//当前职位在当天人员安排人数若达到三人，则无法继续添加
-							{
-								var temparr=$scope.ArrObj[0][8].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[0][8].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[0][8]=$scope.ArrObj[0][8]+','+$scope.changename;
-							}
+							eachdayadd(0,4);
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1][8]=="")
-							{
-								$scope.ArrObj[1][8]=$scope.ArrObj[1][8]+$scope.changename;
-							}
-							else
-							{
-								var temparr=$scope.ArrObj[1][8].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[1][8].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[1][8]=$scope.ArrObj[1][8]+','+$scope.changename;
-							}						
+							eachdayadd(1,4);
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2][8]=="")
-							{
-								$scope.ArrObj[2][8]=$scope.ArrObj[2][8]+$scope.changename;
-							}
-							else
-							{
-								var temparr=$scope.ArrObj[2][8].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[2][8].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[2][8]=$scope.ArrObj[2][8]+','+$scope.changename;
-							}							
+							eachdayadd(2,4);
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3][8]=="")
-							{
-								$scope.ArrObj[3][8]=$scope.ArrObj[3][8]+$scope.changename;
-							}
-							else
-							{
-								var temparr=$scope.ArrObj[3][8].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[3][8].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[3][8]=$scope.ArrObj[3][8]+','+$scope.changename;
-							}							
+							eachdayadd(3,4);
 							break;
 						default:
 							break;
@@ -857,94 +626,16 @@ require './init.php';
 					switch($scope.radioposi)
 					{
 						case "radiorec":
-							//当前职位在当天无人员安排
-							if ($scope.ArrObj[0][10]=="")
-							{
-								$scope.ArrObj[0][10]=$scope.ArrObj[0][10]+$scope.changename;
-								//alert(typeof($scope.ArrObj[0][0]));
-							}
-							else//当前职位在当天人员安排人数若达到三人，则无法继续添加
-							{
-								var temparr=$scope.ArrObj[0][10].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[0][10].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[0][10]=$scope.ArrObj[0][10]+','+$scope.changename;
-							}
+							eachdayadd(0,5);
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1][10]=="")
-							{
-								$scope.ArrObj[1][10]=$scope.ArrObj[1][10]+$scope.changename;
-							}
-							else
-							{
-								var temparr=$scope.ArrObj[1][10].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[1][10].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[1][10]=$scope.ArrObj[1][10]+','+$scope.changename;
-							}						
+							eachdayadd(1,5);
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2][10]=="")
-							{
-								$scope.ArrObj[2][10]=$scope.ArrObj[2][10]+$scope.changename;
-							}
-							else
-							{
-								var temparr=$scope.ArrObj[2][10].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[2][10].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[2][10]=$scope.ArrObj[2][10]+','+$scope.changename;
-							}							
+							eachdayadd(2,5);
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3][10]=="")
-							{
-								$scope.ArrObj[3][10]=$scope.ArrObj[3][10]+$scope.changename;
-							}
-							else
-							{
-								var temparr=$scope.ArrObj[3][10].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[3][10].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[3][10]=$scope.ArrObj[3][10]+','+$scope.changename;
-							}							
+							eachdayadd(3,5);
 							break;
 						default:
 							break;
@@ -955,94 +646,16 @@ require './init.php';
 					switch($scope.radioposi)
 					{
 						case "radiorec":
-							//当前职位在当天无人员安排
-							if ($scope.ArrObj[0][12]=="")
-							{
-								$scope.ArrObj[0][12]=$scope.ArrObj[0][12]+$scope.changename;
-								//alert(typeof($scope.ArrObj[0][0]));
-							}
-							else//当前职位在当天人员安排人数若达到三人，则无法继续添加
-							{
-								var temparr=$scope.ArrObj[0][12].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[0][12].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[0][12]=$scope.ArrObj[0][12]+','+$scope.changename;
-							}
+							eachdayadd(0,6);
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1][12]=="")
-							{
-								$scope.ArrObj[1][12]=$scope.ArrObj[1][12]+$scope.changename;
-							}
-							else
-							{
-								var temparr=$scope.ArrObj[1][12].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[1][12].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[1][12]=$scope.ArrObj[1][12]+','+$scope.changename;
-							}						
+							eachdayadd(1,6);
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2][12]=="")
-							{
-								$scope.ArrObj[2][12]=$scope.ArrObj[2][12]+$scope.changename;
-							}
-							else
-							{
-								var temparr=$scope.ArrObj[2][12].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[2][12].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[2][12]=$scope.ArrObj[2][12]+','+$scope.changename;
-							}							
+							eachdayadd(2,6);	
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3][12]=="")
-							{
-								$scope.ArrObj[3][12]=$scope.ArrObj[3][12]+$scope.changename;
-							}
-							else
-							{
-								var temparr=$scope.ArrObj[3][12].split(',');
-								if (temparr.length==3)
-								{
-									alert("人数达到上限，无法继续添加");
-									return;
-								}
-								var searchres=$scope.ArrObj[3][12].search($scope.changename);
-								if (searchres!=-1)
-								{
-									alert("请勿重复添加");
-									return;
-								}
-								$scope.ArrObj[3][12]=$scope.ArrObj[3][12]+','+$scope.changename;
-							}							
+							eachdayadd(3,6);		
 							break;
 						default:
 							break;
@@ -1052,6 +665,33 @@ require './init.php';
 				default:
 					break;
 			}
+		}
+
+		function eachdaydel(pos,day)
+		{
+			if ($scope.ArrObj[pos][2*day]=="")
+			{
+				alert("无可删除人员");
+				return;
+			}
+
+			//若想要删除的人员不在名单中，则报错退出，否则删除
+			if (($scope.ArrObj[pos][2*day]+$scope.ArrObj[pos][2*day+1]).search($scope.changename)==-1)
+			{
+				alert("无法删除，欲删除人员不在名单中");
+				return;
+			}
+		
+			//若想要删除的人员为第一个，则将第二个前移，并清空第二个
+			if ($scope.ArrObj[pos][2*day].search($scope.changename)!=-1)
+			{
+				$scope.ArrObj[pos][2*day]=$scope.ArrObj[pos][2*day+1];
+				$scope.Style[14*pos].color=$scope.Style[14*pos+1].color;
+			}
+			else//若想要删除的人员为第二个，则直接删除
+			{}
+			$scope.ArrObj[pos][2*day+1]="";
+			$scope.Style[14*pos+1].color="black";
 		}
 
 		$scope.del=function()
@@ -1073,136 +713,16 @@ require './init.php';
 					switch($scope.radioposi)
 					{
 						case "radiorec":
-							//当前想要删除的人员名单为空
-							if ($scope.ArrObj[0][0]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[0][0].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[0][0].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[0][0]="";
-							}
-							else
-							{
-								$scope.ArrObj[0][0]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[0][0]=="")
-										{
-											$scope.ArrObj[0][0]=temparr[i];
-										}
-										else
-											$scope.ArrObj[0][0]=$scope.ArrObj[0][0]+','+temparr[i];
-									}
-								}
-							}
-
+							eachdaydel(0,0);
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1][0]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[1][0].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[1][0].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[1][0]="";
-							}
-							else
-							{
-								$scope.ArrObj[1][0]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[1][0]=="")
-										{
-											$scope.ArrObj[1][0]=temparr[i];
-										}
-										else
-											$scope.ArrObj[1][0]=$scope.ArrObj[1][0]+','+temparr[i];
-									}
-								}
-							}						
+							eachdaydel(1,0);
 							break;
-						case "radiocam":
-							if ($scope.ArrObj[2][0]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (($scope.ArrObj[2][0]+$scope.ArrObj[2][1]).search($scope.changename)==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-						
-							//若想要删除的人员为第一个，则将第二个前移，并清空第二个
-							if ($scope.ArrObj[2][0].search($scope.changename)!=-1)
-							{
-								$scope.ArrObj[2][0]=$scope.ArrObj[2][1];
-								$scope.Style[28].color=$scope.Style[29].color;
-							}
-							else//若想要删除的人员为第二个，则直接删除
-							{
-						
-							}
-							$scope.ArrObj[2][1]="";
-							$scope.Style[29].color="black";							
-							
+						case "radiocam":					
+							eachdaydel(2,0);
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3][0]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (($scope.ArrObj[3][0]+$scope.ArrObj[3][1]).search($scope.changename)==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-						
-							//若想要删除的人员为第一个，则将第二个前移，并清空第二个
-							if ($scope.ArrObj[3][0].search($scope.changename)!=-1)
-							{
-								$scope.ArrObj[3][0]=$scope.ArrObj[3][1];
-								$scope.Style[42].color=$scope.Style[43].color;
-							}
-							else//若想要删除的人员为第二个，则直接删除
-							{
-						
-							}
-							$scope.ArrObj[3][1]="";
-							$scope.Style[43].color="black";							
-							
+							eachdaydel(3,0);
 							break;
 						default:
 							break;
@@ -1213,154 +733,16 @@ require './init.php';
 					switch($scope.radioposi)
 					{
 						case "radiorec":
-							//当前想要删除的人员名单为空
-							if ($scope.ArrObj[0][2]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[0][2].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[0][2].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[0][2]="";
-							}
-							else
-							{
-								$scope.ArrObj[0][2]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[0][2]=="")
-										{
-											$scope.ArrObj[0][2]=temparr[i];
-										}
-										else
-											$scope.ArrObj[0][2]=$scope.ArrObj[0][2]+','+temparr[i];
-									}
-								}
-							}
-
+							eachdaydel(0,1);
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1][2]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[1][2].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[1][2].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[1][2]="";
-							}
-							else
-							{
-								$scope.ArrObj[1][2]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[1][2]=="")
-										{
-											$scope.ArrObj[1][2]=temparr[i];
-										}
-										else
-											$scope.ArrObj[1][2]=$scope.ArrObj[1][2]+','+temparr[i];
-									}
-								}
-							}						
+							eachdaydel(1,1);
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2][2]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[2][2].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[2][2].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[2][2]="";
-							}
-							else
-							{
-								$scope.ArrObj[2][2]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[2][2]=="")
-										{
-											$scope.ArrObj[2][2]=temparr[i];
-										}
-										else
-											$scope.ArrObj[2][2]=$scope.ArrObj[2][2]+','+temparr[i];
-									}
-								}
-							}						
+							eachdaydel(2,1);
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3][2]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[3][2].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[3][2].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[3][2]="";
-							}
-							else
-							{
-								$scope.ArrObj[3][2]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[3][2]=="")
-										{
-											$scope.ArrObj[3][2]=temparr[i];
-										}
-										else
-											$scope.ArrObj[3][2]=$scope.ArrObj[3][2]+','+temparr[i];
-									}
-								}
-							}						
+							eachdaydel(3,1);
 							break;
 						default:
 							break;
@@ -1371,154 +753,16 @@ require './init.php';
 					switch($scope.radioposi)
 					{
 						case "radiorec":
-							//当前想要删除的人员名单为空
-							if ($scope.ArrObj[0][4]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[0][4].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[0][4].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[0][4]="";
-							}
-							else
-							{
-								$scope.ArrObj[0][4]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[0][4]=="")
-										{
-											$scope.ArrObj[0][4]=temparr[i];
-										}
-										else
-											$scope.ArrObj[0][4]=$scope.ArrObj[0][4]+','+temparr[i];
-									}
-								}
-							}
-
+							eachdaydel(0,2);
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1][4]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[1][4].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[1][4].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[1][4]="";
-							}
-							else
-							{
-								$scope.ArrObj[1][4]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[1][4]=="")
-										{
-											$scope.ArrObj[1][4]=temparr[i];
-										}
-										else
-											$scope.ArrObj[1][4]=$scope.ArrObj[1][4]+','+temparr[i];
-									}
-								}
-							}						
+							eachdaydel(1,2);
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2][4]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[2][4].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[2][4].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[2][4]="";
-							}
-							else
-							{
-								$scope.ArrObj[2][4]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[2][4]=="")
-										{
-											$scope.ArrObj[2][4]=temparr[i];
-										}
-										else
-											$scope.ArrObj[2][4]=$scope.ArrObj[2][4]+','+temparr[i];
-									}
-								}
-							}						
+							eachdaydel(2,2);
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3][4]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[3][4].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[3][4].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[3][4]="";
-							}
-							else
-							{
-								$scope.ArrObj[3][4]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[3][4]=="")
-										{
-											$scope.ArrObj[3][4]=temparr[i];
-										}
-										else
-											$scope.ArrObj[3][4]=$scope.ArrObj[3][4]+','+temparr[i];
-									}
-								}
-							}						
+							eachdaydel(3,2);
 							break;
 						default:
 							break;
@@ -1529,154 +773,16 @@ require './init.php';
 					switch($scope.radioposi)
 					{
 						case "radiorec":
-							//当前想要删除的人员名单为空
-							if ($scope.ArrObj[0][6]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[0][6].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[0][6].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[0][6]="";
-							}
-							else
-							{
-								$scope.ArrObj[0][6]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[0][6]=="")
-										{
-											$scope.ArrObj[0][6]=temparr[i];
-										}
-										else
-											$scope.ArrObj[0][6]=$scope.ArrObj[0][6]+','+temparr[i];
-									}
-								}
-							}
-
+							eachdaydel(0,3);
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1][6]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[1][6].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[1][6].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[1][6]="";
-							}
-							else
-							{
-								$scope.ArrObj[1][6]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[1][6]=="")
-										{
-											$scope.ArrObj[1][6]=temparr[i];
-										}
-										else
-											$scope.ArrObj[1][6]=$scope.ArrObj[1][6]+','+temparr[i];
-									}
-								}
-							}						
+							eachdaydel(1,3);
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2][6]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[2][6].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[2][6].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[2][6]="";
-							}
-							else
-							{
-								$scope.ArrObj[2][6]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[2][6]=="")
-										{
-											$scope.ArrObj[2][6]=temparr[i];
-										}
-										else
-											$scope.ArrObj[2][6]=$scope.ArrObj[2][6]+','+temparr[i];
-									}
-								}
-							}						
+							eachdaydel(2,3);
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3][6]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[3][6].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[3][6].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[3][6]="";
-							}
-							else
-							{
-								$scope.ArrObj[3][6]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[3][6]=="")
-										{
-											$scope.ArrObj[3][6]=temparr[i];
-										}
-										else
-											$scope.ArrObj[3][6]=$scope.ArrObj[3][6]+','+temparr[i];
-									}
-								}
-							}						
+							eachdaydel(3,3);
 							break;
 						default:
 							break;
@@ -1687,154 +793,16 @@ require './init.php';
 					switch($scope.radioposi)
 					{
 						case "radiorec":
-							//当前想要删除的人员名单为空
-							if ($scope.ArrObj[0][8]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[0][8].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[0][8].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[0][8]="";
-							}
-							else
-							{
-								$scope.ArrObj[0][8]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[0][8]=="")
-										{
-											$scope.ArrObj[0][8]=temparr[i];
-										}
-										else
-											$scope.ArrObj[0][8]=$scope.ArrObj[0][8]+','+temparr[i];
-									}
-								}
-							}
-
+							eachdaydel(0,4);
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1][8]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[1][8].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[1][8].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[1][8]="";
-							}
-							else
-							{
-								$scope.ArrObj[1][8]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[1][8]=="")
-										{
-											$scope.ArrObj[1][8]=temparr[i];
-										}
-										else
-											$scope.ArrObj[1][8]=$scope.ArrObj[1][8]+','+temparr[i];
-									}
-								}
-							}						
+							eachdaydel(1,4);
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2][8]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[2][8].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[2][8].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[2][8]="";
-							}
-							else
-							{
-								$scope.ArrObj[2][8]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[2][8]=="")
-										{
-											$scope.ArrObj[2][8]=temparr[i];
-										}
-										else
-											$scope.ArrObj[2][8]=$scope.ArrObj[2][8]+','+temparr[i];
-									}
-								}
-							}						
+							eachdaydel(2,4);
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3][8]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[3][8].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[3][8].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[3][8]="";
-							}
-							else
-							{
-								$scope.ArrObj[3][8]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[3][8]=="")
-										{
-											$scope.ArrObj[3][8]=temparr[i];
-										}
-										else
-											$scope.ArrObj[3][8]=$scope.ArrObj[3][8]+','+temparr[i];
-									}
-								}
-							}						
+							eachdaydel(3,4);
 							break;
 						default:
 							break;
@@ -1845,154 +813,16 @@ require './init.php';
 					switch($scope.radioposi)
 					{
 						case "radiorec":
-							//当前想要删除的人员名单为空
-							if ($scope.ArrObj[0][10]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[0][10].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[0][10].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[0][10]="";
-							}
-							else
-							{
-								$scope.ArrObj[0][10]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[0][10]=="")
-										{
-											$scope.ArrObj[0][10]=temparr[i];
-										}
-										else
-											$scope.ArrObj[0][10]=$scope.ArrObj[0][10]+','+temparr[i];
-									}
-								}
-							}
-
+							eachdaydel(0,5);
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1][10]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[1][10].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[1][10].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[1][10]="";
-							}
-							else
-							{
-								$scope.ArrObj[1][10]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[1][10]=="")
-										{
-											$scope.ArrObj[1][10]=temparr[i];
-										}
-										else
-											$scope.ArrObj[1][10]=$scope.ArrObj[1][10]+','+temparr[i];
-									}
-								}
-							}						
+							eachdaydel(1,5);
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2][10]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[2][10].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[2][10].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[2][10]="";
-							}
-							else
-							{
-								$scope.ArrObj[2][10]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[2][10]=="")
-										{
-											$scope.ArrObj[2][10]=temparr[i];
-										}
-										else
-											$scope.ArrObj[2][10]=$scope.ArrObj[2][10]+','+temparr[i];
-									}
-								}
-							}						
+							eachdaydel(2,5);
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3][10]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[3][10].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[3][10].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[3][10]="";
-							}
-							else
-							{
-								$scope.ArrObj[3][10]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[3][10]=="")
-										{
-											$scope.ArrObj[3][10]=temparr[i];
-										}
-										else
-											$scope.ArrObj[3][10]=$scope.ArrObj[3][10]+','+temparr[i];
-									}
-								}
-							}						
+							eachdaydel(3,5);
 							break;
 						default:
 							break;
@@ -2003,154 +833,16 @@ require './init.php';
 					switch($scope.radioposi)
 					{
 						case "radiorec":
-							//当前想要删除的人员名单为空
-							if ($scope.ArrObj[0][12]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[0][12].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[0][12].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[0][12]="";
-							}
-							else
-							{
-								$scope.ArrObj[0][12]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[0][12]=="")
-										{
-											$scope.ArrObj[0][12]=temparr[i];
-										}
-										else
-											$scope.ArrObj[0][12]=$scope.ArrObj[0][12]+','+temparr[i];
-									}
-								}
-							}
-
+							eachdaydel(0,6);
 							break;
 						case "radiodre":
-							if ($scope.ArrObj[1][12]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[1][12].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[1][12].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[1][12]="";
-							}
-							else
-							{
-								$scope.ArrObj[1][12]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[1][12]=="")
-										{
-											$scope.ArrObj[1][12]=temparr[i];
-										}
-										else
-											$scope.ArrObj[1][12]=$scope.ArrObj[1][12]+','+temparr[i];
-									}
-								}
-							}						
+							eachdaydel(1,6);
 							break;
 						case "radiocam":
-							if ($scope.ArrObj[2][12]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[2][12].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[2][12].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[2][12]="";
-							}
-							else
-							{
-								$scope.ArrObj[2][12]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[2][12]=="")
-										{
-											$scope.ArrObj[2][12]=temparr[i];
-										}
-										else
-											$scope.ArrObj[2][12]=$scope.ArrObj[2][12]+','+temparr[i];
-									}
-								}
-							}						
+							eachdaydel(2,6);
 							break;
 						case "radiopro":
-							if ($scope.ArrObj[3][12]=="")
-							{
-								alert("无可删除人员");
-								return;
-							}
-
-							var searchres=$scope.ArrObj[3][12].search($scope.changename);
-							//若想要删除的人员不在名单中，则报错退出，否则删除
-							if (searchres==-1)
-							{
-								alert("无法删除，欲删除人员不在名单中");
-								return;
-							}
-
-							var temparr=$scope.ArrObj[3][12].split(',');
-							if (temparr.length==1)
-							{
-								$scope.ArrObj[3][12]="";
-							}
-							else
-							{
-								$scope.ArrObj[3][12]="";
-								for(var i=0;i<temparr.length;i++)
-								{
-									if (temparr[i]!=$scope.changename)
-									{
-										if ($scope.ArrObj[3][12]=="")
-										{
-											$scope.ArrObj[3][12]=temparr[i];
-										}
-										else
-											$scope.ArrObj[3][12]=$scope.ArrObj[3][12]+','+temparr[i];
-									}
-								}
-							}						
+							eachdaydel(3,6);
 							break;
 						default:
 							break;
@@ -2161,8 +853,6 @@ require './init.php';
 					break;
 			}
 		}
-
-		
 
 		//当选择的职位发生变化时相应的人员选择也发生变化
 		$scope.posichoose=function()
@@ -2384,40 +1074,45 @@ require './init.php';
 			}
 		}
 
+		//提交数据前组织数据
+		function orgdata(pos,day)
+		{
+			if ($scope.Style[14*pos].color=="orange")
+			{
+				$scope.ArrDataSub[pos][day]=$scope.ArrObj[pos][2*day]+"+";
+			}
+			else if ($scope.Style[14*pos].color=="green")
+			{
+				$scope.ArrDataSub[pos][day]=$scope.ArrObj[pos][2*day]+"-";
+			}
+			else
+			{
+				$scope.ArrDataSub[pos][day]=$scope.ArrObj[pos][2*day];
+			}
+
+			if ($scope.Style[14*pos+1].color=="orange")
+			{
+				$scope.ArrDataSub[pos][day]=$scope.ArrDataSub[pos][day]+","+$scope.ArrObj[pos][2*day+1]+"+";
+			}
+			else if ($scope.Style[14*pos+1].color=="green")
+			{
+				$scope.ArrDataSub[pos][day]=$scope.ArrDataSub[pos][day]+","+$scope.ArrObj[pos][2*day+1]+"-";
+			}
+			else
+			{
+				if ($scope.ArrObj[pos][2*day+1]!="")
+				{
+					$scope.ArrDataSub[pos][day]=$scope.ArrDataSub[pos][day]+","+$scope.ArrObj[pos][2*day+1];	
+				}
+			}
+		}
 		//“确定”按钮对应的出发事件，将数据提交至数据库
 		function subdata(idday)
 		{
 			switch(idday)
 			{
 				case 1:
-					if ($scope.Style[42].color=="orange")
-					{
-						$scope.optpro1sub=$scope.ArrObj[3][0]+"+";
-					}
-					else if ($scope.Style[42].color=="green")
-					{
-						$scope.optpro1sub=$scope.ArrObj[3][0]+"-";
-					}
-					else
-					{
-						$scope.optpro1sub=$scope.ArrObj[3][0];
-					}
-
-					if ($scope.Style[43].color=="orange")
-					{
-						$scope.optpro1sub=$scope.optpro1sub+","+$scope.ArrObj[3][1]+"+";
-					}
-					else if ($scope.Style[43].color=="green")
-					{
-						$scope.optpro1sub=$scope.optpro1sub+","+$scope.ArrObj[3][1]+"-";
-					}
-					else
-					{
-						if ($scope.ArrObj[3][1]!="")
-						{
-							$scope.optpro1sub=$scope.optpro1sub+","+$scope.ArrObj[3][1];	
-						}
-					}
+				orgdata(3,0);
 
 					if ($scope.Style[28].color=="orange")
 					{
@@ -2451,7 +1146,7 @@ require './init.php';
 					$http(
 					{
 					    method: "POST",
-					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0][0],postdre:$scope.ArrObj[1][0],postcam:$scope.optcam1sub,postpro:$scope.optpro1sub},
+					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0][0],postdre:$scope.ArrObj[1][0],postcam:$scope.optcam1sub,postpro:$scope.ArrDataSub[3][0]},
 					    url:"sqlinput2.php"
 					})
 					.success(function (response)
