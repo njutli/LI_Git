@@ -443,7 +443,7 @@ require './init.php';
 			$scope.radioclass="";
 		}
 
-		function day1add(pos)
+		function eachdayadd(pos,day)
 		{
 			if ($scope.ArrObj[pos][0]=="")
 			{
@@ -503,66 +503,6 @@ require './init.php';
 			}	
 		}
 
-		function day2add(pos)
-		{
-			if ($scope.ArrObj[pos][2]=="")
-			{
-				$scope.ArrObj[pos][2]=$scope.changename;
-				if ($scope.radioclass=="radioday")
-				{
-					$scope.Style[14*pos+2]={
-						"color":"orange",
-						"display":"inline"
-					};
-				}
-				else if($scope.radioclass=="radionight")
-				{
-					$scope.Style[14*pos+2]={
-						"color":"green",
-						"display":"inline"
-					};								
-				}
-				else
-				{}	
-			}
-			else
-			{
-				if ($scope.ArrObj[pos][3]!="")
-				{
-					alert("人数达到上限，无法继续添加");
-					return;
-				}
-				if (($scope.ArrObj[pos][2]+$scope.ArrObj[pos][3]).search($scope.changename)!=-1)
-				{
-					alert("请勿重复添加");
-					return;
-				}
-				$scope.ArrObj[pos][3]=$scope.changename;
-
-				if ($scope.radioclass=="radioday")
-				{
-					$scope.Style[14*pos+3]={
-						"color":"orange",
-						"display":"inline"
-					};
-				}
-				else if($scope.radioclass=="radionight")
-				{
-					$scope.Style[14*pos+3]={
-						"color":"green",
-						"display":"inline"
-					};								
-				}
-				else
-				{
-					$scope.Style[14*pos+3]={
-						"color":"black",
-						"display":"inline"
-					};										
-				}
-			}	
-		}
-
 		//排班表添加内容
 		$scope.add=function()
 		{
@@ -583,16 +523,16 @@ require './init.php';
 					switch($scope.radioposi)
 					{
 						case "radiorec":
-							day1add(0);
+							eachdayadd(0);
 							break;
 						case "radiodre":
-							day1add(1);					
+							eachdayadd(1);					
 							break;
 						case "radiocam":
-							day1add(2);						
+							eachdayadd(2);						
 							break;
 						case "radiopro":
-							day1add(3);	
+							eachdayadd(3);	
 							break;
 						default:
 							break;
@@ -603,16 +543,16 @@ require './init.php';
 					switch($scope.radioposi)
 					{
 						case "radiorec":
-							day2add(0);
+							//day2add(0);
 							break;
 						case "radiodre":
-							day2add(1);
+							//day2add(1);
 							break;
 						case "radiocam":
-							day2add(2);	
+							//day2add(2);	
 							break;
 						case "radiopro":
-							day2add(3);			
+							//day2add(3);			
 							break;
 						default:
 							break;
@@ -2227,27 +2167,21 @@ require './init.php';
 		//当选择的职位发生变化时相应的人员选择也发生变化
 		$scope.posichoose=function()
 		{
-			//alert("ok");
 			switch($scope.radioposi)
 			{
 				case "radiorec":
 					$scope.people=$scope.recept;
-					//alert("radiorec");
 					break;
 				case "radiodre":
 					$scope.people=$scope.dress;
-					//alert("radiodre");
 					break;
 				case "radiocam":
 					$scope.people=$scope.camera;
-					//alert("radiocam");
 					break;
 				case "radiopro":
 					$scope.people=$scope.process;
-					//alert("radiopro");
 					break;
 				default:
-					//alert("wrong");
 					break;
 			}			
 		}
@@ -2309,93 +2243,30 @@ require './init.php';
 				var TempData;
 				if (res.length!=0)
 				{
-					TempData=getdatatran(0,1,res[0]['rec']);
-					$scope.ArrObj[0][0]=TempData.split(",")[0];
-					$scope.ArrObj[0][1]=TempData.split(",")[1];
-					TempData=getdatatran(2,3,res[1]['rec']);
-					$scope.ArrObj[0][2]=TempData.split(",")[0];
-					$scope.ArrObj[0][3]=TempData.split(",")[1];
-					TempData=getdatatran(4,5,res[2]['rec']);
-					$scope.ArrObj[0][4]=TempData.split(",")[0];
-					$scope.ArrObj[0][5]=TempData.split(",")[1];
-					TempData=getdatatran(6,7,res[3]['rec']);
-					$scope.ArrObj[0][6]=TempData.split(",")[0];
-					$scope.ArrObj[0][7]=TempData.split(",")[1];
-					TempData=getdatatran(8,9,res[4]['rec']);
-					$scope.ArrObj[0][8]=TempData.split(",")[0];
-					$scope.ArrObj[0][9]=TempData.split(",")[1];
-					TempData=getdatatran(10,11,res[5]['rec']);
-					$scope.ArrObj[0][10]=TempData.split(",")[0];
-					$scope.ArrObj[0][11]=TempData.split(",")[1];
-					TempData=getdatatran(12,13,res[6]['rec']);
-					$scope.ArrObj[0][12]=TempData.split(",")[0];
-					$scope.ArrObj[0][13]=TempData.split(",")[1];
-
-					TempData=getdatatran(14,15,res[0]['dre']);
-					$scope.ArrObj[1][0]=TempData.split(",")[0];
-					$scope.ArrObj[1][1]=TempData.split(",")[1];
-					TempData=getdatatran(16,17,res[1]['dre']);
-					$scope.ArrObj[1][2]=TempData.split(",")[0];
-					$scope.ArrObj[1][3]=TempData.split(",")[1];
-					TempData=getdatatran(18,19,res[2]['dre']);
-					$scope.ArrObj[1][4]=TempData.split(",")[0];
-					$scope.ArrObj[1][5]=TempData.split(",")[1];
-					TempData=getdatatran(20,21,res[3]['dre']);
-					$scope.ArrObj[1][6]=TempData.split(",")[0];
-					$scope.ArrObj[1][7]=TempData.split(",")[1];
-					TempData=getdatatran(22,23,res[4]['dre']);
-					$scope.ArrObj[1][8]=TempData.split(",")[0];
-					$scope.ArrObj[1][9]=TempData.split(",")[1];
-					TempData=getdatatran(24,25,res[5]['dre']);
-					$scope.ArrObj[1][10]=TempData.split(",")[0];
-					$scope.ArrObj[1][11]=TempData.split(",")[1];
-					TempData=getdatatran(26,27,res[6]['dre']);
-					$scope.ArrObj[1][12]=TempData.split(",")[0];
-					$scope.ArrObj[1][13]=TempData.split(",")[1];
-
-					TempData=getdatatran(28,29,res[0]['car']);
-					$scope.ArrObj[2][0]=TempData.split(",")[0];
-					$scope.ArrObj[2][1]=TempData.split(",")[1];
-					TempData=getdatatran(30,31,res[1]['car']);
-					$scope.ArrObj[2][2]=TempData.split(",")[0];
-					$scope.ArrObj[2][3]=TempData.split(",")[1];
-					TempData=getdatatran(32,33,res[2]['car']);
-					$scope.ArrObj[2][4]=TempData.split(",")[0];
-					$scope.ArrObj[2][5]=TempData.split(",")[1];					
-					TempData=getdatatran(34,35,res[3]['car']);
-					$scope.ArrObj[2][6]=TempData.split(",")[0];
-					$scope.ArrObj[2][7]=TempData.split(",")[1];
-					TempData=getdatatran(36,37,res[4]['car']);
-					$scope.ArrObj[2][8]=TempData.split(",")[0];
-					$scope.ArrObj[2][9]=TempData.split(",")[1];
-					TempData=getdatatran(38,39,res[5]['car']);
-					$scope.ArrObj[2][10]=TempData.split(",")[0];
-					$scope.ArrObj[2][11]=TempData.split(",")[1];
-					TempData=getdatatran(40,41,res[6]['car']);
-					$scope.ArrObj[2][12]=TempData.split(",")[0];
-					$scope.ArrObj[2][13]=TempData.split(",")[1];
-
-					TempData=getdatatran(42,43,res[0]['pro']);
-					$scope.ArrObj[3][0]=TempData.split(",")[0];
-					$scope.ArrObj[3][1]=TempData.split(",")[1];
-					TempData=getdatatran(44,45,res[1]['pro']);
-					$scope.ArrObj[3][2]=TempData.split(",")[0];
-					$scope.ArrObj[3][3]=TempData.split(",")[1];
-					TempData=getdatatran(46,47,res[2]['pro']);
-					$scope.ArrObj[3][4]=TempData.split(",")[0];
-					$scope.ArrObj[3][5]=TempData.split(",")[1];
-					TempData=getdatatran(48,49,res[3]['pro']);
-					$scope.ArrObj[3][6]=TempData.split(",")[0];
-					$scope.ArrObj[3][7]=TempData.split(",")[1];
-					TempData=getdatatran(50,51,res[4]['pro']);
-					$scope.ArrObj[3][8]=TempData.split(",")[0];
-					$scope.ArrObj[3][9]=TempData.split(",")[1];
-					TempData=getdatatran(52,53,res[5]['pro']);
-					$scope.ArrObj[3][10]=TempData.split(",")[0];
-					$scope.ArrObj[3][11]=TempData.split(",")[1];
-					TempData=getdatatran(54,55,res[6]['pro']);
-					$scope.ArrObj[3][12]=TempData.split(",")[0];
-					$scope.ArrObj[3][13]=TempData.split(",")[1];
+					for(var i=0;i<7;i++)
+					{
+						TempData=getdatatran(2*i,(2*i+1),res[i]['rec']);
+						$scope.ArrObj[0][2*i]=TempData.split(",")[0];
+						$scope.ArrObj[0][2*i+1]=TempData.split(",")[1];
+					}
+					for(var i=0;i<7;i++)
+					{
+						TempData=getdatatran(2*i+14,(2*i+15),res[i]['dre']);
+						$scope.ArrObj[1][2*i]=TempData.split(",")[0];
+						$scope.ArrObj[1][2*i+1]=TempData.split(",")[1];
+					}
+					for(var i=0;i<7;i++)
+					{
+						TempData=getdatatran(2*i+28,(2*i+29),res[i]['car']);
+						$scope.ArrObj[2][2*i]=TempData.split(",")[0];
+						$scope.ArrObj[2][2*i+1]=TempData.split(",")[1];
+					}
+					for(var i=0;i<7;i++)
+					{
+						TempData=getdatatran(2*i+42,(2*i+43),res[i]['pro']);
+						$scope.ArrObj[3][2*i]=TempData.split(",")[0];
+						$scope.ArrObj[3][2*i+1]=TempData.split(",")[1];
+					}
 				}
 				else
 				{
