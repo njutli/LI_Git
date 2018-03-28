@@ -427,10 +427,10 @@ require './init.php';
 		typereset();
 		//初始化排班表
 		$scope.ArrObj=[
-			["0","1","2","3","4","5","6","7","8","9","10","11","12","13"],
-			["0","1","2","3","4","5","6","7","8","9","10","11","12","13"],
-			["0","1","2","3","4","5","6","7","8","9","10","11","12","13"],
-			["0","1","2","3","4","5","6","7","8","9","10","11","12","13"],
+			["","","","","","","","","","","","","",""],
+			["","","","","","","","","","","","","",""],
+			["","","","","","","","","","","","","",""],
+			["","","","","","","","","","","","","",""],
 		];
 
 		//用于提交的数据
@@ -686,12 +686,12 @@ require './init.php';
 			if ($scope.ArrObj[pos][2*day].search($scope.changename)!=-1)
 			{
 				$scope.ArrObj[pos][2*day]=$scope.ArrObj[pos][2*day+1];
-				$scope.Style[14*pos].color=$scope.Style[14*pos+1].color;
+				$scope.Style[14*pos+2*day].color=$scope.Style[14*pos+1+2*day].color;
 			}
 			else//若想要删除的人员为第二个，则直接删除
 			{}
 			$scope.ArrObj[pos][2*day+1]="";
-			$scope.Style[14*pos+1].color="black";
+			$scope.Style[14*pos+1+2*day].color="black";
 		}
 
 		$scope.del=function()
@@ -1077,11 +1077,11 @@ require './init.php';
 		//提交数据前组织数据
 		function orgdata(pos,day)
 		{
-			if ($scope.Style[14*pos].color=="orange")
+			if ($scope.Style[14*pos+2*day].color=="orange")
 			{
 				$scope.ArrDataSub[pos][day]=$scope.ArrObj[pos][2*day]+"+";
 			}
-			else if ($scope.Style[14*pos].color=="green")
+			else if ($scope.Style[14*pos+2*day].color=="green")
 			{
 				$scope.ArrDataSub[pos][day]=$scope.ArrObj[pos][2*day]+"-";
 			}
@@ -1090,11 +1090,11 @@ require './init.php';
 				$scope.ArrDataSub[pos][day]=$scope.ArrObj[pos][2*day];
 			}
 
-			if ($scope.Style[14*pos+1].color=="orange")
+			if ($scope.Style[14*pos+1+2*day].color=="orange")
 			{
 				$scope.ArrDataSub[pos][day]=$scope.ArrDataSub[pos][day]+","+$scope.ArrObj[pos][2*day+1]+"+";
 			}
-			else if ($scope.Style[14*pos+1].color=="green")
+			else if ($scope.Style[14*pos+1+2*day].color=="green")
 			{
 				$scope.ArrDataSub[pos][day]=$scope.ArrDataSub[pos][day]+","+$scope.ArrObj[pos][2*day+1]+"-";
 			}
@@ -1107,150 +1107,26 @@ require './init.php';
 			}
 		}
 		//“确定”按钮对应的出发事件，将数据提交至数据库
-		function subdata(idday)
+		function subdata()
 		{
-			switch(idday)
+			for(var i=0;i<7;i++)
 			{
-				case 1:
-				orgdata(3,0);
-
-					if ($scope.Style[28].color=="orange")
-					{
-						$scope.optcam1sub=$scope.ArrObj[2][0]+"+";
-					}
-					else if ($scope.Style[28].color=="green")
-					{
-						$scope.optcam1sub=$scope.ArrObj[2][0]+"-";
-					}
-					else
-					{
-						$scope.optcam1sub=$scope.ArrObj[2][0];
-					}
-
-					if ($scope.Style[29].color=="orange")
-					{
-						$scope.optcam1sub=$scope.optcam1sub+","+$scope.ArrObj[2][1]+"+";
-					}
-					else if ($scope.Style[29].color=="green")
-					{
-						$scope.optcam1sub=$scope.optcam1sub+","+$scope.ArrObj[2][1]+"-";
-					}
-					else
-					{
-						if ($scope.ArrObj[2][1]!="")
-						{
-							$scope.optcam1sub=$scope.optcam1sub+","+$scope.ArrObj[2][1];	
-						}
-					}
-
-					$http(
-					{
-					    method: "POST",
-					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0][0],postdre:$scope.ArrObj[1][0],postcam:$scope.optcam1sub,postpro:$scope.ArrDataSub[3][0]},
-					    url:"sqlinput2.php"
-					})
-					.success(function (response)
-					{
-						res = response.records;
-						//$scope.count=res.length;
-
-						console.log(response);
-					});
-					break;
-				case 2:
-					$http(
-					{
-					    method: "POST",
-					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0][2],postdre:$scope.ArrObj[1][2],postcam:$scope.ArrObj[2][2],postpro:$scope.ArrObj[3][2]},
-					    url:"sqlinput2.php"
-					})
-					.success(function (response)
-					{
-						res = response.records;
-						//$scope.count=res.length;
-
-						console.log(response);
-					});
-					break;
-				case 3:
-					$http(
-					{
-					    method: "POST",
-					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0][4],postdre:$scope.ArrObj[1][4],postcam:$scope.ArrObj[2][4],postpro:$scope.ArrObj[3][4]},
-					    url:"sqlinput2.php"
-					})
-					.success(function (response)
-					{
-						res = response.records;
-						//$scope.count=res.length;
-
-						console.log(response);
-					});
-					break;
-				case 4:
-					$http(
-					{
-					    method: "POST",
-					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0][6],postdre:$scope.ArrObj[1][6],postcam:$scope.ArrObj[2][6],postpro:$scope.ArrObj[3][6]},
-					    url:"sqlinput2.php"
-					})
-					.success(function (response)
-					{
-						res = response.records;
-						//$scope.count=res.length;
-
-						console.log(response);
-					});
-					break;
-				case 5:
-					$http(
-					{
-					    method: "POST",
-					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0][8],postdre:$scope.ArrObj[1][8],postcam:$scope.ArrObj[2][8],postpro:$scope.ArrObj[3][8]},
-					    url:"sqlinput2.php"
-					})
-					.success(function (response)
-					{
-						res = response.records;
-						//$scope.count=res.length;
-
-						console.log(response);
-					});
-					break;
-				case 6:
-					$http(
-					{
-					    method: "POST",
-					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0][10],postdre:$scope.ArrObj[1][10],postcam:$scope.ArrObj[2][10],postpro:$scope.ArrObj[3][10]},
-					    url:"sqlinput2.php"
-					})
-					.success(function (response)
-					{
-						res = response.records;
-						//$scope.count=res.length;
-
-						console.log(response);
-					});
-					break;
-				case 7:
-					$http(
-					{
-					    method: "POST",
-					    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:idday,postrec:$scope.ArrObj[0][12],postdre:$scope.ArrObj[1][12],postcam:$scope.ArrObj[2][12],postpro:$scope.ArrObj[3][12]},
-					    url:"sqlinput2.php"
-					})
-					.success(function (response)
-					{
-						res = response.records;
-						//$scope.count=res.length;
-
-						console.log(response);
-					});
-					break;															
-				default:
-					break;
+				orgdata(0,i);
+				orgdata(1,i);
+				orgdata(2,i);
+				orgdata(3,i);
+				$http(
+				{
+				    method: "POST",
+				    data:{postyear:$scope.showyear,postweek:$scope.showweek,postday:(i+1),postrec:$scope.ArrDataSub[0][i],postdre:$scope.ArrDataSub[1][i],postcam:$scope.ArrDataSub[2][i],postpro:$scope.ArrDataSub[3][i]},
+				    url:"sqlinput2.php"
+				})
+				.success(function (response)
+				{
+					res = response.records;
+					//console.log(response);
+				});			
 			}
-
 		}
 
 		$scope.changesub=function()
@@ -1266,13 +1142,7 @@ require './init.php';
 				alert("未全部选择！");
 				return;
 			}
-			subdata(1);
-			subdata(2);
-			subdata(3);
-			subdata(4);
-			subdata(5);
-			subdata(6);
-			subdata(7);
+			subdata();
 
 			$scope.information="已提交";
 
@@ -1312,7 +1182,6 @@ require './init.php';
 						$scope.showyear=parseInt(choyear)+1;
 						$scope.showweek=1;
 						flag=0;
-						//return;
 					}
 					else
 					{
@@ -1325,7 +1194,6 @@ require './init.php';
 			var oridateobj=new Date(choyear,"0","1");
 			//oridateobj.setTime(oridateobj.getTime()+24*3600000);
 			var oridatetime=oridateobj.getTime();
-
 
 			//获取本年1月1日所在周的第一天
 			//1月1日与其所在周的第一天相差的天数
@@ -1354,7 +1222,6 @@ require './init.php';
 
 				//构造本年1月1日的日期对象
 				oridateobj=new Date(choyear,"0","1");
-				//oridateobj.setTime(oridateobj.getTime()+24*3600000);
 				oridatetime=oridateobj.getTime();
 
 
@@ -1408,23 +1275,16 @@ require './init.php';
 			$scope.day3=day3.getFullYear()+"-"+(parseInt(day3.getMonth())+1)+"-"+day3.getDate();
 			$scope.day4=day4.getFullYear()+"-"+(parseInt(day4.getMonth())+1)+"-"+day4.getDate();
 			$scope.day5=day5.getFullYear()+"-"+(parseInt(day5.getMonth())+1)+"-"+day5.getDate();
-			$scope.day6=day6.getFullYear()+"-"+(parseInt(day6.getMonth())+1)+"-"+day6.getDate();			
-
-			//alert("start:"+startdate);
-			//alert("end:"+enddate);
+			$scope.day6=day6.getFullYear()+"-"+(parseInt(day6.getMonth())+1)+"-"+day6.getDate();
 
 			//该周第一天与选中日期的差值
 			var starttonow=(nowdateobj.getTime()-startdate.getTime())/(24*3600000);
 
 			//由于前面计算第x天的周数使用正常算法计算第(x-1)天的周数得到，所以这里要多加1
 			$scope.showdate=starttonow+1+1;
-			//alert(startdateobj.getDay());
-			//alert(startdateobj);
 			getdata2();
 
 		}
-		
-
 	})
 </script>
 
