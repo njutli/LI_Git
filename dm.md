@@ -289,3 +289,385 @@ linear_ctr
     bd_link_disk_holder // 检测目标设备是否为自身 (bdev->bd_disk == disk)
 ......
 ```
+
+# 三、dm-thin-pool
+
+```c
+dmsetup create linear_1 --table "0 2097152 linear /dev/sdc 0"
+dmsetup create linear_2 --table "0 16777216  linear /dev/sdc 2097153"
+dd if=/dev/zero of=/dev/mapper/linear_1 bs=4096 count=1
+dmsetup create pool --table "0 16777216 thin-pool /dev/mapper/linear_1 /dev/mapper/linear_2 1024 0 1 skip_block_zeroing"
+/*
+块管理
+struct dm_block_manager { // 关键成员是 dm_bufio_client
+	struct dm_bufio_client *bufio;
+	bool read_only:1;
+};
+struct dm_bufio_client { // 关键成员是变长的 dm_buffer_cache
+...
+	struct dm_buffer_cache cache; // must be last member
+};
+struct dm_buffer_cache { // 用于管理(元)数据块，CLEAN/DIRTY 两个链表，管理(元)数据块的 tree
+	struct lru lru[LIST_SIZE];
+	unsigned int num_locks;
+	struct buffer_tree trees[];
+};
+// 根节点
+struct buffer_tree {
+	struct rw_semaphore lock;
+	struct rb_root root;
+}
+*/
+    
+/*
+pool_create
+ dm_pool_metadata_open // 分配初始化 dm_pool_metadata *pmd
+  __create_persistent_data_objects
+   dm_block_manager_create // 分配 dm_block_manager pmd->bm
+    dm_bufio_client_create // 分配 dm_bufio_client bm->bufio(dm_bufio_client_create + num_locks*buffer_tree)
+                           // num_locks*buffer_tree 对应于 c->cache 的空间
+                           // tree 用于管理 dm_buffer，与 block 对应
+     cache_init // 初始化 dm_buffer_cache c->cache
+      lru_init // 初始化 LIST_CLEAN/LIST_DIRTY 两个lru链表
+     dm_io_client_create // 分配 dm_io_client c->dm_io
+     register_shrinker // 初始化并注册shrinker，用于内存管理
+   __open_or_format_metadata
+    __superblock_all_zeroes // 读取 THIN_SUPERBLOCK_LOCATION 块数据，确认是否全0
+    __format_metadata // 如果全0，并且需要format，则format
+     dm_tm_create_with_sm
+      dm_tm_create_internal
+       dm_sm_metadata_init // 分配包含 dm_space_map 的 sm_metadata，并返回 dm_space_map 赋值给 pmd->metadata_sm -- &ops
+       dm_tm_create // 分配初始化 dm_transaction_manager pmd->tm ---- pmd->tm->sm=pmd->metadata_sm;pmd->tm->bm=pmd->bm
+       dm_sm_metadata_create // 初始化 sm_metadata
+       dm_sm_disk_create // 分配 包含 dm_space_map 的 sm_disk，并返回 dm_space_map 赋值给 pmd->metadata_sm
+       dm_tm_create_non_blocking_clone // 分配初始化 dm_transaction_manager pmd->nb_tm，包含 pmd->tm
+       __setup_btree_details // 初始化各个 dm_btree_info
+       dm_btree_empty // 创建 root
+    __open_metadata // 否则，直接打开
+     dm_block_data // 读取磁盘上的超级块信息 thin_disk_superblock
+     dm_tm_open_with_sm // 初始化 pmd->metadata_sm (metadata_space_map_root)
+      dm_tm_create_internal
+       dm_sm_metadata_init // 创建sm
+       dm_tm_create // 根据bm和sm创建tm
+       dm_sm_metadata_open
+        sm_ll_open_metadata // 加载metadata_space_map_root 使用disk_super->metadata_space_map_root初始化disk_sm_root再初始化ll_disk
+        metadata_ll_open // 根据metadata_space_map_root中元数据bitmap所在块号，加载元数据space map信息
+     dm_sm_disk_open // 初始化 pmd->data_sm (data_space_map_root)
+      // 分配sm_disk，初始化 pmd->data_sm 为 static struct dm_space_map ops
+      sm_ll_open_disk // 加载 data_space_map_root 使用disk_super->data_space_map_root 初始化disk_sm_root再初始化ll_disk
+                      // 初始化时只保存根节点信息，数据块的 disk_index_entry 信息在初始化时没有加载，在查找空闲块时会加载
+     pmd->root = disk_super->data_mapping_root // 保存数据映射信息根节点
+	 pmd->details_root = disk_super->device_details_root // 保存设备信息根节点
+  
+*/
+dmsetup message /dev/mapper/pool 0 "create_thin 0"
+/*
+pool_message
+ process_create_thin_mesg
+  dm_pool_create_thin
+   __create_thin
+    dm_btree_lookup // 当前 thin_id 是否已经存在 pmd->details_root 树中
+    dm_btree_empty // 基于 pmd->bl_info 创建一个新的空树(新的 btree_node 根节点)
+     new_block // 通过 pmd->metadata_sm 分配元数据块
+    dm_btree_insert // 以 thin_id 为键，新创建thin设备对应的空树 btree_node 根节点为值，将键值对插入 pmd->tl_info 树中，并更新 pmd->root
+    __open_device // 根据 thin_id 查找dm_thin_device，若没有则创建。 打开设备 (*td)->open_count = 1
+    dm_btree_remove // 若打开失败，从 pmd->tl_info 上删除键值对
+    dm_btree_del // 若打开失败，基于 pmd->bl_info 释放空树
+    __close_device // 关闭设备 --td->open_count
+ commit
+  dm_pool_commit_metadata
+   __commit_transaction
+    __write_changed_details
+     dm_btree_insert // 遍历 pmd->thin_devices 插入 pmd->details_info
+
+*/
+dmsetup create thin --table "0 14680064 thin /dev/mapper/pool 0"
+/*
+sector_start=0, length=14680064, target_type="thin"
+pool_dev=“/dev/mapper/pool”
+tc->dev_id=0
+*/
+    
+[root@localhost ~]# lsblk
+NAME        MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda           8:0    0   10G  0 disk
+sdb           8:16   0    5G  0 disk
+sdc           8:32   0   20G  0 disk
+├─linear_1  252:0    0    1G  0 dm
+│ └─pool    252:2    0    8G  0 dm
+│   ├─thin  252:3    0  512M  0 dm
+│   └─thin1 252:4    0  512M  0 dm
+└─linear_2  252:1    0    8G  0 dm
+  └─pool    252:2    0    8G  0 dm
+    ├─thin  252:3    0  512M  0 dm
+    └─thin1 252:4    0  512M  0 dm
+sdd           8:48   0    8M  0 disk
+vda         253:0    0   20G  0 disk /
+[root@localhost ~]# dmsetup table
+thin: 0 1048576 thin 252:2 0
+linear_2: 0 16777216 linear 8:32 2097153
+linear_1: 0 2097152 linear 8:32 0
+thin1: 0 1048576 thin 252:2 1
+pool: 0 16777216 thin-pool 252:0 252:1 1024 0 1 skip_block_zeroing
+[root@localhost ~]#
+
+// 初始化worker
+pool_ctr
+ __pool_find
+  pool_create
+   // INIT_WORK(&pool->worker, do_worker);
+
+// 唤醒worker
+wake_worker
+ // queue_work(pool->wq, &pool->worker);
+
+// worker执行流程
+do_worker
+ process_deferred_bios
+  get_first_thin // 从pool->active_thins中获取thin，thin设备通过thin_ctr将自身添加到链表中
+  process_thin_deferred_bios // 处理当前thin设备上的bio
+   bio_list_merge // 将tc->deferred_bio_list存到局部变量，同时清空tc->deferred_bio_list
+   process_bio // pool->process_bio 取出第一个bio进行处理
+    get_bio_block // 根据bio的sector计算对应的block
+	build_virtual_key // 使用目标 逻辑 block 初始化cell key
+	bio_detain // drivers\md\dm-thin.c
+	 dm_bio_prison_alloc_cell // 从prison的mempool里分配cell
+	 dm_bio_detain
+	  bio_detain // drivers\md\dm-bio-prison-v1.c
+	   __bio_detain // 从prison->cells的红黑树里查找key对应的cell是否存在，如果存在，则使用已有的cell，否则使用新分配的cell
+	    __setup_new_cell // 初始化新分配的cell，将cell与key/bio关联起来(cell->key/cell->holder)
+	process_cell // 处理新分配的cell
+
+process_cell
+ dm_thin_find_block # 根据逻辑块号，找到对应的信息(物理块号及共享信息)
+  __find_block // 两级索引，第一级索引key为thin id，第二级索引key为逻辑块号
+   dm_btree_lookup
+	// 第一次循环，查找目标thin的映射信息所在块；第二次循环，查找目标thin上逻辑块与物理块的对应关系
+	btree_lookup_raw
+	 ro_step // 将new_child对应的数据读取到s->nodes + s->count对应的buffer中 --> struct btree_node
+	 ro_node // 获取s->nodes[s->count - 1]对应的buffer --> struct btree_node
+	 lower_bound // search_fn 在btree_node中二分查找指定的key，返回对应的索引值
+	 // 如果是中间结点，则根据刚刚获取到的索引值，查找下一级结点所在的block
+	 // 返回查找到的key值rkey与value值value_p
+   unpack_lookup_result
+	// 从查找到的value值中解析出物理块号exception_block和时间exception_time(根据time判断是否共享)
+ process_shared_bio # 如果该块是多个thin设备共享的块号，需要进行处理
+  build_data_key // 使用目标 物理 block 初始化cell key
+   break_sharing
+     alloc_data_block # 返回 -EINVAL
+       dm_pool_alloc_data_block # 返回 -EINVAL
+         dm_sm_new_block // 新分配一个块，用于data
+		 // pmd->data_sm
+		 // container_of(sm, struct sm_disk, sm)
+		 // smd->old_ll
+           sm_disk_new_block # 通过 sm->new_block 回调
+             sm_ll_find_free_block // 计算bitmap的逻辑块范围，根据逻辑块号依次读取存放bitmap信息的物理块，根据bitmap信息查找空闲块
+			  // 遍历bitmap的所有块，每个块上包含ll->entries_per_block个entry，表示块的使用情况
+			  disk_ll_load_ie // ll->load_ie 查找bitmap逻辑块i对应的 disk_index_entry ，存在ie_disk中
+			  dm_tm_read_lock //  根据 disk_index_entry 判断，有空闲块，查找物理块ie_disk.blocknr，获取详细的bitmap信息
+			  sm_find_free // 查找空闲块
+			  // 计算空闲块并返回 *result = i * ll->entries_per_block + (dm_block_t) position;
+             sm_ll_inc
+               sm_ll_mutate(inc_ref_count)
+                disk_ll_load_ie // ll->load_ie
+                dm_tm_shadow_block # 此处返回错误 -EINVAL
+                 dm_sm_count_is_more_than_one
+                  sm_disk_count_is_more_than_one // sm->count_is_more_than_one 判断引用计数是否大于1
+                   sm_disk_get_count // 获取引用计数
+                	sm_ll_lookup
+                	 sm_ll_lookup_bitmap // 引用计数小于3，则从bitmap中获取
+                	 sm_ll_lookup_big_ref_count // 引用计数大于等于3，则从引用计数信息保存块上获取
+                	  dm_btree_lookup
+                 __shadow_block
+                  dm_sm_new_block # 新分配一个块， 用于metadata
+				  // smd->ll
+				  // ll->tm
+				  // tm->sm
+				  // container_of(sm, struct sm_metadata, sm)
+				  // smm->old_ll
+				   sm_metadata_new_block
+				    sm_metadata_new_block_
+					 sm_ll_find_free_block
+                  dm_sm_dec_block # 原始块的引用计数 -1
+                   sm_metadata_dec_block # 通过 sm->dec_block 回调
+                    sm_ll_dec
+                     sm_ll_mutate(dec_ref_count)
+                      dec_ref_count
+                       DMERR_LIMIT("unable to decrement a reference count below 0");
+                  dm_bm_read_lock # 从原始块中读取数据
+                  dm_bm_write_lock_zero # 新块中的数据清零
+                  memcpy # 将老数据复制到新块中
+                DMERR("dm_tm_shadow_block() failed");
+      metadata_operation_failed(dm_pool_alloc_data_block)
+       DMERR_LIMIT("%s: metadata operation '%s' failed: error = %d")
+        abort_transaction
+         DMERR_LIMIT("%s: aborting current metadata transaction", dev_name);
+        set_pool_mode(PM_READ_ONLY)
+         notify_of_pool_mode_change(read-only)
+          DMINFO("%s: switching pool to %s mode")
+    DMERR_LIMIT("%s: alloc_data_block() failed: error = %d",)
+
+
+
+table_load
+ populate_table
+  dm_table_add_target
+   dm_get_target_type // 根据字符串获取 target_type 用于赋值给tgt->type
+    get_target_type
+	 __find_target_type
+	  // 根据传入的name参数寻找已注册的 target_type，thin 对应 thin_target
+	  // thin设备将关联 thin_target，可以使用.ctr函数 thin_ctr
+   thin_ctr // tgt->type->ctr
+
+修改元数据块时，需要获取一个新的空闲元数据块，作为待修改块的shadow1。
+获取用于作为shadow1的空闲元数据块，理论上需要修改该块的bitmap，即该块bitmap信息所在的块，也需要一个shadow2，这样会陷入无限递归。
+
+要防止无限递归，需要做到两点：
+1、获取作为shadow2的空闲块时，不会立刻修改shadow2块的bitmap，使得shadow2块在不修改bitmap的情况下可以使用
+2、shadow2块在不修改bitmap的情况下使用时，要防止其他进程作为空闲块获取使用
+
+解决方案：
+1、获取shadow2块后不修改shadow2的bitmap，将修改请求加入等待队列
+2、获取到一个空闲块后增加smm->begin，保证后一次查找空闲块的范围不包括前一次查找到的空闲块
+
+dm_pool_alloc_data_block // 分配新的数据块
+ dm_sm_new_block
+  sm_disk_new_block
+   sm_ll_find_free_block // 查找到空闲数据块
+   sm_ll_inc // 修改空闲数据块的bitmap信息，增加空闲数据块的引用计数
+    sm_ll_mutate
+     dm_tm_shadow_block // 为保留新分配的空闲块bitmap信息的物理block分配shadow1
+      __shadow_block
+       dm_sm_new_block
+        sm_metadata_new_block
+         sm_metadata_new_block_
+          sm_ll_find_free_block // 查找空闲元数据块shadow1
+          smm->begin = *b + 1; // 更新begin，保证下一次调用该函数查找空闲块时，及时上次查找到的已经在使用的空闲块没有更新bitmap，也不会第二次被获取使用
+          in(smm)
+          sm_ll_inc // 修改空闲元数据块的bitmap信息，增加空闲元数据块的引用计数 shadow1
+           sm_ll_mutate
+            dm_tm_shadow_block
+             __shadow_block
+              dm_sm_new_block
+               sm_metadata_new_block
+                sm_metadata_new_block_
+                 sm_ll_find_free_block // 查找空闲元数据块shadow2(由于begin已更新，shadow1和shadow2不会是同一个块)
+                  recursing // 判断出当前正在shadow1的sm_ll_inc流程中
+                  add_bop // 将对shadow2的sm_ll_inc操作将入等待队列
+                  // 此时shadow2可供使用(bitmap更新操作延迟)，shadow1的sm_ll_inc流程可继续进行
+          out(mm) // shadow1的sm_ll_inc流程完成后，会将等待队列中的请求取出执行
+
+// 每次更新一个shadow的bitmap，一直更新到superblock中的metadata_space_map_root
+```
+
+## 关键函数
+
+```c
+int dm_btree_lookup(struct dm_btree_info *info, dm_block_t root,
+		    uint64_t *keys, void *value_le);
+/*
+在指定btree上搜索指定key值对应的value值
+info：提供搜索所需信息，如目标value的size等
+root：待搜索btree的根节点所在块
+keys：待搜索的key值
+value_le：搜索结果
+
+从btree的根节点所在块搜索btree_node->keys[]，如果btree_node->keys[x] == keys[0]，则x为values的索引，values[x]为下一级索引块的块号，或者是搜索结果
+*/
+
+int dm_btree_empty(struct dm_btree_info *info, dm_block_t *root);
+/*
+创建一个空的树
+root：创建出的btree根节点所在块
+*/
+
+int dm_btree_lookup_next(struct dm_btree_info *info, dm_block_t root,
+			 uint64_t *keys, uint64_t *rkey, void *value_le);
+/*
+查找下一个非空(已map)的块
+root：待搜索btree的根节点所在块
+keys：待搜索的key值
+rkey：返回实际要搜索的key值
+value_le：实际要搜索key值对应的value
+*/
+
+/* 不同的 info 用于不同的查找
+例如同样是从超级块根节点pmd->root开始查找
+__create_snap
+	key = origin
+	dm_btree_lookup(&pmd->tl_info, pmd->root, &key, &value);
+	使用tl_info做一层查找，根据thin_id查找到thin映射所在块
+	
+__find_block
+	keys[2] = { td->id, block };
+	info = &pmd->info;
+	dm_btree_lookup(info, pmd->root, keys, &value)
+	使用info做两层查找，先根据thin_id查找到thin映射所在块，再根据block查找映射关系
+*/
+
+static int btree_insert_raw(struct shadow_spine *s, dm_block_t root,
+			    struct dm_btree_value_type *vt,
+			    uint64_t key, unsigned *index)
+/*
+从root开始，查找到leaf节点，查找目标key在leaf节点上的位置(已经在树中的返回当前位置，不在树中的返回待插入位置)
+*/
+
+static void insert_shadow(struct dm_transaction_manager *tm, dm_block_t b)
+/*
+将某个block标志成shadow
+*/
+static void __setup_btree_details(struct dm_pool_metadata *pmd)
+{
+    /* 2层的B树，第一层为thin设备，第二层为thin的映射 */
+	pmd->info.tm = pmd->tm;
+	pmd->info.levels = 2;
+	pmd->info.value_type.context = pmd->data_sm;
+	pmd->info.value_type.size = sizeof(__le64);
+	pmd->info.value_type.inc = data_block_inc;
+	pmd->info.value_type.dec = data_block_dec;
+	pmd->info.value_type.equal = data_block_equal;
+
+	memcpy(&pmd->nb_info, &pmd->info, sizeof(pmd->nb_info));
+	pmd->nb_info.tm = pmd->nb_tm;
+
+	pmd->tl_info.tm = pmd->tm;
+	pmd->tl_info.levels = 1;
+	pmd->tl_info.value_type.context = &pmd->bl_info;
+	pmd->tl_info.value_type.size = sizeof(__le64);
+	pmd->tl_info.value_type.inc = subtree_inc;
+	pmd->tl_info.value_type.dec = subtree_dec;
+	pmd->tl_info.value_type.equal = subtree_equal;
+
+	pmd->bl_info.tm = pmd->tm;
+	pmd->bl_info.levels = 1;
+	pmd->bl_info.value_type.context = pmd->data_sm;
+	pmd->bl_info.value_type.size = sizeof(__le64);
+	pmd->bl_info.value_type.inc = data_block_inc;
+	pmd->bl_info.value_type.dec = data_block_dec;
+	pmd->bl_info.value_type.equal = data_block_equal;
+
+    // 用于操作 device_details_root
+    /* 描述thin设备详细信息的B树 */
+	pmd->details_info.tm = pmd->tm;
+	pmd->details_info.levels = 1;
+	pmd->details_info.value_type.context = NULL;
+	pmd->details_info.value_type.size = sizeof(struct disk_device_details);
+	pmd->details_info.value_type.inc = NULL;
+	pmd->details_info.value_type.dec = NULL;
+	pmd->details_info.value_type.equal = NULL;
+}
+
+static int thin_map(struct dm_target *ti, struct bio *bio)
+thin_map
+ thin_bio_map
+  dm_thin_find_block // 查找逻辑块对应的物理块
+  1) 找到
+   将bio调整为指向数据盘实际物理块的bio，返回 DM_MAPIO_REMAPPED 由上层再次下发
+  2) 没找到
+   延迟由worker处理，返回 DM_MAPIO_SUBMITTED
+   thin_defer_cell // -ENODATA/-EWOULDBLOCK
+
+
+
+
+```
