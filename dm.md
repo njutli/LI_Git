@@ -1991,3 +1991,378 @@ static struct dm_exception *dm_lookup_exception(struct dm_exception_table *et,
 }
 ```
 
+### （3）snapshot_merge_map
+
+[snapshot_merge_map](#snapshot_merge_map)
+
+## 4、使用场景
+
+### （1）典型使用场景
+![image](https://github.com/user-attachments/assets/5e060c9a-ee6c-46bb-bab2-77d990c75e30)
+
+#### 1、创建物理卷
+
+```
+pvcreate /dev/sda
+```
+
+#### 2、创建卷组
+
+```
+vgcreate volumeGroup /dev/sda
+```
+
+#### 3、创建 base 盘（linear 设备）
+
+```
+lvcreate -L 1G -n base volumeGroup
+[root@localhost ~]# lsblk
+NAME               MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                  8:0    0   10G  0 disk
+└─volumeGroup-base 252:0    0    1G  0 lvm
+sdb                  8:16   0    5G  0 disk
+sdc                  8:32   0   20G  0 disk
+sdd                  8:48   0   30G  0 disk
+sde                  8:64   0  100G  0 disk
+sdf                  8:80   0    8M  0 disk
+vda                253:0    0   20G  0 disk /
+
+[root@localhost ~]# dmsetup table
+volumeGroup-base: 0 2097152 linear 8:0 2048
+[root@localhost ~]#
+volumeGroup-base-real: 0 2097152 linear 8:0 2048
+
+/*
+ * 创建 linear 设备，映射到物理盘
+ */
+```
+
+#### 4、格式化使用 base 盘
+
+```
+mkfs.ext4 /dev/mapper/volumeGroup-base
+
+[root@localhost ~]# mount /dev/mapper/volumeGroup-base /mnt/test
+[root@localhost ~]# echo 123-base > /mnt/test/testfile
+[root@localhost ~]# cat /mnt/test/testfile
+123-base
+[root@localhost ~]#
+```
+
+#### 5、创建 snapshot
+
+```
+lvcreate -L 100M --snapshot -n snap volumeGroup/base
+[root@localhost ~]# lsblk
+NAME                    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                       8:0    0   10G  0 disk
+├─volumeGroup-base-real 252:1    0    1G  0 lvm
+│ ├─volumeGroup-base    252:0    0    1G  0 lvm  /mnt/test
+│ └─volumeGroup-snap    252:3    0    1G  0 lvm
+└─volumeGroup-snap-cow  252:2    0  100M  0 lvm
+  └─volumeGroup-snap    252:3    0    1G  0 lvm
+sdb                       8:16   0    5G  0 disk
+sdc                       8:32   0   20G  0 disk
+sdd                       8:48   0   30G  0 disk
+sde                       8:64   0  100G  0 disk
+sdf                       8:80   0    8M  0 disk
+vda                     253:0    0   20G  0 disk /
+
+[root@localhost ~]# dmsetup table
+volumeGroup-snap-cow: 0 204800 linear 8:0 2099200
+volumeGroup-snap: 0 2097152 snapshot 252:1 252:2 P 8
+volumeGroup-base-real: 0 2097152 linear 8:0 2048
+volumeGroup-base: 0 2097152 snapshot-origin 252:1
+
+/*
+ * 1) 创建 linear 设备 base-real ，与 base 映射物理盘的 map 一致
+ * DM_DEV_CREATE name="volumeGroup-base-real" 252:1
+ * DM_TABLE_LOAD 252:1 -- 8:0 2048
+ * base reload 成 snapshot-origin，reload 到 base-real
+ * DM_TABLE_LOAD 252:0 -- 252:1
+ * --> 之后对 base 设备的操作，不会直接写入物理盘
+ *
+ * 2) 创建 linear 设备 snap-cow
+ * DM_DEV_CREATE name="volumeGroup-snap-cow" 252:2
+ * DM_TABLE_LOAD 252:2 -- 8:0 2099200
+ * --> 用于写 snapshot
+ *
+ * 3) 创建 snapshot 设备 snap，load 到 base-real 和 snap-cow
+ * DM_DEV_CREATE name="volumeGroup-snap"
+ * DM_TABLE_LOAD 252:3 -- 252:1 252:2 P 8
+ */
+```
+
+#### 6、使用 snapshot
+
+```
+// 挂载使用 snapshot （读）
+[root@localhost ~]# mount /dev/mapper/volumeGroup-snap /mnt/test_sda
+[root@localhost ~]# ls /mnt/test_sda/
+lost+found  testfile
+[root@localhost ~]# cat /mnt/test_sda/testfile
+123-base
+[root@localhost ~]# lsblk
+NAME                    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                       8:0    0   10G  0 disk
+├─volumeGroup-base-real 252:1    0    1G  0 lvm
+│ ├─volumeGroup-base    252:0    0    1G  0 lvm  /mnt/test
+│ └─volumeGroup-snap    252:3    0    1G  0 lvm  /mnt/test_sda
+└─volumeGroup-snap-cow  252:2    0  100M  0 lvm
+  └─volumeGroup-snap    252:3    0    1G  0 lvm  /mnt/test_sda
+sdb                       8:16   0    5G  0 disk
+sdc                       8:32   0   20G  0 disk
+sdd                       8:48   0   30G  0 disk
+sde                       8:64   0  100G  0 disk
+sdf                       8:80   0    8M  0 disk
+vda                     253:0    0   20G  0 disk /
+[root@localhost ~]#
+[root@localhost ~]# dmsetup table
+volumeGroup-snap-cow: 0 204800 linear 8:0 2099200
+volumeGroup-snap: 0 2097152 snapshot 252:1 252:2 P 8
+volumeGroup-base-real: 0 2097152 linear 8:0 2048
+volumeGroup-base: 0 2097152 snapshot-origin 252:1
+[root@localhost ~]#
+
+// 使用 snapshot-origin （写） --> 数据落盘
+[root@localhost ~]# echo 123-snap-ori > /mnt/test/testfile1
+[root@localhost ~]# ls /mnt/test
+lost+found  testfile  testfile1
+
+// 不影响 snapshot （读） --> 从 base 设备中读取
+[root@localhost ~]# ls /mnt/test_sda
+lost+found  testfile
+[root@localhost ~]#
+[root@localhost ~]# cat /mnt/test/testfile1
+123-snap-ori
+[root@localhost ~]#
+```
+
+#### 7、删除 snapshot
+
+```
+base-real(linear): testfile
+base(snapshot-origin): testfile testfile1
+```
+
+##### a. remove snapshot
+
+```
+remove snapshot
+lvremove volumeGroup/snap
+
+[root@localhost ~]# umount /mnt/test
+[root@localhost ~]# umount /mnt/test_sda
+[root@localhost ~]# lvremove volumeGroup/snap
+File descriptor 6 (/dev/ttyS0) leaked on lvremove invocation. Parent PID 2449: -bash
+Do you really want to remove active logical volume volumeGroup/snap? [y/n]: y
+  Logical volume "snap" successfully removed
+[root@localhost ~]# lsblk
+NAME               MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                  8:0    0   10G  0 disk
+└─volumeGroup-base 252:0    0    1G  0 lvm
+sdb                  8:16   0    5G  0 disk
+sdc                  8:32   0   20G  0 disk
+sdd                  8:48   0   30G  0 disk
+sde                  8:64   0  100G  0 disk
+sdf                  8:80   0    8M  0 disk
+vda                253:0    0   20G  0 disk /
+[root@localhost ~]# dmsetup table
+volumeGroup-base: 0 2097152 linear 8:0 2048
+
+/*
+ * DM_TABLE_LOAD 252:0(base) -- 8:0 2048
+ * DM_TABLE_LOAD 252:3(snap) -- 8:0 2099200(volumeGroup-snap-cow)
+ * DM_DEV_SUSPEND(suspend) 252:0
+ * DM_DEV_SUSPEND(suspend) 252:3
+ * DM_DEV_SUSPEND(suspend) 252:1
+ * DM_DEV_SUSPEND(suspend) 252:2
+ * DM_DEV_SUSPEND(resume) 252:2
+ * DM_DEV_SUSPEND(resume) 252:1
+ * DM_DEV_SUSPEND(resume) 252:3
+ * DM_DEV_REMOVE 252:2
+ * DM_DEV_SUSPEND(resume) 252:0
+ * DM_DEV_REMOVE 252:1
+ * DM_DEV_REMOVE 252:3
+ */
+
+// 查看 base 设备，对 snapshot-origin 的修改落盘
+[root@localhost ~]# mount /dev/mapper/volumeGroup-base /mnt/test
+[root@localhost ~]# ls /mnt/test
+lost+found  testfile  testfile1
+[root@localhost ~]# cat /mnt/test/testfile
+123-base
+[root@localhost ~]# cat /mnt/test/testfile1
+123-snap-ori
+[root@localhost ~]#
+```
+
+##### b. merge snapshot
+
+```
+[root@localhost ~]# lsblk
+NAME                    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                       8:0    0   10G  0 disk
+├─volumeGroup-base-real 252:1    0    1G  0 lvm
+│ ├─volumeGroup-base    252:0    0    1G  0 lvm  /mnt/test
+│ └─volumeGroup-snap    252:3    0    1G  0 lvm  /mnt/test_sda
+└─volumeGroup-snap-cow  252:2    0  100M  0 lvm
+  └─volumeGroup-snap    252:3    0    1G  0 lvm  /mnt/test_sda
+sdb                       8:16   0    5G  0 disk
+sdc                       8:32   0   20G  0 disk
+sdd                       8:48   0   30G  0 disk
+sde                       8:64   0  100G  0 disk
+sdf                       8:80   0    8M  0 disk
+vda                     253:0    0   20G  0 disk /
+[root@localhost ~]# ls /mnt/test
+lost+found  testfile  testfile1
+[root@localhost ~]# ls /mnt/test_sda/
+lost+found  testfile  testfile1
+
+// 修改 snapshot-origin
+[root@localhost ~]# echo 123-snap-oritest > /mnt/test/testfile2
+[root@localhost ~]# ls /mnt/test
+lost+found  testfile  testfile1  testfile2
+[root@localhost ~]#
+
+// merge snap 设备
+[root@localhost ~]# umount /mnt/test
+[root@localhost ~]# umount /mnt/test_sda
+[root@localhost ~]# lvconvert --merge volumeGroup/snap
+File descriptor 6 (/dev/ttyS0) leaked on lvconvert invocation. Parent PID 2449: -bash
+  Merging of volume volumeGroup/snap started.
+  base: Merged: 100.00%
+[root@localhost ~]# lsblk
+NAME               MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                  8:0    0   10G  0 disk
+└─volumeGroup-base 252:0    0    1G  0 lvm
+sdb                  8:16   0    5G  0 disk
+sdc                  8:32   0   20G  0 disk
+sdd                  8:48   0   30G  0 disk
+sde                  8:64   0  100G  0 disk
+sdf                  8:80   0    8M  0 disk
+vda                253:0    0   20G  0 disk /
+[root@localhost ~]#
+
+/*
+ * DM_TABLE_LOAD 252:0 -- 252:1 252:2 P 8 snapshot-merge
+ * DM_TABLE_LOAD 252:3 -- error
+ * DM_DEV_SUSPEND(suspend) 252:0
+ * DM_DEV_SUSPEND(suspend) 252:3
+ * DM_DEV_SUSPEND(suspend) 252:1
+ * DM_DEV_SUSPEND(suspend) 252:2
+ * DM_DEV_SUSPEND(resume) 252:1
+ * DM_DEV_SUSPEND(resume) 252:2
+ * DM_DEV_SUSPEND(resume) 252:0
+ * DM_DEV_SUSPEND(resume) 252:3
+ */
+
+// 挂载查看 --> snapshot-origin 上的修改已丢弃 --> 快照恢复
+[root@localhost ~]# mount /dev/mapper/volumeGroup-base /mnt/test
+[root@localhost ~]# ls /mnt/test
+lost+found  testfile  testfile1
+[root@localhost ~]#
+```
+
+### （2）多快照场景
+
+#### 1、 并行创建多快照
+
+(所有快照均基于base设备)
+
+```
+lvcreate -L 1G -n base volumeGroup // 创建 base
+// base 写 1
+lvcreate -L 100M --snapshot -n snap volumeGroup/base // snap 数据为 1
+// base 写 2
+lvcreate -L 100M --snapshot -n snap2 volumeGroup/base // snap2 数据为 2
+// base 写 3
+lvconvert --merge volumeGroup/snap
+// base 数据恢复成 1， snap2 数据仍为 2
+lvconvert --merge volumeGroup/snap2
+// base 数据恢复成 2
+
+snap 角度 base 数据变化：
+1(初始值) --> 2(数据更新) --> 3(数据更新) --> 1(数据恢复)
+snap2 角度 base 数据变化：
+1(初始值) --> 2(数据更新) --> 3(数据更新) --> 1(数据更新) --> 2(数据恢复)
+
+// 设备拓扑
+[root@localhost ~]# lsblk
+NAME                    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                       8:0    0   10G  0 disk
+├─volumeGroup-base-real 252:1    0    1G  0 lvm
+│ ├─volumeGroup-base    252:0    0    1G  0 lvm
+│ ├─volumeGroup-snap    252:3    0    1G  0 lvm
+│ └─volumeGroup-snap2   252:5    0    1G  0 lvm
+├─volumeGroup-snap-cow  252:2    0  100M  0 lvm
+│ └─volumeGroup-snap    252:3    0    1G  0 lvm
+└─volumeGroup-snap2-cow 252:4    0  100M  0 lvm
+  └─volumeGroup-snap2   252:5    0    1G  0 lvm
+vda                     253:0    0   20G  0 disk /
+[root@localhost ~]#
+<---------------- 多个快照恢复 不需要 按照创建的相反顺序 ---------------->
+```
+
+
+
+#### 2、串行创建多快照
+
+(后面的快照基于前面的快照创建)
+
+```
+dmsetup create base-real --table "0 2097152 linear /dev/sda 0"
+dmsetup create cow --table "0 204800 linear /dev/sda 2099200"
+dmsetup create cow2 --table "0 204800 linear /dev/sda 2304000"
+dmsetup create base --table "0 2097152 snapshot-origin /dev/mapper/base-real"
+// base 写 1
+dmsetup create snap --table "0 2097152 snapshot /dev/mapper/base-real /dev/mapper/cow P 8" // snap 数据为 1
+// base 写 2 -- cow 上保存 1
+dmsetup create snap2 --table "0 2097152 snapshot /dev/mapper/snap /dev/mapper/cow2 P 8" // snap2 数据为 1
+// snap 写 3 -- cow 上保存 3，由于 snap 不是 snapshot-origin 类型设备，cow2 上不保存数据
+// snap2 写 4 -- cow2 上保存 4
+
+<---------- 不按照创建的相反顺序 ---------->
+dmsetup suspend snap
+dmsetup create snap-merge --table "0 2097152 snapshot-merge /dev/mapper/base-real /dev/mapper/cow P 8" // merge snap -- base 从 2 恢复成 3
+
+[root@localhost ~]# dmsetup status
+snap-merge: 0 2097152 snapshot-merge 16/204800 16
+snap: 0 2097152 snapshot Invalid
+snap2: 0 2097152 snapshot 24/204800 16
+cow2: 0 204800 linear
+base: 0 2097152 snapshot-origin
+cow: 0 204800 linear
+base-real: 0 2097152 linear
+[root@localhost ~]#
+
+此时 snap 被设置成 invalid，不能读写，也就不能再用 snap2 去恢复 snap
+
+<---------- 按照创建的相反顺序 ---------->
+dmsetup suspend snap2
+dmsetup create snap2-merge --table "0 2097152 snapshot-merge /dev/mapper/snap /dev/mapper/cow2 P 8" // merge snap2 -- snap 从 3 恢复成 4
+dmsetup remove /dev/mapper/snap2-merge
+dmsetup remove /dev/mapper/snap2
+dmsetup create snap-merge --table "0 2097152 snapshot-merge /dev/mapper/base-real /dev/mapper/cow P 8" // merge snap -- base 从 2 恢复成 4
+dmsetup remove /dev/mapper/snap-merge
+dmsetup remove /dev/mapper/snap
+
+// 设备拓扑
+[root@localhost ~]# lsblk
+NAME        MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda           8:0    0   10G  0 disk
+├─base-real 252:0    0    1G  0 dm
+│ ├─base    252:3    0    1G  0 dm   /mnt/test
+│ └─snap    252:4    0    1G  0 dm
+│   └─snap2 252:5    0    1G  0 dm
+├─cow       252:1    0  100M  0 dm
+│ └─snap    252:4    0    1G  0 dm
+│   └─snap2 252:5    0    1G  0 dm
+└─cow2      252:2    0  100M  0 dm
+  └─snap2   252:5    0    1G  0 dm
+vda         253:0    0   20G  0 disk /
+[root@localhost ~]#
+<---------------- 多个快照恢复 需要 按照创建的相反顺序 ---------------->
+```
+
+
