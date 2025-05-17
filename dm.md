@@ -671,3 +671,62 @@ thin_map
 
 
 ```
+# 四、dm-multipath
+
+```C
+dm_read_arg：读取当前索引到的参数字符串
+dm_read_arg_group：读取当前索引到的参数字符串，当前字符串为一组参数的个数，总参数的个数要大于一组参数的个数
+dm_shift_arg：返回当前参数，指向下一个参数
+
+dmsetup reload test --table "0 20971520 multipath 1 queue_if_no_path 0 1 1 service-time 0 2 1 8:0 1 8:16 1"
+1：一个可选特性
+queue_if_no_path：可选特性
+0：hw_argc
+1：nr_priority_groups
+1：next_pg_num
+service-time：path_selector_type
+0：ps_argc 创建path_selector参数个数
+1：nr_pgpaths 路径数，即设备数
+1：nr_selector_args 初始化selector参数个数
+8:0：设备号
+1：path_selector_type add_path回调参数 service-time是repeat_count
+
+strace -v multipath -v2
+strace -v -s 512 multipath -v2
+
+// 查看目标设备是否存在
+ioctl(3, DM_DEV_STATUS, {version=4.0.0, data_size=16384, name="0QEMU_QEMU_HARDDISK_ds_1", flags=DM_EXISTS_FLAG|DM_SKIP_BDGET_FLAG} => {version=4.39.0, data_size=16384, name="0QEMU_QEMU_HARDDISK_ds_1", flags=DM_EXISTS_FLAG|DM_SKIP_BDGET_FLAG}) = -1 ENXIO (No such device or address)
+
+// 创建设备
+ioctl(3, DM_DEV_CREATE, {version=4.0.0, data_size=16384, name="0QEMU_QEMU_HARDDISK_ds_1", uuid="mpath-0QEMU_QEMU_HARDDISK_ds_1", flags=DM_EXISTS_FLAG} => {version=4.39.0, data_size=305, dev=makedev(252, 0), name="0QEMU_QEMU_HARDDISK_ds_1", uuid="mpath-0QEMU_QEMU_HARDDISK_ds_1", target_count=0, open_count=0, event_nr=0, flags=DM_EXISTS_FLAG}) = 0
+
+// load设备
+ioctl(3, DM_TABLE_LOAD, {version=4.0.0, data_size=16384, data_start=312, dev=makedev(252, 0), target_count=1, flags=DM_EXISTS_FLAG|DM_PERSISTENT_DEV_FLAG, {sector_start=0, length=209715200, target_type="multipath", string="1 queue_if_no_path 0 1 1 service-time 0 1 1 8:0 1"}} => {version=4.43.0, data_size=305, data_start=312, dev=makedev(252, 0), name="0QEMU_QEMU_HARDDISK_ds_1", uuid="mpath-0QEMU_QEMU_HARDDISK_ds_1", target_count=0, open_count=0, event_nr=0, flags=DM_EXISTS_FLAG|DM_PERSISTENT_DEV_FLAG|DM_INACTIVE_PRESENT_FLAG}) = 0
+
+// resume设备
+ioctl(3, DM_DEV_SUSPEND, {version=4.0.0, data_size=16384, name="0QEMU_QEMU_HARDDISK_ds_1", event_nr=4247926, flags=DM_EXISTS_FLAG|DM_SKIP_BDGET_FLAG} => {version=4.39.0, data_size=305, dev=makedev(252, 0), name="0QEMU_QEMU_HARDDISK_ds_1", uuid="mpath-0QEMU_QEMU_HARDDISK_ds_1", target_count=1, open_count=0, event_nr=0, flags=DM_EXISTS_FLAG|DM_ACTIVE_PRESENT_FLAG|DM_SKIP_BDGET_FLAG|DM_UEVENT_GENERATED_FLAG}) = 0
+
+// send message -- switch_group
+ioctl(3, DM_TARGET_MSG, {version=4.2.0, data_size=16384, data_start=312, name="0QEMU_QEMU_HARDDISK_ds_1", flags=DM_EXISTS_FLAG|DM_SKIP_BDGET_FLAG, {sector=0, message="switch_group 1"}} => {version=4.39.0, data_size=305, data_start=312, dev=makedev(252, 0), name="0QEMU_QEMU_HARDDISK_ds_1", uuid="mpath-0QEMU_QEMU_HARDDISK_ds_1", target_count=1, open_count=0, event_nr=0, flags=DM_EXISTS_FLAG|DM_ACTIVE_PRESENT_FLAG|DM_SKIP_BDGET_FLAG}) = 0
+
+// 设置参数 -- 关联实际设备
+ioctl(3, DM_DEV_SET_GEOMETRY, {version=4.6.0, data_size=16384, data_start=312, name="0QEMU_QEMU_HARDDISK_ds_1", flags=DM_EXISTS_FLAG|DM_SKIP_BDGET_FLAG, string="13054 255 63 0"} => {version=4.39.0, data_size=16384, data_start=312, name="0QEMU_QEMU_HARDDISK_ds_1", flags=DM_EXISTS_FLAG|DM_SKIP_BDGET_FLAG}) = 0
+
+/*
+ * open("/dev/sda", O_RDONLY)              = 4
+ * ioctl(4, HDIO_GETGEO, {heads=255, sectors=63, cylinders=13054, start=0}) = 0
+ */
+
+// send message -- fail_if_no_path
+ioctl(3, DM_TARGET_MSG, {version=4.2.0, data_size=16384, data_start=312, name="0QEMU_QEMU_HARDDISK_ds_1", flags=DM_EXISTS_FLAG|DM_SKIP_BDGET_FLAG, {sector=0, message="fail_if_no_path"}} => {version=4.39.0, data_size=305, data_start=312, dev=makedev(252, 0), name="0QEMU_QEMU_HARDDISK_ds_1", uuid="mpath-0QEMU_QEMU_HARDDISK_ds_1", target_count=1, open_count=0, event_nr=1, flags=DM_EXISTS_FLAG|DM_ACTIVE_PRESENT_FLAG|DM_SKIP_BDGET_FLAG}) = 0
+
+[root@localhost ~]# lsblk
+NAME                       MAJ:MIN RM  SIZE RO TYPE  MOUNTPOINT
+sda                          8:0    0  100G  0 disk
+└─0QEMU_QEMU_HARDDISK_ds_1 252:0    0  100G  0 mpath
+sdb                          8:16   0   20G  0 disk
+└─0QEMU_QEMU_HARDDISK_ds_2 252:1    0   20G  0 mpath
+sdc                          8:32   0    8M  0 disk
+vda                        253:0    0   20G  0 disk  /
+[root@localhost ~]#
+```
