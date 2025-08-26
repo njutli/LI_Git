@@ -1,5 +1,24 @@
 test
 
-rpc_execute
- 
+ 438                 { NFS_MOUNT_SOFT, ",soft", "" },
+ 439                 { NFS_MOUNT_SOFTERR, ",softerr", "" },
 
+server->client->cl_softerr = 1;
+server->client->cl_softrtry = 1;
+
+task->tk_flags |= RPC_TASK_SOFT;
+task->tk_flags |= RPC_TASK_TIMEOUT;
+
+#define RPC_IS_SOFT(t)          ((t)->tk_flags & (RPC_TASK_SOFT|RPC_TASK_TIMEOUT))
+ 
+rpc_check_timeout
+ __rpc_call_rpcerror // RPC_IS_SOFT
+  rpc_exit // 退出 rpc_task，根据是否有RPC_TASK_TIMEOUT决定返回ETIMEOUT还是EIO
+
+以call_bind_status为例
+call_bind_status
+ task->tk_action = call_bind
+ // 出现timeout后调用
+ rpc_check_timeout
+  // 如果有 RPC_IS_SOFT 则直接退出
+  // 如果没有 RPC_IS_SOFT 则继续 call_bind --> call_bind_status 的循环
