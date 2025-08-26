@@ -22,3 +22,27 @@ call_bind_status
  rpc_check_timeout
   // 如果有 RPC_IS_SOFT 则直接退出
   // 如果没有 RPC_IS_SOFT 则继续 call_bind --> call_bind_status 的循环
+
+--- a/fs/nfs_common/grace.c
++++ b/fs/nfs_common/grace.c
+@@ -31,9 +31,10 @@ locks_start_grace(struct net *net, struct lock_manager *lm)
+        struct list_head *grace_list = net_generic(net, grace_net_id);
+
+        spin_lock(&grace_lock);
+-       if (list_empty(&lm->list))
++       if (list_empty(&lm->list)) {
++               printk("%s add lm %px to grace_list\n", __func__, lm);
+                list_add(&lm->list, grace_list);
+-       else
++       } else
+                WARN(1, "double list_add attempt detected in net %x %s\n",
+                     net->ns.inum, (net == &init_net) ? "(init_net)" : "");
+        spin_unlock(&grace_lock);
+@@ -55,6 +56,7 @@ void
+ locks_end_grace(struct lock_manager *lm)
+ {
+        spin_lock(&grace_lock);
++       printk("%s remove lm %px to grace_list\n", __func__, lm);
+        list_del_init(&lm->list);
+        spin_unlock(&grace_lock);
+ }
