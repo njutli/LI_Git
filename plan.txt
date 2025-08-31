@@ -75,7 +75,7 @@ kexec需求
 5902异步加载固件需求
 
 
-
+raspberrypi test
 
 
 
