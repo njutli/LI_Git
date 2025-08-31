@@ -1,0 +1,81 @@
+互联网场景(spark/clickhouse/redis/mysql等)
+
+文件系统
+	VFS
+		基本操作 mount/umount open/close read/write
+		基本数据结构 superblock dentry inode file
+		DIO/DAX/buffer IO(后台回写)
+	磁盘文件系统
+		ext4/xfs
+			磁盘结构 日志
+		squashfs
+			基本原理
+	网络文件系统
+		nfs
+			基本流程 deleg(数据一致性，访问冲突处理)
+		nfsd
+			启动流程，请求处理流程
+	其他文件系统
+		erofs
+
+通用块层
+	IO下发流程
+	IO调度器
+	rq-qos(iocost)
+	IO拆分与合并
+
+dm层
+	dm-linear
+	dm-snapshot
+	dm-thinpool
+
+驱动层
+	SCSI
+	NVME(namespace)
+
+其他
+	io_uring
+
+磁电盘文件系统
+	等开源后更新简历？
+
+虚拟化相关
+	docker kata qemu
+
+
+
+rq-qos 之前的RCA材料？
+有哪些调度器，调度器有哪些配置 之前整理的接口列表？
+虚拟化相关，找找之前的材料？
+脚本工具之类的上传到元宝？
+
+
+
+打印增强特性 https://gitee.com/openeuler/kernel/pulls/3963
+
+美团mysql 5.10读优化导致写被反压，特定场景下写劣化
+
+MindIO，优化内存池分配，异常上报功能
+
+磁电盘文件系统
+	功能介绍
+	重点问题
+
+NFSD 需求
+	重点问题 ———— 社区补丁分析
+
+
+BIOS维护问题：
+1620 GIC 中断丢失 ？
+1215线卡TCP超时攻关 缓冲区被踩，报文异常，重新分配缓冲区
+
+ATF 基本信息：
+kexec需求
+
+5902异步加载固件需求
+
+
+
+
+
+
