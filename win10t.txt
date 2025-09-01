@@ -1,4 +1,6 @@
 test
+ifdebug(PROC)
+rpcdebug -m nfs -c proc
 
 mkfs.ext4 -F /dev/sdb
 mount /dev/sdb /mnt/sdb
