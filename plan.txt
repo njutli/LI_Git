@@ -78,4 +78,4 @@ kexec需求
 raspberrypi test
 
 
-
+https://lore.kernel.org/all/tencent_6A84D2E177043C91217A1CF6@qq.com/
