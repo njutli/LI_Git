@@ -43,7 +43,12 @@ dm层
 虚拟化相关
 	docker kata qemu
 
-
+客户端写：
+1、数据写入
+先调 nfs_file_write (write_iter回调)，数据写入buffer
+2、数据同步
+2.1 通过 nfs_commit_inode (fsync等操作触发)，发送 NFSPROC4_CLNT_COMMIT 请求，服务端通过 nfsd4_commit 处理commit请求，如果nfsd配置了sync，那么数据就直接落盘
+2.2 通过 nfs_writepages (后台回写等操作触发)， 发送 NFSPROC4_CLNT_WRITE 请求
 
 rq-qos 之前的RCA材料？
 有哪些调度器，调度器有哪些配置 之前整理的接口列表？
