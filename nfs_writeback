@@ -1,0 +1,63 @@
+// NFSPROC4_CLNT_COMMIT
+nfs_commit_inode
+ __nfs_commit_inode
+  nfs_generic_commit_list
+   nfs_commit_list
+    nfs_init_commit // nfs_commit_ops
+   nfs_initiate_commit
+
+nfs_commit_release
+ nfs_write_completion // data->completion_ops->completion
+  nfs_inode_remove_request
+   folio->private = NULL
+   nfs_release_request
+   ...
+    nfs_page_group_destroy
+     nfs_free_request
+	  nfs_page_free
+	   kmem_cache_free // nfs_page_cachep
+
+// .write_iter
+nfs_file_write
+ generic_perform_write
+  nfs_write_begin
+   __filemap_get_folio // 根据 pos 获取folio
+  nfs_write_end // a_ops->write_end
+   nfs_update_folio
+    nfs_writepage_setup
+     nfs_setup_write_request
+	  nfs_try_to_update_request
+	   nfs_lock_and_join_requests
+      nfs_page_create_from_folio
+       nfs_page_create
+        nfs_page_alloc
+
+// .writepages
+nfs_writepages
+ nfs_pageio_complete
+  nfs_pageio_complete_mirror
+   nfs_pageio_doio
+    nfs_generic_pg_pgios
+	 nfs_initiate_pgio
+	  nfs_initiate_write
+	   nfs_proc_write_setup // NFSPROC_WRITE
+	   ...
+	   nfs4_xdr_enc_write
+	    encode_sequence
+		encode_putfh
+		encode_write // OP_WRITE
+		 args->stateid
+		 args->offset
+		 args->stable
+		 args->count
+		 args->pages
+		 args->pgbase
+	   nfs4_xdr_dec_write
+
+
+客户端写：
+1、数据写入
+先调 nfs_file_write (write_iter回调)，数据写入buffer
+2、数据同步
+2.1 通过 nfs_commit_inode (fsync等操作触发)，发送 NFSPROC4_CLNT_COMMIT 请求，服务端通过 nfsd4_commit 处理commit请求，如果nfsd配置了sync，那么数据就直接落盘
+2.2 通过 nfs_writepages (后台回写等操作触发)， 发送 NFSPROC4_CLNT_WRITE 请求
