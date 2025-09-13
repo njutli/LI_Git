@@ -13,7 +13,7 @@
 	网络文件系统
 		nfs
 			基本流程 deleg(数据一致性，访问冲突处理)
-			nfs 数据回写？bdi？super_setup_bdi_name
+			nfs 数据回写？bdi？super_setup_bdi_name nfs close-to-open
 		nfsd
 			启动流程，请求处理流程
 	其他文件系统
