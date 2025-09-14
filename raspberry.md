@@ -1,4 +1,4 @@
-a1151488180@google.com
+a1151488180@gmail.com
 gyesLLF1026...
 
 应用专用密码
@@ -11,3 +11,5 @@ export https_proxy="http://192.168.43.192:26001"
 
 sudo global -u -v
 sudo htags -v
+sudo htags -fosa
+sudo htags -fosav --update
