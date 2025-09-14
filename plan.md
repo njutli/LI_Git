@@ -1,3 +1,9 @@
+# 树莓派 git send-email
+# 树莓派上的仓远程登录打开
+
+lilingfeng3@outlook.com
+gyesLLF1026...
+
 互联网场景(spark/clickhouse/redis/mysql等)
 
 文件系统
