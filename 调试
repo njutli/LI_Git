@@ -1,0 +1,5 @@
+添加IP
+ip address add 10.43.90.94/24 dev enp189s0f0
+
+添加路由
+ip route add default via 10.43.90.1 dev enp189s0f0
