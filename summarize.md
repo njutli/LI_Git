@@ -179,6 +179,7 @@ spinfs结构：
 <img width="724" height="630" alt="image" src="https://github.com/user-attachments/assets/087cd837-cd88-4f2c-9fdd-04e3d11a5b1f" />
 <img width="242" height="763" alt="image" src="https://github.com/user-attachments/assets/e6e9dc8d-5881-42cd-9f7c-bb92e5963dfd" />
 <img width="430" height="833" alt="image" src="https://github.com/user-attachments/assets/c553d908-0eec-43a3-a34a-497cf9eb7155" />
+
 ```
 /*
  * entries -- 指定SQ的规模，CQ规模为SQ两倍
@@ -243,7 +244,6 @@ io_sq_thread
 		 __io_prep_linked_timeout // link 请求？？？
 	  io_queue_async_work // 异步执行
 
-
 io_submit_sqe
  io_queue_sqe
   io_queue_async_work // 异步执行
@@ -256,5 +256,3 @@ io_submit_sqe
 	   io_init_new_worker
 	    list_add_tail_rcu // worker->all_list --> wqe->all_list io_worker 由wqe管理
 ```
-
-
