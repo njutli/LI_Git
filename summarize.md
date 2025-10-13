@@ -175,5 +175,10 @@ spinfs结构：
 
 ```
 ## io_uring
+<img width="724" height="841" alt="image" src="https://github.com/user-attachments/assets/bb739a91-4c18-496d-a465-594ad5a5311b" />
+<img width="724" height="630" alt="image" src="https://github.com/user-attachments/assets/087cd837-cd88-4f2c-9fdd-04e3d11a5b1f" />
+<img width="242" height="763" alt="image" src="https://github.com/user-attachments/assets/e6e9dc8d-5881-42cd-9f7c-bb92e5963dfd" />
+<img width="430" height="833" alt="image" src="https://github.com/user-attachments/assets/c553d908-0eec-43a3-a34a-497cf9eb7155" />
 
-<img width="717" height="817" alt="image" src="https://github.com/user-attachments/assets/20376d57-b552-4617-aa16-fe18ec6ee8be" />
+
+
