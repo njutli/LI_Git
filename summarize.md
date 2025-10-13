@@ -179,6 +179,82 @@ spinfs结构：
 <img width="724" height="630" alt="image" src="https://github.com/user-attachments/assets/087cd837-cd88-4f2c-9fdd-04e3d11a5b1f" />
 <img width="242" height="763" alt="image" src="https://github.com/user-attachments/assets/e6e9dc8d-5881-42cd-9f7c-bb92e5963dfd" />
 <img width="430" height="833" alt="image" src="https://github.com/user-attachments/assets/c553d908-0eec-43a3-a34a-497cf9eb7155" />
+```
+/*
+ * entries -- 指定SQ的规模，CQ规模为SQ两倍
+ *				io_uring_queue_init_params 可通过 IORING_SETUP_CQSIZE 标记指定CQ规模
+ * ring -- io_uring 指针，创建出的io_uring实例
+ * flags -- IORING_SETUP_IOPOLL/IORING_SETUP_SQPOLL 等
+ */
+io_uring_queue_init
+ io_uring_queue_init_params // io_uring_params
+  __sys_io_uring_setup // io_uring_setup 系统调用
+  io_uring_queue_mmap
+   io_uring_mmap
+    __sys_mmap // IORING_OFF_SQ_RING 映射 io_rings(ctx->rings)，主要是 sq->array 对应 sq_entries个u32 即SQ
+	__sys_mmap // IORING_OFF_CQ_RING 映射 io_rings(ctx->rings)，主要是 cq->cqes 对应 cq_entries个io_uring_cqe 即CQ
+    __sys_mmap // IORING_OFF_SQES 映射 io_uring_sqe(ctx->sq_sqes)，即SQE数组
+  sq_array[index] = index; // SQ 与 SQE 一对一映射
 
+
+io_uring_setup
+ io_uring_create
+  io_ring_ctx_alloc // 分配初始化 io_ring_ctx
+  io_allocate_scq_urings // 根据 io_uring_params 初始化 io_ring_ctx
+   rings_size // 计算 io_rings 大小，包括 （io_rings内嵌成员 + cq_entries个io_uring_cqe + sq_entries个u32）
+			  // cq_entries个io_uring_cqe 即 cqes 数组
+			  // sq_entries个u32 即 sq_array，sq偏移数组
+   io_mem_alloc // 分配初始化 io_urings(内嵌CQ) --> ctx->rings
+   ctx->sq_array // sq偏移数组，分配 io_rings 时一起分配，对应用户态 sq->array
+   io_mem_alloc // 分配SQE数组 --> ctx->sq_sqes
+  io_sq_offload_create // 根据不同的flags做特殊处理
+   // IORING_SETUP_SQPOLL
+   io_get_sq_data // 通过 IORING_SETUP_ATTACH_WQ 标记可以使用指定的 io_sq_data，多io_uring共享io_sq_data
+    kzalloc // 分配初始化 io_sq_data --> ctx->sq_data
+   io_sq_thread_park // 暂停 io_sq_thread 运行
+   list_add // ctx->sqd_list --> sqd->ctx_list io_ring_ctx 添加到 io_sq_data 链表中
+   io_sqd_update_thread_idle // 更新 sqd->sq_thread_idle
+   io_sq_thread_unpark // 恢复 io_sq_thread 运行
+   create_io_thread // 创建 io_sq_thread 进程 --> sqd->thread
+   io_uring_alloc_task_context // 分配初始化 io_uring_task ，由 io_sq_thread 使用 --> task->io_uring
+    io_init_wq_offload
+	 io_wq_create // 分配初始化 io_wq --> tctx->io_wq
+	  kzalloc_node // 为每个numa分配一个 io_wqe --> wq->wqes[node]
+  io_rsrc_node_switch_start
+   io_rsrc_node_alloc // 分配初始化 io_rsrc_node --> ctx->rsrc_backup_node
+  io_uring_get_file
+   anon_inode_getfile // 基于匿名inode创建一个file， f_op 是 io_uring_fops，private_data 是 io_ring_ctx，主要用于用户态mmap
+  io_uring_install_fd // 获取fd返回给用户态
+
+
+// io_sq_thread 在使能 IORING_SETUP_SQPOLL 后会同步处理sqe，处理的方式可能是同步处理，也可能是根据io_wq创建worker后异步处理
+io_sq_thread
+ __io_sq_thread // io_sq_data 可以对应多个 io_ring_ctx，遍历一个 io_ring_ctx 进行处理
+  io_submit_sqes
+   io_alloc_req // 分配 req (io_kiocb)
+   io_get_sqe // 获取 sqe (io_uring_sqe)
+    io_submit_sqe
+	 io_init_req // 初始化 req
+	 io_req_prep // 调用当前操作对应的 prep 函数
+	 io_queue_sqe
+	  __io_queue_sqe // 同步执行
+	   io_issue_sqe
+	    io_prep_linked_timeout
+		 __io_prep_linked_timeout // link 请求？？？
+	  io_queue_async_work // 异步执行
+
+
+io_submit_sqe
+ io_queue_sqe
+  io_queue_async_work // 异步执行
+   io_wq_enqueue // tctx->io_wq req->work
+    io_wqe_enqueue
+	 io_wqe_create_worker
+	  create_io_worker
+	   kzalloc_node // 分配初始化 io_worker
+	   create_io_thread // 创建 io_wqe_worker 进程 --> worker->task
+	   io_init_new_worker
+	    list_add_tail_rcu // worker->all_list --> wqe->all_list io_worker 由wqe管理
+```
 
 
