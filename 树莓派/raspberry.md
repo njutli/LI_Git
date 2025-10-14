@@ -32,3 +32,8 @@ e2fsprogs  gssproxy    hulk-4.19  hulk-5.10  hulk-6.6        linux-fs-next  linu
 [root@szvphis18908837 httpd]# ls code/css/
 style.css
 [root@szvphis18908837 httpd]#
+
+#global -u
+gtags
+htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux -m 'start_kernel'
+
