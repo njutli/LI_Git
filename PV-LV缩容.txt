@@ -1,0 +1,206 @@
+<-------------------- 32M sdb 用于创建PV -------------------->
+[root@fedora ~]# lsblk
+NAME MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+sda    8:0    0  20G  0 disk /mnt/sda
+sdb    8:16   0  32M  0 disk
+sdc    8:32   0   8M  0 disk
+sdd    8:48   0   2G  0 disk
+vda  253:0    0  10G  0 disk /
+vdb  253:16   0  30G  0 disk
+
+<-------------------- 创建PV(32M) -------------------->
+[root@fedora ~]# pvcreate /dev/sdb
+File descriptor 6 (/dev/ttyS0) leaked on pvcreate invocation. Parent PID 581: -bash
+  Physical volume "/dev/sdb" successfully created.
+[root@fedora ~]# pvs
+File descriptor 6 (/dev/ttyS0) leaked on pvs invocation. Parent PID 581: -bash
+  PV         VG Fmt  Attr PSize  PFree
+  /dev/sdb      lvm2 ---  32.00m 32.00m
+
+<-------------------- 创建VG(28M) -------------------->
+[root@fedora ~]# vgcreate vg1 /dev/sdb
+File descriptor 6 (/dev/ttyS0) leaked on vgcreate invocation. Parent PID 581: -bash
+  Volume group "vg1" successfully created
+[root@fedora ~]# vgs
+File descriptor 6 (/dev/ttyS0) leaked on vgs invocation. Parent PID 581: -bash
+  VG  #PV #LV #SN Attr   VSize  VFree
+  vg1   1   0   0 wz--n- 28.00m 28.00m
+
+<-------------------- 创建LV(16M) -------------------->
+[root@fedora ~]# lvcreate -L 16M -n lv1 vg1
+File descriptor 6 (/dev/ttyS0) leaked on lvcreate invocation. Parent PID 581: -bash
+  Logical volume "lv1" created.
+[root@fedora ~]# lvs
+File descriptor 6 (/dev/ttyS0) leaked on lvs invocation. Parent PID 581: -bash
+  LV   VG  Attr       LSize  Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert
+  lv1  vg1 -wi-a----- 16.00m
+
+<-------------------- 格式化文件系统 -------------------->
+[root@fedora ~]# mkfs.ext4 /dev/mapper/vg1-lv1
+mke2fs 1.46.4 (18-Aug-2021)
+Discarding device blocks: done
+Creating filesystem with 16384 1k blocks and 4096 inodes
+Filesystem UUID: 874f88dc-07e3-40be-b0f6-c662503c161f
+Superblock backups stored on blocks:
+        8193
+
+Allocating group tables: done
+Writing inode tables: done
+Creating journal (1024 blocks): done
+Writing superblocks and filesystem accounting information: done
+
+<-------------------- 挂载文件系统，写入回读文件 -------------------->
+[root@fedora ~]# mount /dev/mapper/vg1-lv1 /mnt/test
+[root@fedora ~]# echo 111111111 > /mnt/test/testfile
+[root@fedora ~]# cat /mnt/test/testfile
+111111111
+
+<-------------------- 文件系统大小14M -------------------->
+[root@fedora ~]# df -Th
+Filesystem          Type      Size  Used Avail Use% Mounted on
+/dev/root           xfs        10G  7.0G  3.1G  70% /
+devtmpfs            devtmpfs   28G     0   28G   0% /dev
+tmpfs               tmpfs      28G     0   28G   0% /dev/shm
+tmpfs               tmpfs      11G  936K   11G   1% /run
+tmpfs               tmpfs      28G     0   28G   0% /tmp
+tmpfs               tmpfs     5.5G     0  5.5G   0% /run/user/0
+/dev/sda            ext4       20G   41M   19G   1% /mnt/sda
+/dev/mapper/vg1-lv1 ext4       14M   15K   13M   1% /mnt/test
+[root@fedora ~]#
+[root@fedora ~]# umount /mnt/test
+
+<-------------------- 文件系统缩容 -------------------->
+[root@fedora ~]# e2fsck -f /dev/mapper/vg1-lv1
+e2fsck 1.46.4 (18-Aug-2021)
+Pass 1: Checking inodes, blocks, and sizes
+Pass 2: Checking directory structure
+Pass 3: Checking directory connectivity
+Pass 4: Checking reference counts
+Pass 5: Checking group summary information
+/dev/mapper/vg1-lv1: 12/4096 files (0.0% non-contiguous), 2326/16384 blocks
+[root@fedora ~]# resize2fs /dev/mapper/vg1-lv1 4M
+resize2fs 1.46.4 (18-Aug-2021)
+Resizing the filesystem on /dev/mapper/vg1-lv1 to 4096 (1k) blocks.
+The filesystem on /dev/mapper/vg1-lv1 is now 4096 (1k) blocks long.
+
+[root@fedora ~]# mount /dev/mapper/vg1-lv1 /mnt/test
+
+<-------------------- 文件系统大小2.4M -------------------->
+[root@fedora ~]# df -Th
+Filesystem          Type      Size  Used Avail Use% Mounted on
+/dev/root           xfs        10G  7.0G  3.1G  70% /
+devtmpfs            devtmpfs   28G     0   28G   0% /dev
+tmpfs               tmpfs      28G     0   28G   0% /dev/shm
+tmpfs               tmpfs      11G  936K   11G   1% /run
+tmpfs               tmpfs      28G     0   28G   0% /tmp
+tmpfs               tmpfs     5.5G     0  5.5G   0% /run/user/0
+/dev/sda            ext4       20G   41M   19G   1% /mnt/sda
+/dev/mapper/vg1-lv1 ext4      2.4M   15K  2.1M   1% /mnt/test
+[root@fedora ~]# cat /mnt/test/testfile
+111111111
+[root@fedora ~]# umount /mnt/test
+[root@fedora ~]#
+[root@fedora ~]# lsblk
+NAME      MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+sda         8:0    0  20G  0 disk /mnt/sda
+sdb         8:16   0  32M  0 disk
+└─vg1-lv1 252:0    0  16M  0 lvm
+sdc         8:32   0   8M  0 disk
+sdd         8:48   0   2G  0 disk
+vda       253:0    0  10G  0 disk /
+vdb       253:16   0  30G  0 disk
+
+<-------------------- LV缩容 -------------------->
+[root@fedora ~]# lvresize -L 8M /dev/vg1/lv1
+File descriptor 6 (/dev/ttyS0) leaked on lvresize invocation. Parent PID 581: -bash
+  WARNING: Reducing active logical volume to 8.00 MiB.
+  THIS MAY DESTROY YOUR DATA (filesystem etc.)
+Do you really want to reduce vg1/lv1? [y/n]: y
+  Size of logical volume vg1/lv1 changed from 16.00 MiB (4 extents) to 8.00 MiB (2 extents).
+  Logical volume vg1/lv1 successfully resized.
+[root@fedora ~]# lsblk
+NAME      MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+sda         8:0    0  20G  0 disk /mnt/sda
+sdb         8:16   0  32M  0 disk
+└─vg1-lv1 252:0    0   8M  0 lvm
+sdc         8:32   0   8M  0 disk
+sdd         8:48   0   2G  0 disk
+vda       253:0    0  10G  0 disk /
+vdb       253:16   0  30G  0 disk
+[root@fedora ~]# mount /dev/mapper/vg1-lv1 /mnt/test
+[root@fedora ~]# cat /mnt/test/testfile
+111111111
+[root@fedora ~]# umount /mnt/test
+[root@fedora ~]#
+
+<-------------------- PV缩容 -------------------->
+[root@fedora ~]# pvs
+File descriptor 6 (/dev/ttyS0) leaked on pvs invocation. Parent PID 581: -bash
+  PV         VG  Fmt  Attr PSize  PFree
+  /dev/sdb   vg1 lvm2 a--  28.00m 20.00m
+[root@fedora ~]# pvresize --setphysicalvolumesize 15M /dev/sdb
+File descriptor 6 (/dev/ttyS0) leaked on pvresize invocation. Parent PID 581: -bash
+/dev/sdb: Requested size 15.00 MiB is less than real size 32.00 MiB. Proceed?  [y/n]: y
+  WARNING: /dev/sdb: Pretending size is 30720 not 65536 sectors.
+  Physical volume "/dev/sdb" changed
+  1 physical volume(s) resized or updated / 0 physical volume(s) not resized
+[root@fedora ~]# pvs
+File descriptor 6 (/dev/ttyS0) leaked on pvs invocation. Parent PID 581: -bash
+  PV         VG  Fmt  Attr PSize  PFree
+  /dev/sdb   vg1 lvm2 a--  12.00m 4.00m
+[root@fedora ~]# lsblk
+NAME      MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+sda         8:0    0  20G  0 disk /mnt/sda
+sdb         8:16   0  32M  0 disk
+└─vg1-lv1 252:0    0   8M  0 lvm
+sdc         8:32   0   8M  0 disk
+sdd         8:48   0   2G  0 disk
+vda       253:0    0  10G  0 disk /
+vdb       253:16   0  30G  0 disk
+[root@fedora ~]# mount /dev/mapper/vg1-lv1 /mnt/test/
+[root@fedora ~]# cat /mnt/test/testfile
+111111111
+[root@fedora ~]#
+[root@fedora ~]# umount /mnt/test
+[root@fedora ~]#
+[root@fedora ~]# pvs
+File descriptor 6 (/dev/ttyS0) leaked on pvs invocation. Parent PID 581: -bash
+  PV         VG  Fmt  Attr PSize  PFree
+  /dev/sdb   vg1 lvm2 a--  12.00m 4.00m
+[root@fedora ~]# vgs
+File descriptor 6 (/dev/ttyS0) leaked on vgs invocation. Parent PID 581: -bash
+  VG  #PV #LV #SN Attr   VSize  VFree
+  vg1   1   1   0 wz--n- 12.00m 4.00m
+[root@fedora ~]# lvs
+File descriptor 6 (/dev/ttyS0) leaked on lvs invocation. Parent PID 581: -bash
+  LV   VG  Attr       LSize Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert
+  lv1  vg1 -wi-a----- 8.00m
+[root@fedora ~]#
+
+<-------------------- 后端文件缩容 -------------------->
+(qemu) block_resize ds_2 16M
+(qemu) [13969.050422] sd 0:0:1:0: Capacity data has changed
+
+(qemu)
+
+[root@fedora ~]# lsblk
+NAME      MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+sda         8:0    0  20G  0 disk /mnt/sda
+sdb         8:16   0  16M  0 disk
+└─vg1-lv1 252:0    0   8M  0 lvm
+sdc         8:32   0   8M  0 disk
+sdd         8:48   0   2G  0 disk
+vda       253:0    0  10G  0 disk /
+vdb       253:16   0  30G  0 disk
+[root@fedora ~]# mount /dev/mapper/vg1-lv1 /mnt/test/
+[root@fedora ~]# cat /mnt/test/testfile
+111111111
+[root@fedora ~]# umount /mnt/test
+[root@fedora ~]#
+
+<-------------------- 后端文件大小已变化 -------------------->
+[lilingfeng@ceph-admin disk]$ ls -lh md1
+-rw-rw-r-- 1 lilingfeng lilingfeng 32M Feb  1 15:01 md1
+[lilingfeng@ceph-admin disk]$ ls -lh md1
+-rw-rw-r-- 1 lilingfeng lilingfeng 16M Feb  1 15:17 md1
+[lilingfeng@ceph-admin disk]$
