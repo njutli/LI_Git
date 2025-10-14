@@ -1652,3 +1652,527 @@ __break_lease
 // 无冲突
 
 ```
+
+## 异常处理
+```
+服务端异常重启
+
+dd if=/dev/zero of=/mnt/sdb/test.io count=1 ibs=1G &
+dd if=/dev/zero of=/mnt/sdb/test.io count=1 ibs=1G oflag=direct &
+
+[root@localhost ~]# echo 0 > /proc/sys/sunrpc/nfs_debug
+[root@localhost ~]# echo 0xffff > /proc/sys/sunrpc/nfs_debug
+
+[2024-04-29 09:58:38]  
+[2024-04-29 09:58:38]  [<0>] wait_on_page_bit+0x23b/0x740
+[2024-04-29 09:58:38]  [<0>] wait_on_page_writeback+0x59/0x210
+[2024-04-29 09:58:38]  [<0>] __filemap_fdatawait_range+0xfe/0x290
+[2024-04-29 09:58:38]  [<0>] filemap_write_and_wait_range+0x5e/0xe0
+[2024-04-29 09:58:38]  [<0>] nfs_wb_all+0x47/0x2a0
+[2024-04-29 09:58:38]  [<0>] nfs4_file_flush+0xb5/0xf0
+[2024-04-29 09:58:38]  [<0>] filp_close+0x6d/0xf0
+[2024-04-29 09:58:38]  [<0>] __close_fd+0x2e/0x50
+[2024-04-29 09:58:38]  [<0>] __se_sys_close+0x35/0x80
+[2024-04-29 09:58:38]  [<0>] __x64_sys_close+0x23/0x30
+[2024-04-29 09:58:38]  [<0>] do_syscall_64+0x45/0x70
+[2024-04-29 09:58:38]  [<0>] entry_SYSCALL_64_after_hwframe+0x61/0xc6
+
+x[
+    rpc_run_task+1
+    nfs_initiate_pgio+403
+    nfs_generic_pg_pgios+339
+    nfs_pageio_doio+143
+    __nfs_pageio_add_request+879
+    nfs_pageio_add_request_mirror+88
+    nfs_pageio_add_request+1146
+    nfs_do_writepage+849
+    nfs_writepages_callback+24
+    write_cache_pages+804
+    nfs_writepages+405
+    do_writepages+71
+    __filemap_fdatawrite_range+451
+    filemap_write_and_wait_range+64
+    nfs_wb_all+71
+    nfs4_file_flush+181
+    filp_close+109
+    __close_fd+46
+    __se_sys_close+53
+    __x64_sys_close+35
+    do_syscall_64+69
+    entry_SYSCALL_64_after_hwframe+97
+, dd]: 306
+
+@x[
+    rpc_run_task+1
+    nfs_initiate_commit+492
+    nfs_generic_commit_list+355
+    __nfs_commit_inode+499
+    nfs_io_completion_commit+22
+    nfs_io_completion_put+149
+    nfs_writepages+448
+    do_writepages+71
+    __writeback_single_inode+128
+    writeback_sb_inodes+942
+    __writeback_inodes_wb+200
+    wb_writeback+1480
+    wb_workfn+1963
+    process_one_work+1035
+    worker_thread+809
+    kthread+516
+    ret_from_fork+31
+, kworker/u32:10]: 4
+
+
+1、服务端重启后客户端一直通过TCP发送SYN请求检测服务端状态
+
+2、服务端就绪后客户端发送rpc请求，请求失败(sequeue校验失败)
+服务端 __find_in_sessionid_hashtbl 查找session失败，返回 -NFS4ERR_BADSESSION(status -10052)
+客户端
+nfs41_sequence_process
+ nfs4_schedule_session_recovery
+  // 设置 NFS4CLNT_SESSION_RESET
+
+3、客户端发起销毁session请求，重新建立session
+后台进程销毁旧session，建立新session，重新打开文件
+@y[
+    nfs4_schedule_state_manager+1
+    nfs41_discover_server_trunking+146
+    nfs4_discover_server_trunking+211
+    nfs4_init_client+477
+    nfs_get_client+1267
+    nfs4_set_client+417
+    nfs4_create_server+801
+    nfs4_try_get_tree+109
+    nfs_get_tree+2562
+    vfs_get_tree+73
+    path_mount+2776
+    do_mount+226
+    __se_sys_mount+343
+    __x64_sys_mount+106
+    do_syscall_64+69
+    entry_SYSCALL_64_after_hwframe+97
+, mount.nfs]: 1
+
+nfs4_schedule_state_manager
+ nfs4_run_state_manager
+  nfs4_state_manager
+  <---------- reset session ----------> NFS4CLNT_SESSION_RESET
+   nfs4_reset_session
+    nfs4_begin_drain_session
+	 nfs4_drain_slot_tbl // 释放 slot tables
+    nfs4_proc_destroy_session // 销毁 session
+	 // nfs41_sequence_process: Error -10052 销毁失败，服务端找不到对应 session
+	nfs4_proc_create_session
+	 _nfs4_proc_create_session // 创建 session
+	  // nfs4_reset_session: session reset failed with status -10022 for server 192.168.240.251!
+	  // 服务端识别不到对应的 nfs4_client ，返回 nfserr_stale_clientid
+	  // 创建失败，clientid已过期 NFS4ERR_STALE_CLIENTID
+	nfs4_handle_reclaim_lease_error
+	 nfs4_state_start_reclaim_reboot
+	  set_bit // NFS4CLNT_RECLAIM_REBOOT
+	 set_bit // NFS4CLNT_LEASE_EXPIRED
+
+
+nfs4_schedule_state_manager
+ nfs4_run_state_manager
+  nfs4_state_manager
+<---------- lease expired ----------> NFS4CLNT_LEASE_EXPIRED
+   nfs4_reclaim_lease
+    nfs4_establish_lease
+	 nfs4_begin_drain_session
+	 nfs41_init_clientid // ops->establish_clid
+	  nfs4_proc_exchange_id // OP_EXCHANGE_ID
+	  nfs4_proc_create_session // OP_CREATE_SESSION
+	  nfs41_finish_session_reset
+	   nfs4_setup_state_renewal
+	    nfs4_proc_get_lease_time
+		...
+		 nfs4_xdr_enc_get_lease_time
+		  encode_putrootfh // OP_PUTROOTFH
+		 nfs4_xdr_dec_get_lease_time
+
+
+nfs4_schedule_state_manager
+ nfs4_run_state_manager
+  nfs4_state_manager
+<---------- reclaim reboot ----------> NFS4CLNT_RECLAIM_REBOOT
+   nfs4_do_reclaim
+    nfs4_reclaim_open_state
+	 __nfs4_reclaim_open_state
+	  nfs4_open_reclaim // ops->recover_open
+	   nfs4_do_open_reclaim
+	    _nfs4_do_open_reclaim
+		 nfs4_open_recover
+		  nfs4_open_recover_helper
+		   _nfs4_recover_proc_open
+		    nfs4_run_open_task // OP_OPEN
+
+<-------------------- nfs模块恢复完成 -------------------->
+
+4、sunrpc模块重试之前WRITE请求
+服务器恢复后客户端nfs模块没有发出新的WRITE请求，sunrpc模块重试之前WRITE请求，服务端收到并处理
+@xx[
+    nfsd4_write+1
+    nfsd4_proc_compound+1777
+    nfsd_dispatch+555
+    svc_process+3173
+    nfsd+506
+    kthread+516
+    ret_from_fork+31
+, nfsd]: 1025
+
+5、客户端nfs模块发送commit请求
+filp_close
+ nfs4_file_flush
+  nfs_wb_all
+   filemap_write_and_wait
+    filemap_write_and_wait_range
+     __filemap_fdatawrite_range
+	  do_writepages
+	   nfs_writepages
+	    write_cache_pages
+	     nfs_writepages_callback
+		  nfs_do_writepage
+		   nfs_page_async_flush
+		    nfs_pageio_add_request
+		     nfs_pageio_add_request_mirror
+			  nfs_pageio_add_request_mirror
+			   __nfs_pageio_add_request
+			    nfs_pageio_doio
+			     nfs_generic_pg_pgios
+				  nfs_generic_pgio
+				   // desc->pg_rpc_callops 绑定ops nfs_pgio_common_ops
+				  nfs_initiate_pgio
+				   nfs_initiate_write // 发送写请求
+	 filemap_fdatawait_range
+	  __filemap_fdatawait_range
+	   wait_on_page_writeback
+	    wait_on_page_bit // 等待 PG_writeback
+	  filemap_check_errors // AS_EIO
+	   return -EIO
+
+nfs_pgio_result // task->tk_ops->rpc_call_done
+ nfs_set_pgio_error
+  // set NFS_IOHDR_ERROR
+  hdr->error = error
+
+nfs_pgio_release // ops->rpc_release
+ nfs_write_completion
+  nfs_mapping_set_error(req->wb_page, hdr->error)
+   SetPageError
+   mapping_set_error
+   nfs_set_pageerror
+    nfs_zap_mapping
+	 NFS_INO_INVALID_DATA
+	NFS_INO_REVAL_FORCED/NFS_INO_REVAL_PAGECACHE/NFS_INO_INVALID_SIZE
+
+static const struct rpc_call_ops nfs_pgio_common_ops = {
+	.rpc_call_prepare = nfs_pgio_prepare,
+	.rpc_call_done = nfs_pgio_result,
+	.rpc_release = nfs_pgio_release,
+};
+
+// 写请求返回后由 sunprc 模块调用该回调
+nfs_pgio_release
+ nfs_write_completion // nfs_pgio_completion_ops.completion
+  nfs_end_page_writeback
+   end_page_writeback
+    wake_up_page // 唤醒等待 PG_writeback 的进程
+
+@zzz[
+    nfs4_proc_commit_setup+1
+    nfs_initiate_commit+425
+    nfs_generic_commit_list+355
+    __nfs_commit_inode+499
+    nfs_io_completion_commit+22
+    nfs_io_completion_put+149
+    nfs_write_completion+1041
+    nfs_pgio_release+46
+    rpc_free_task+130
+    rpc_async_release+81
+    process_one_work+1035
+    worker_thread+809
+    kthread+516
+    ret_from_fork+31
+, kworker/u32:1]: 1
+
+
+
+客户端异常重启
+
+
+客户端长时间无响应，或重新挂载，服务端怎么回收资源？
+1、客户端不续约，服务端将删除客户端相关信息删除后需重新挂载
+2、客户端重新挂载，如果此时服务端没有删除相关资源，则直接返回相关数据给客户端
+
+
+客户端续约
+515 @y[
+516     nfs4_schedule_state_renewal+1
+517     nfs4_setup_state_renewal+317
+518     nfs41_finish_session_reset+145
+519     nfs41_init_clientid+157
+520     nfs4_establish_lease+181
+521     nfs4_run_state_manager+990
+522     kthread+516
+523     ret_from_fork+31
+524 , 192.168.240.251]: 1
+
+nfs4_run_state_manager
+ nfs4_reclaim_lease
+  nfs4_establish_lease
+   nfs41_init_clientid // ops->establish_clid
+    nfs41_finish_session_reset
+	 nfs4_setup_state_renewal
+	  nfs4_schedule_state_renewal
+
+@x[
+    rpc_run_task+1
+    _nfs41_proc_sequence+693
+    nfs41_proc_async_sequence+29
+    nfs4_renew_state+316
+    process_one_work+1035
+    worker_thread+809
+    kthread+516
+    ret_from_fork+31
+, kworker/7:1]: 1
+
+nfs4_renew_state
+ nfs41_proc_async_sequence // ops->sched_state_renewal
+  _nfs41_proc_sequence
+
+[root@localhost ~]#
+[  581.009114] nfs4_renew_state: start
+[  581.036824] <-- nfs41_proc_async_sequence status=0
+[  581.036994] --> nfs4_alloc_slot used_slots=0000 highest_used=4294967295 max_slots=30
+[  581.037702] nfs4_renew_state: done
+[  581.040382] <-- nfs4_alloc_slot used_slots=0001 highest_used=0 slotid=0
+[  581.041451] encode_sequence: sessionid=1714393896:367573156:3:0 seqid=24 slotid=0 max_slotid=0 cache_this=0
+[  581.044522] --> nfs4_alloc_slot used_slots=0001 highest_used=0 max_slots=30
+[  581.045494] <-- nfs4_alloc_slot used_slots=0003 highest_used=1 slotid=1
+[  581.046470] nfs4_free_slot: slotid 1 highest_used_slotid 0
+[  581.047373] nfs41_sequence_process: Error 0 free the slot
+[  581.048232] nfs4_free_slot: slotid 0 highest_used_slotid 4294967295
+[  581.049100] nfs41_sequence_call_done rpc_cred 00000000ae234104
+[  581.049885] <-- nfs41_sequence_call_done
+[  581.050521] nfs4_schedule_state_renewal: requeueing work. Lease period = 60
+[  642.448263] nfs4_renew_state: start
+[  642.459093] <-- nfs41_proc_async_sequence status=0
+[  642.459172] --> nfs4_alloc_slot used_slots=0000 highest_used=4294967295 max_slots=30
+[  642.459816] nfs4_renew_state: done
+[  642.461882] <-- nfs4_alloc_slot used_slots=0001 highest_used=0 slotid=0
+[  642.463435] encode_sequence: sessionid=1714393896:367573156:3:0 seqid=25 slotid=0 max_slotid=0 cache_this=0
+[  642.467566] --> nfs4_alloc_slot used_slots=0001 highest_used=0 max_slots=30
+[  642.468673] <-- nfs4_alloc_slot used_slots=0003 highest_used=1 slotid=1
+[  642.469693] nfs4_free_slot: slotid 1 highest_used_slotid 0
+[  642.470580] nfs41_sequence_process: Error 0 free the slot
+[  642.471453] nfs4_free_slot: slotid 0 highest_used_slotid 4294967295
+[  642.472365] nfs41_sequence_call_done rpc_cred 00000000ae234104
+[  642.473179] <-- nfs41_sequence_call_done
+[  642.473753] nfs4_schedule_state_renewal: requeueing work. Lease period = 60
+
+
+
+laundromat_main
+ nfs4_laundromat
+  list_for_each_safe // nn->client_lru
+   // 遍历 nn->client_lru 中已超期的 client ，加入 reaplist
+  list_for_each_safe
+   // 遍历 reaplist ，移除超期 client
+  expire_client
+   unhash_client
+   nfsd4_client_record_remove
+   __destroy_client
+
+
+@xx[
+    nfsd4_umh_cltrack_upcall+1
+    nfsd4_umh_cltrack_remove+304
+    nfsd4_client_record_remove+159
+    expire_client+38
+    laundromat_main+1480
+    process_one_work+1035
+    worker_thread+809
+    kthread+516
+    ret_from_fork+31
+, kworker/u35:1]: 1
+超时销毁客户端记录
+
+
+[2024-05-06 16:23:14]  [  369.467949]  dump_stack+0xdd/0x126
+[2024-05-06 16:23:14]  [  369.468435]  put_client_renew_locked+0x245/0x330
+[2024-05-06 16:23:14]  [  369.469064]  nfsd4_put_session_locked+0xad/0xe0
+[2024-05-06 16:23:14]  [  369.469687]  nfsd4_put_session+0xa6/0xe0
+[2024-05-06 16:23:14]  [  369.470216]  nfsd4_sequence_done+0x70/0x480
+[2024-05-06 16:23:14]  [  369.470793]  nfs4svc_encode_compoundres+0x145/0x180
+[2024-05-06 16:23:14]  [  369.471468]  nfsd_dispatch+0x29c/0x390
+[2024-05-06 16:23:14]  [  369.471984]  ? nfsd_svc+0x680/0x680
+[2024-05-06 16:23:14]  [  369.472469]  svc_process+0xc65/0x1300
+[2024-05-06 16:23:14]  [  369.472968]  ? svc_rpcb_setup+0x60/0x60
+[2024-05-06 16:23:14]  [  369.473496]  ? __kasan_check_write+0x20/0x30
+[2024-05-06 16:23:14]  [  369.474075]  ? _raw_spin_lock_irq+0x9b/0x120
+[2024-05-06 16:23:14]  [  369.474662]  ? nfsd_svc+0x680/0x680
+[2024-05-06 16:23:14]  [  369.475140]  nfsd+0x1fa/0x2a0
+[2024-05-06 16:23:14]  [  369.475555]  ? nfsd_destroy+0x100/0x100
+[2024-05-06 16:23:14]  [  369.476082]  kthread+0x204/0x280
+[2024-05-06 16:23:14]  [  369.476533]  ? kthread_flush_work+0x260/0x260
+[2024-05-06 16:23:14]  [  369.477105]  ret_from_fork+0x1f/0x30
+
+
+
+
+
+
+
+
+
+515 @y[
+516     nfs4_schedule_state_renewal+1
+517     nfs4_setup_state_renewal+317
+518     nfs41_finish_session_reset+145
+519     nfs41_init_clientid+157
+520     nfs4_establish_lease+181
+521     nfs4_run_state_manager+990
+522     kthread+516
+523     ret_from_fork+31
+524 , 192.168.240.251]: 1
+
+nfs4_run_state_manager
+ nfs4_reclaim_lease
+  nfs4_establish_lease
+   nfs41_init_clientid // ops->establish_clid
+    nfs41_finish_session_reset
+	 nfs4_setup_state_renewal
+	  nfs4_schedule_state_renewal
+
+
+
+服务端IO故障
+[root@localhost ~]# echo 1 > /sys/block/sdb/make-it-fail
+[root@localhost ~]# [ 9093.381941] nfsd_dispatch: vers 4 proc 1
+[ 9093.383180] __find_in_sessionid_hashtbl: 1715667035:331846363:1:0
+[ 9093.384136] nfsd4_sequence: slotid 0
+[ 9093.384765] check_slot_seqid enter. seqid 19 slot_seqid 18
+[ 9093.385733] nfsd: fh_verify(8: 00010001 00000002 00000000 00000000 00000000 00000000)
+[ 9093.387019] nfsd: fh_verify(8: 00010001 00000002 00000000 00000000 00000000 00000000)
+[ 9093.388172] nfsd: fh_verify(8: 00010001 00000002 00000000 00000000 00000000 00000000)
+[ 9093.389340] --> nfsd4_store_cache_entry slot 00000000e56cdc75
+[ 9093.392048] nfsd_dispatch: vers 4 proc 1
+[ 9093.392639] __find_in_sessionid_hashtbl: 1715667035:331846363:1:0
+[ 9093.393585] nfsd4_sequence: slotid 0
+[ 9093.394267] check_slot_seqid enter. seqid 20 slot_seqid 19
+[ 9093.395344] nfsd: fh_verify(8: 00010001 00000002 00000000 00000000 00000000 00000000)
+[ 9093.396579] NFSD: nfsd4_open filename 1.io op_openowner 0000000000000000
+[ 9093.397820] nfsd: fh_verify(8: 00010001 00000002 00000000 00000000 00000000 00000000)
+[ 9093.398975] nfsd: fh_verify(8: 00010001 00000002 00000000 00000000 00000000 00000000)
+[ 9093.400152] nfsd: fh_compose(exp 08:10/2 /1.io, ino=0)
+[ 9093.402150] Aborting journal on device sdb-8.
+[ 9093.409488] Buffer I/O error on dev sdb, logical block 262144, lost sync page write
+[ 9093.410627] JBD2: Error -5 detected when updating journal superblock for sdb-8.
+[ 9093.411860] --> nfsd4_store_cache_entry slot 00000000e56cdc75
+
+[root@localhost ~]#
+
+
+
+[11044.822132] nfsd_dispatch: vers 4 proc 1
+[11044.823206] __find_in_sessionid_hashtbl: 1715668705:331846366:3:0
+[11044.824242] nfsd4_sequence: slotid 28
+[11044.825058] check_slot_seqid enter. seqid 34 slot_seqid 33
+[11044.826377] nfsd: fh_verify(16: 01010001 00000002 00000017 0642001b 00000000 00000000)
+[11044.829144] NFSD: nfsd4_write: couldn't process stateid!
+[11044.830203] --> nfsd4_store_cache_entry slot 00000000c7ddb960
+[11045.148506] nfsd_dispatch: vers 4 proc 1
+[11045.149798] __find_in_sessionid_hashtbl: 1715668705:331846366:3:0
+[11045.150902] nfsd4_sequence: slotid 2
+[11045.151520] check_slot_seqid enter. seqid 35 slot_seqid 34
+[11045.152926] nfsd: fh_verify(16: 01010001 00000002 00000017 0642001b 00000000 00000000)
+[11045.155441] NFSD: nfsd4_write: couldn't process stateid!
+[11045.156702] --> nfsd4_store_cache_entry slot 00000000601c7825
+[11045.476132] nfsd_dispatch: vers 4 proc 1
+[11045.476898] __find_in_sessionid_hashtbl: 1715668705:331846366:3:0
+[11045.477972] nfsd4_sequence: slotid 1
+[11045.478757] check_slot_seqid enter. seqid 35 slot_seqid 34
+[11045.480069] nfsd: fh_verify(16: 01010001 00000002 00000017 0642001b 00000000 00000000)
+[11045.482099] NFSD: nfsd4_write: couldn't process stateid!
+[11045.483065] --> nfsd4_store_cache_entry slot 000000009f891ff4
+[11045.503377] nfsd_dispatch: vers 4 proc 1
+[11045.504016] __find_in_sessionid_hashtbl: 1715668705:331846366:3:0
+[11045.504892] nfsd4_sequence: slotid 0
+[11045.505508] check_slot_seqid enter. seqid 42 slot_seqid 41
+[11045.506581] nfsd: fh_verify(16: 01010001 00000002 00000017 0642001b 00000000 00000000)
+[11045.507821] nfsd: fh_verify(16: 01010001 00000002 00000017 0642001b 00000000 00000000)
+[11045.509240] NFSD: nfsd4_close on file 1.io
+[11045.510046] --> nfsd4_store_cache_entry slot 000000002bc2b5a9
+
+
+fh_verify --> nfsd_permission --> nfserr_rofs
+
+@x[
+    nfs_pageio_doio+1
+    __nfs_pageio_add_request+879
+    nfs_pageio_add_request_mirror+88
+    nfs_pageio_add_request+1146
+    nfs_do_writepage+849
+    nfs_writepages_callback+24
+    write_cache_pages+804
+    nfs_writepages+405
+    do_writepages+71
+    __filemap_fdatawrite_range+451
+    filemap_write_and_wait_range+64
+    nfs_wb_all+71
+    nfs4_file_flush+181
+    filp_close+109
+    __close_fd+46
+    __se_sys_close+53
+    __x64_sys_close+35
+    do_syscall_64+69
+    entry_SYSCALL_64_after_hwframe+97
+]: 290
+@x[
+    nfs_pgio_result+1
+    rpc_exit_task+203
+    __rpc_execute+329
+    rpc_async_schedule+81
+    process_one_work+1035
+    worker_thread+809
+    kthread+516
+    ret_from_fork+31
+]: 451
+@y[
+    nfs_write_completion+1
+    nfs_pgio_release+46
+    rpc_free_task+130
+    rpc_async_release+81
+    process_one_work+1035
+    worker_thread+809
+    kthread+516
+    ret_from_fork+31
+]: 1032
+
+[root@localhost ~]# cat /proc/4167/stack
+[<0>] wait_on_page_bit+0x23b/0x740
+[<0>] wait_on_page_writeback+0x59/0x210
+[<0>] __filemap_fdatawait_range+0xfe/0x290
+[<0>] filemap_write_and_wait_range+0x5e/0xe0
+[<0>] nfs_wb_all+0x47/0x2a0
+[<0>] nfs4_file_flush+0xb5/0xf0
+[<0>] filp_close+0x6d/0xf0
+[<0>] __close_fd+0x2e/0x50
+[<0>] __se_sys_close+0x35/0x80
+[<0>] __x64_sys_close+0x23/0x30
+[<0>] do_syscall_64+0x45/0x70
+[<0>] entry_SYSCALL_64_after_hwframe+0x61/0xc6
+
+#define NFS_MAX_FILE_IO_SIZE    (1048576U)
+
+
+nfs_pgio_result
+ nfs_set_pgio_error
+  // set NFS_IOHDR_ERROR
+  hdr->error = error
+
+nfs_commit_release // ops->rpc_release
+ nfs_write_completion
+  nfs_mapping_set_error(req->wb_page, hdr->error)
+```
