@@ -256,3 +256,13 @@ io_submit_sqe
 	   io_init_new_worker
 	    list_add_tail_rcu // worker->all_list --> wqe->all_list io_worker 由wqe管理
 ```
+
+## ext4
+```
+https://blog.csdn.net/xuhaitao23/article/details/112404331
+```
+## xfs
+```
+https://zhuanlan.zhihu.com/p/352464797
+```
+
