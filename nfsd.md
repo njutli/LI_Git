@@ -1437,3 +1437,218 @@ struct nfs_fh {
 
 mount 与 submount 之间延时，延时
 ```
+
+## 并发控制
+```
+// client1写打开文件后，client2写打开同一个文件
+// 有冲突
+1) 服务端查找是否有冲突
+2) 有冲突时将 delegation 加入删除链表(del_recall_lru)并向之前的客户端发送 recall
+>> recall 没有及时返回怎么处理，及时返回后怎么处理？
+recall会立刻返回，之后客户端如果发出 OP_DELEGRETURN 请求主动放弃 delegation，则服务端立刻销毁 delegation ，否则等超时销毁
+3) 删除链表(del_recall_lru)中的 delegation 在宽限期结束后会删除
+
+nfsd4_open
+<---------------- open1 ---------------->
+ nfsd4_process_open1
+  nfsd4_alloc_file // 分配 nfs4_file 保存在 open->op_file
+  find_openstateowner_str // 当前客户端没有打开过该文件
+  alloc_init_open_stateowner // 分配新的 nfs4_openowner
+  nfs4_alloc_open_stateid // 分配 nfs4_ol_stateid 保存在 open->op_stp 中
+<---------------- open2 ---------------->
+ nfsd4_process_open2
+  find_or_add_file // 根据 current_fh->fh_handle 查找目标文件 nfs4_file
+                   // 每个客户端有自己的 struct svc_fh *current_fh，有自己的 current_fh->fh_handle
+				   // 但每个文件的 knfsd_fh 是全局唯一的，其中根目录的 knfsd_fh 是 OP_PUTROOTFH 操作设置的
+  nfs4_check_deleg
+   find_deleg_stateid // 根据 open->op_delegate_stateid 查找 nfs4_delegation
+                      // 在创建 nfs4_delegation 时会将id保存在 op_delegate_stateid 中返回给客户端
+					  // 若当前客户端再次尝试打开该文件时，则可以根据该id找到服务端之前为这个客户端分配的 nfs4_delegation
+  nfsd4_find_and_lock_existing_open
+   nfsd4_find_existing_open // 在 nfs4_file.fi_stateids 链表中查找当前owner的NFS4_OPEN_STID实例
+  init_open_stateid // 创建 nfs4_ol_stateid
+  nfs4_get_vfs_file
+   if (!fp->fi_fds[oflag]) // 不满足
+    nfsd_open_break_lease
+	 break_lease
+	  __break_lease // FL_LEASE
+	   lease_alloc // 分配新的文件锁
+	    lease_init // fl->fl_flags = FL_LEASE
+		 assign_type // fl->fl_type 锁类型，写锁 F_WRLCK
+	   time_out_leases // 获取超时的lease，加到 dispose 链表中
+	   any_leases_conflict
+	    leases_conflict // 当前新的文件锁与该文件上已有的文件锁是否有冲突
+		 nfsd_breaker_owns_lease // lease->fl_lmops->lm_breaker_owns_lease
+		  i_am_nfsd // 非 nfsd 线程直接退出
+<------------ 如果与所有的锁都没有冲突则直接返回 ------------>
+       break_time = jiffies + lease_break_time * HZ; // 计算超时时间
+	   list_for_each_entry_safe(fl, tmp, &ctx->flc_lease, fl_list) // 遍历查找冲突锁
+	    fl->fl_flags |= FL_UNLOCK_PENDING; // 冲突锁标记为 FL_UNLOCK_PENDING
+		fl->fl_break_time = break_time; // 为冲突锁设置超时时间
+		nfsd_break_deleg_cb // fl->fl_lmops->lm_break
+		 fl->fl_break_time = 0; // 清超时时间
+		 fp->fi_had_conflict = true; // 设置冲突标记
+		 nfsd_break_one_deleg
+		  refcount_inc(&dp->dl_stid.sc_count) // 增加 nfs4_delegation 引用计数
+		  nfsd4_run_cb // nfsd4_cb_recall_ops
+		   nfsd4_queue_cb
+		    queue_work(callback_wq, &cb->cb_work) // 异步执行 recall 回调
+<------------ 异步执行 recall 回调 ------------>
+	   locks_insert_block // 将当前新锁加入阻塞新锁的旧锁 fl_blocked_requests 链表中
+	    __locks_insert_block
+		 list_add_tail
+		 __locks_wake_up_blocks // 唤醒阻塞在waiter上的锁，这里无意义，没有锁阻塞在新锁上
+	   wait_event_interruptible_timeout // 等待阻塞新锁的旧锁唤醒
+	   1) 客户端返回 OP_DELEGRETURN 请求后唤醒
+	   2) nfs4_laundromat 超时删除 delegation 后唤醒
+	   any_leases_conflict // 再次校验是否有冲突
+	   1) 有冲突
+	    goto restart
+	   2) 无冲突
+	    return
+
+
+// 异步执行 recall 回调
+nfsd4_run_cb_work
+ nfsd4_cb_recall_prepare // cb->cb_ops->prepare  dp->dl_recall nfsd4_cb_recall_ops
+  block_delegations // 将当前 filehandle(knfsd_fh) 设置为 delegation_blocked 状态
+  dp->dl_time = ktime_get_boottime_seconds(); // 设置 dl_time
+  list_add_tail(&dp->dl_recall_lru, &nn->del_recall_lru) // 将 nfs4_delegation 插入删除队列 del_recall_lru
+<------------ 异步进程处理待删除的 nfs4_delegation ------------>
+ // nfsd4_setclientid_confirm --> nfsd4_probe_callback 设置了 NFSD4_CLIENT_CB_FLAG_MASK
+ nfsd4_process_cb_update
+  __nfsd4_find_backchannel // 查找反向通道
+   list_for_each_entry // 遍历 nfs4_client.cl_sessions 链表查找session
+    list_for_each_entry // 遍历 nfsd4_session.se_conns 链表查找session上的conn
+	 // 返回查找到 nfsd4_conn
+  setup_callback_client // 创建 rpc_clnt 用于反向发送请求，保存在 nfs4_client.cl_cb_client 中
+ rpc_call_async
+  rpc_run_task // callback_ops 为 nfsd4_cb_ops 或 nfsd4_cb_probe_ops
+   // NFSPROC4_CLNT_CB_RECALL
+   ...
+   nfs4_xdr_enc_cb_recall
+	encode_cb_compound4args
+	encode_cb_sequence4args
+	encode_cb_recall4args
+	 encode_nfs_cb_opnum4 // OP_CB_RECALL
+	 encode_stateid4 // dp->dl_stid.sc_stateid
+	 encode_nfs_fh4 // dp->dl_stid.sc_file->fi_fhandle
+   nfs4_xdr_dec_cb_recall
+
+
+
+// 异步进程处理待删除的 nfs4_delegation (del_recall_lru)
+nfs4_laundromat
+ if (dp->dl_time > cutoff) // 判断租约是否到期
+ 1) 没到期
+  退出，等待下次调度
+ 2) 到期
+  unhash_delegation_locked // 从链表中删除 nfs4_delegation
+  list_add(&dp->dl_recall_lru, &reaplist) // 插入 reaplist 链表
+  while (!list_empty(&reaplist))
+   // 释放 nfs4_delegation
+   revoke_delegation
+    destroy_unhashed_deleg
+	 nfs4_unlock_deleg_lease
+	  vfs_setlease // 解除文件锁
+
+
+
+<------------ 客户端接收处理 cb_recall ------------>
+// 挂载的时候初始化
+nfs4_init_client
+ nfs4_init_client_minor_version
+  nfs4_init_callback
+   nfs_callback_up
+    nfs_callback_create_svc
+	 svc_create_pooled // nfs4_callback_program
+	  // serv->sv_ops <-- nfs4_cb_sv_ops[0]/nfs4_cb_sv_ops[1]
+	  __svc_create
+    nfs_callback_start_svc // 默认线程数 NFS4_MIN_NR_CALLBACK_THREADS
+	 svc_set_num_threads_sync // serv->sv_ops->svo_setup
+	  svc_start_kthreads
+	   kthread_create_on_node // 创建进程，运行函数 nfs4_callback_svc
+	   wake_up_process // 启动进程
+
+// 接收处理服务端 cb_recall 请求
+nfs4_callback_svc
+ svc_recv
+ svc_process
+ ...
+  nfs4_callback_compound // pc_func
+   process_op
+    decode_recall_args // op->decode_args [OP_CB_RECALL]
+	 args->stateid <-- dp->dl_stid.sc_stateid
+	 args->fh <-- dp->dl_stid.sc_file->fi_fhandle
+	nfs4_callback_recall // op->process_op [OP_CB_RECALL]
+	 nfs_delegation_find_inode // 根据 filehandle 查找 inode
+	 nfs_async_inode_return_delegation
+	  nfs_mark_return_delegation
+	   // NFS_DELEGATION_RETURN NFS4CLNT_DELEGRETURN 标记当前 delegation 需要返回
+	  nfs_delegation_run_state_manager
+	   nfs4_schedule_state_manager
+	    // 异步执行 nfs4_run_state_manager
+	 nfs_iput_and_deactive
+	encode_op_hdr // 将结果编码，通过 sunrpc 框架返回给服务端
+（由于返回 delegation 的操作是异步执行，客户端给服务端返回 recall 结果时可能并没有返回 delegation）
+
+
+nfs4_run_state_manager
+ nfs4_state_manager
+  nfs_client_return_marked_delegations
+   nfs_client_for_each_server
+    // test_and_clear_bit NFS4CLNT_DELEGRETURN
+    nfs_server_return_marked_delegations
+	 nfs_end_delegation_return
+	  nfs_delegation_claim_opens
+	   nfs4_open_delegation_recall
+	    nfs4_open_recover_helper
+		 _nfs4_recover_proc_open
+		  nfs4_run_open_task // 发送 NFSPROC4_CLNT_OPEN 请求
+		 nfs4_close_state // 发送 NFSPROC4_CLNT_CLOSE 请求
+	   nfs_delegation_claim_locks
+	    nfs4_lock_delegation_recall
+		 _nfs4_do_setlk // 发送 NFSPROC4_CLNT_LOCK 请求
+	  nfs_do_return_delegation
+	   nfs4_proc_delegreturn
+	    _nfs4_proc_delegreturn // 发送 NFSPROC4_CLNT_DELEGRETURN 请求
+
+/* 如果服务端想要回收 delegation 时客户端正在写文件，客户端怎样处理？ */
+客户端不断续约，不会释放delegation
+
+
+服务端超时回收 delegation 后，没有 delegation 的客户端再发送写请求会怎样？
+会失败，根据客户端发过来的stateid找不到有效的 delegation
+
+
+// client1读打开文件后，client2写打开同一个文件
+// 有冲突
+  nfs4_get_vfs_file
+   if (!fp->fi_fds[oflag]) // 满足
+    nfsd_file_acquire // 此时服务端没有写打开的 nfsd_file ，会写打开文件生成写打开 nfsd_file
+     nfsd_open_break_lease // 生成写打开 nfsd_file 后再回收 delegation
+
+
+// client1写打开文件后，client2读打开同一个文件
+// 有冲突
+__break_lease
+ leases_conflict // 冲突判断
+  nfsd_breaker_owns_lease // lease->fl_lmops->lm_breaker_owns_lease
+   // return dl->dl_stid.sc_client == clp  同一个客户端不冲突
+  locks_conflict
+   // sys_fl->fl_type == F_WRLCK
+   // caller_fl->fl_type == F_WRLCK
+   // 任何一方写打开则冲突
+
+// client1读打开文件后，client2读打开同一个文件
+// 无冲突
+
+
+//client1进程1打开文件后，client1进程2打开同一个文件
+// 无冲突
+
+
+//client1进程1打开文件后，client1进程1再次打开同一个文件
+// 无冲突
+
+```
