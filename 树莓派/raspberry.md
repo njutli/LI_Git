@@ -22,3 +22,13 @@ sudo htags -fosav --update
 | 改了部分源文件 | `global -u && htags --frame --alphabet --title "Linux Source Browser"` | 增量更新     |
 
 gtags && global -u && htags --frame --alphabet --title "Linux Source Browser"
+
+[root@szvphis18908837 ~]# cd /home/httpd/
+[root@szvphis18908837 httpd]# ls
+auto_update_code.sh  code  daily_update_code.sh  gitproxy.sh  nohup.out
+[root@szvphis18908837 httpd]# ls code/
+css        fscryptctl  hulk-4.1   hulk-4.4   hulk-5.10-next  index.html     linux-next    mtd-utils  nfs-utils  olk-6.6      rh-7.3  rh-8.1
+e2fsprogs  gssproxy    hulk-4.19  hulk-5.10  hulk-6.6        linux-fs-next  linux-stable  ndctl      olk-5.10   quota-tools  rh-7.5  xfsprogs-dev
+[root@szvphis18908837 httpd]# ls code/css/
+style.css
+[root@szvphis18908837 httpd]#
