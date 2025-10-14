@@ -1,0 +1,69 @@
+设置读取操作的目标延迟；
+kyber调度器使用4个队列管理不同类型的IO(read/write/discard/other)，并且轮询这些队列，将队列中的IO下发；
+在IO压力不变时，将读操作目标延迟减小，将使得更多读IO时延超过，kyber调度器将增加读队列深度；
+每次遍历到读队列时，可以下发更多的读IO，使得读IO不易超时，但会拉长整个轮询周期。
+
+kyber：适用于高速器件。对不同类型的IO（read/write/discard/others）设置不同的延迟要求，分开调度，同时监控每个IO调度域的延迟情况，如果某个IO调度域的延迟过高，则动态增加这个IO调度域的队列深度，并减小延迟OK的IO调度域的队列深度，以达到控制IO延迟的目的。
+bfq：适用于慢速器件，如机械硬盘。提供了IO排序、IO优先级、按权重均匀分配IO带宽和组调度的能力，保证每个IO的最大延迟可控的同时充分利用器件IO带宽。调度的软件开销比较高，不适用于高速器件
+
+https://www.kernel.org/doc/html/v5.3/block/bfq-iosched.html
+
+/sys/block/[device]/queue/iosched/back_seek_max
+向后搜寻的最大值(KiB)
+预测request的访问范围，根据request访问起始位置与向后搜寻的最大值来判断当前磁头是否在request访问范围内。BFQ会根据预测结果选择要下发的下一个request。
+该值设置过大会导致BFQ退化成CFQ，设置过小会导致访问起始位置靠前的request总是优先被下发
+
+/sys/block/[device]/queue/iosched/back_seek_penalty
+此参数用于计算后向查找的开销。
+磁头向后移动的成本要低于向前移动的成本。
+在选取下发IO时，若比较的两个request的起始位置，一个在当前磁头之前，一个在当前磁头之后，则在比较时，磁头之前到磁头的位置d1需要乘以该参数，再与磁头之后到磁头的位置d2做比较，使得在绝对距离一样或接近时优先处理磁头之后的IO。
+
+/sys/block/[device]/queue/iosched/fifo_expire_async
+此参数用于设置异步请求的超时时间。
+若超时时间设置过大，会导致IO可能长时间无法下发；若超时时间设置过小，会导致其他调度策略(如根据磁头位置调度)失效，影响整体IO吞吐量
+
+/sys/block/[device]/queue/iosched/fifo_expire_sync
+此参数用于设置同步请求的超时时间
+
+/sys/block/[device]/queue/iosched/low_latency
+是否开启bfq的低延迟模式
+如果启用，交互式和软实时应用程序随机下发的IO可以得到较快响应，但会影响整体IO吞吐量
+
+/sys/block/[device]/queue/iosched/max_budget
+每次服务时队列完成io扇区数量上限，一旦到达上限将会切换队列
+在单个进程下发大量IO的场景下，增大该值可增加整体吞吐量，但会导致其他进程的IO延迟增加
+
+/sys/block/[device]/queue/iosched/slice_idle
+允许队列在空闲状态死等下一个请求的时间，以毫秒为单位
+对于SATA/SAS磁盘和SATA/SAS磁盘的软件RAID，启用slice_idle可以减少寻道总数以提高吞吐量；
+对于单个LUN后有多个磁盘轴的情况，或是基于闪存的快速存储设备，设置slice_idle=0可能会获得更好的吞吐量和延迟。
+
+/sys/block/[device]/queue/iosched/slice_idle_us
+允许队列在空闲状态死等下一个请求的时间，以纳秒为单位
+
+/sys/block/[device]/queue/iosched/strict_guarantees
+是否使能严格的带宽保证
+若使能，则在当前服务队列为空时，会一直死等，且强制要求设备每次只处理一个IO(只有当所有IO完成时才会下发一个新的IO)
+
+/sys/block/[device]/queue/iosched/timeout_sync
+每个队列提供服务的最长时间
+在寻道开销大的设备上，增加此时间通常会增加最大吞吐量，但会导致其他进程的IO延迟增加
+
+
+submit_bio
+...
+blk_mq_submit_bio
+ __blk_queue_split // IO拆分
+ <-------------------- 非 flush/fua，bio与 plug->mq_list 上的req合并 -------------------->
+ blk_attempt_plug_merge
+  blk_attempt_bio_merge
+ <-------------------- bio 与 ctx->rq_lists 上的req合并 -------------------->
+ blk_mq_sched_bio_merge // 若合并成功，则 blk_mq_submit_bio 直接返回
+  __blk_mq_sched_bio_merge
+   1) 调度器merge
+   e->type->ops.bio_merge
+   2) 无调度器merge // 将bio合并到已有request中
+   blk_bio_list_merge // 遍历 ctx->rq_lists 中的 request
+    blk_attempt_bio_merge // 尝试合并并返回IO合并结果
+     blk_try_merge // 判断当前 req 和当前 bio 可进行哪种IO合并
+     back_merge/front_merge/discard_merge
