@@ -1171,3 +1171,269 @@ call_bind_status
   // 如果没有 RPC_IS_SOFT 则继续 call_bind --> call_bind_status 的循环
 
 ```
+
+## 挂载流程
+```
+// 用户态命令
+mount -t nfs4 -o rw 192.168.240.251:/sdb /mnt/sdb
+// 内核参数
+192.168.240.251:/sdb  nfs4 vers=4.2,addr=192.168.240.251,clientaddr=192.168.240.250
+
+
+dev_name 192.168.240.251:/sdb
+dir_name // 挂载目录，用户态字符串，打印不出来
+type_page nfs4
+data_page vers=4.2,addr=192.168.240.251,clientaddr=192.168.240.250
+
+
+inode 所在的 nfs_inode 包含 nfs_fh ，指向 server 的文件(目录)
+
+do_mount
+ path_mount
+  do_new_mount
+   get_fs_type // 根据 "type_page nfs4" 获取对应的 file_system_type &nfs4_fs_type
+   fs_context_for_mount // 初始化 fs_context nfs_fs_context
+    // fc->ops = &nfs_fs_context_ops
+	// fc->fs_private --> nfs_fs_context ctx --> nfs_fh mntfh
+	  nfs_init_fs_context
+	   nfs_alloc_fhandle // 分配 ctx->mntfh
+<---------------- ctx 保存在 fc 中 ---------------->
+   vfs_parse_fs_string // 根据 "dev_name 192.168.240.251:/sdb" 构造 source 参数，对应 Opt_source
+    nfs_fs_context_parse_param
+	 // fc->source = 192.168.240.251:/sdb
+   parse_monolithic_mount_data // 根据 "data_page" 进行参数解析
+    nfs_fs_context_parse_monolithic
+	 nfs4_parse_monolithic
+	  // ctx->version = 4
+	  generic_parse_monolithic
+	   nfs_fs_context_parse_param
+	    // vers=4.2 --> Opt_vers --> Opt_vers_4_2
+		   ctx->version = 4; ctx->minorversion = 2;
+		// addr=192.168.240.251 --> Opt_addr
+		   ctx->nfs_server.address <-- 192.168.240.251
+		// clientaddr=192.168.240.250 --> Opt_clientaddr
+		   ctx->client_address <-- 192.168.240.250
+   vfs_get_tree
+    nfs_get_tree // ctx->internal 默认 false
+	 nfs_fs_context_validate
+	  nfs_parse_source
+<---------------- ctx->nfs_server 保存 server 的地址和导出路径 ---------------->
+	   // ctx->nfs_server.hostname <-- dev_name 192.168.240.251
+	   // ctx->nfs_server.export_path <-- dev_name /sdb
+	  get_nfs_version // 初始化 ctx->nfs_mod  struct nfs_subversion nfs_v4
+	 nfs4_try_get_tree
+	  do_nfs4_mount
+<---------------- 创建初始化 nfs_server ---------------->
+	   nfs4_create_server // 创建初始化 nfs_server
+	    nfs_alloc_server
+	    nfs4_init_server
+		 nfs4_set_client
+<---------------- 创建初始化 nfs_client ---------------->
+		  nfs_get_client
+		   nfs_match_client // 从 nn->nfs_client_list 中匹配已有的 nfs_client
+		    1) 返回已找到的 nfs_client
+		    nfs_found_client
+			2) 分配初始化 nfs_client 并插入 nn->nfs_client_list 链表
+			nfs4_alloc_client
+			 nfs_create_rpc_client // 创建 rpc_clnt
+			nfs4_init_client
+		  // server->nfs_client = clp
+		      nfs4_discover_server_trunking
+			   nfs41_discover_server_trunking
+/********************* nfs4_proc_exchange_id *********************/
+			    nfs4_proc_exchange_id
+			    nfs4_schedule_state_manager
+			     nfs4_run_state_manager
+			     ...
+				  nfs4_reset_session
+/********************* nfs4_proc_create_session *********************/
+			       nfs4_proc_create_session
+				  nfs4_state_end_reclaim_reboot
+				   nfs4_reclaim_complete
+/********************* nfs41_proc_reclaim_complete *********************/
+				    nfs41_proc_reclaim_complete
+		nfs4_server_common_setup // 入参 struct nfs_fh *mntfh 的 size 为0，说明 mntfh 在该函数中初始化
+<---------------- 探测 root fh ---------------->
+		 nfs4_get_rootfh // 从 server 获取 root filehandle
+		  nfs4_proc_get_rootfh
+		   nfs41_find_root_sec
+<---------------- 远程调用 NFSPROC4_CLNT_SECINFO_NO_NAME ---------------->
+/********************* nfs41_proc_secinfo_no_name *********************/
+		    nfs41_proc_secinfo_no_name // 对应 server 操作 OP_SECINFO_NO_NAME
+			 ...
+			 nfs4_xdr_enc_secinfo_no_name
+			 nfs4_xdr_dec_secinfo_no_name
+		    nfs4_lookup_root_sec
+/********************* nfs4_lookup_root *********************/
+			 nfs4_lookup_root
+<---------------- 远程调用 NFSPROC4_CLNT_LOOKUP_ROOT ---------------->
+			  _nfs4_lookup_root
+			   ...
+			   nfs4_xdr_enc_lookup_root
+			   nfs4_xdr_dec_lookup_root
+/********************* nfs4_server_capabilities *********************/
+		   nfs4_server_capabilities
+/********************* nfs4_do_fsinfo *********************/
+		   nfs4_do_fsinfo
+>>
+	mntfh 只包含 server 信息，不包含导出目录("/sdb")的信息？
+	fsid=0 的导出文件系统？
+	根据 nfs4_server_common_setup 中打印的 Server FSID: 0:0 ， mntfh 应该只包含 fsid=0 的文件系统
+// /etc/exports fsid=
+// 设置被导出文件系统的id用于NFS模块识别。对于NFSv4，有一个独特的文件系统(fsid=root或fsid=0)，它是所有导出的文件系统的根。
+<<
+		 nfs_display_fhandle // 打印 mntfh
+[2024-04-01 15:44:59]  [  123.716978] Server FSID: 0:0
+[2024-04-01 15:44:59]  [  123.717532] Pseudo-fs root FH at 00000000f38d5545 is 8 bytes, crc: 0x62d40c52:
+		 nfs_probe_fsinfo
+/********************* nfs4_server_capabilities *********************/
+		  nfs4_server_capabilities // clp->rpc_ops->set_capabilities
+		  nfs4_proc_fsinfo
+/********************* nfs4_do_fsinfo *********************/
+		   nfs4_do_fsinfo
+/********************* nfs4_proc_pathconf *********************/
+		  nfs4_proc_pathconf
+	   vfs_dup_fs_context // 分配初始化新的 fs_context *root_fc
+	    nfs_fs_context_dup // 初始化 nfs_fs_context
+		 nfs_alloc_fhandle // 分配 ctx->mntfh
+	   // root_ctx->internal = true;
+	   vfs_parse_fs_param // 初始化 root_fc 的 source
+	   fc_mount
+	    vfs_get_tree
+		 nfs_get_tree
+		  nfs_get_tree_common
+		   sget_fc // 创建初始化 super_block
+		    nfs_compare_super // fc->fs_type->fs_supers 查找比较是否已有 super_block
+			alloc_super // 分配超级块 nfs4_fs_type
+			nfs_set_super // 设置 s_d_op，默认 dentry_operations
+			 s->s_d_op = server->nfs_client->rpc_ops->dentry_ops // nfs_v4_clientops --> nfs4_dentry_operations
+			 s->s_fs_info = server // nfs_server 保存在超级块的 s_fs_info 中
+		   nfs_fill_super // 根据 nfs_fs_context 填充 super_block
+		    // nfs_v4 --> nfs4_xattr_handlers
+		    sb->s_xattr = server->nfs_client->cl_nfs_mod->xattr
+			// nfs_v4 --> nfs4_sops
+			sb->s_op = server->nfs_client->cl_nfs_mod->sops
+		   nfs_get_root // 创建初始化 根 inode/dentry
+		    nfs_alloc_fattr // 分配初始化 nfs_fattr
+			nfs4_label_alloc // 分配初始化 安全标签 nfs4_label
+			nfs4_proc_get_root // server->nfs_client->rpc_ops->getroot
+/********************* nfs4_server_capabilities *********************/
+			 nfs4_server_capabilities // 通过远程调用获取 server 能力集 NFSPROC4_CLNT_SERVER_CAPS
+									  // 根据远程调用返回的结果设置 nfs_server 的功能
+			  _nfs4_server_capabilities 
+			   // 构造 rpc_message
+			    // .rpc_proc
+				// nfs4_xdr_enc_server_caps
+				// nfs4_xdr_dec_server_caps
+				// .rpc_argp = &args,
+				// .rpc_resp = &res,
+<---------------- 远程调用 NFSPROC4_CLNT_SERVER_CAPS ---------------->
+			   nfs4_do_call_sync
+			    ...
+				nfs4_xdr_enc_server_caps // GETATTR_BITMAP 请求编码
+				nfs4_xdr_dec_server_caps // GETATTR_BITMAP 返回结果解码
+<---------------- 远程调用 NFSPROC4_CLNT_GETATTR ---------------->
+/********************* nfs4_proc_getattr *********************/
+			 nfs4_proc_getattr // 通过远程调用获取 server 属性 NFSPROC4_CLNT_GETATTR
+			  nfs4_do_call_sync
+			   ...
+			   nfs4_xdr_enc_getattr // GETATTR 请求编码
+			   nfs4_xdr_dec_getattr // GETATTR 返回结果解码
+			nfs_fhget // 根 inode -- 包含 nfs_fattr nfs_fh 若需要，也包含安全标签 nfs4_label
+<---------------- 创建初始化 inode(包含server信息，不包含导出目录信息) ---------------->
+			 iget5_locked
+			  alloc_inode // 分配 inode
+			  inode_insert5 // 添加到全局 inode_hashtable 链表和超级块链表 inode->i_sb->s_inodes
+			   nfs_init_locked
+			    set_nfs_fileid // nfs_fattr 保存到 nfs_inode->fileid 
+				nfs_copy_fh // nfs_fh 保存到 nfs_inode->fh
+<---------------- 将 nfs_fh 保存在 inode 所在的 nfs_inode 中 ---------------->
+			 // inode->i_ino = hash
+			d_obtain_root // root 结点对应的 dentry
+			// root->d_fsdata = name = fc->source
+			// fc->root = root
+<---------------- 创建初始化 mount(包含server信息，不包含导出目录信息) ---------------->
+		vfs_create_mount // 创建 root_mnt (struct mount)
+		 // mnt->mnt.mnt_root       = dget(fc->root)
+		 // mnt->mnt_mountpoint     = mnt->mnt.mnt_root;
+// fc_mount
+	   mount_subtree // 传入 root_mnt 与 export_path ("/sdb")
+	    alloc_mnt_ns // 分配 mnt_namespace 并与 mount 绑定
+<---------------- 在包含server信息的dentry下查找导出目录export_path ---------------->
+		vfs_path_lookup // 在包含server信息
+		 filename_lookup
+		  set_nameidata // 创建初始化 nameidata
+		  path_lookupat
+		   link_path_walk
+		    may_lookup
+			 inode_permission
+			  do_inode_permission
+			   nfs_permission
+			    nfs_do_access
+/********************* nfs4_proc_access *********************/
+				 nfs4_proc_access
+		   lookup_last
+		    walk_component
+			 lookup_fast // 快速路径，在当前目录entry下未找到对应的dentry
+			 lookup_slow // 慢速路径，在当前目录entry下创建新的dentry
+			  __lookup_slow
+			   nfs4_proc_lookup
+			    nfs4_proc_lookup_common
+/********************* _nfs4_proc_lookup *********************/
+				 _nfs4_proc_lookup
+			 step_into
+			  handle_mounts
+			   traverse_mounts
+			    __traverse_mounts
+				 follow_automount
+				  nfs_d_automount
+				   fs_context_for_submount // 创建初始化新的 fs_context，会有新的 nfs_fh
+				    // fc->fs_private --> nfs_fs_context ctx --> nfs_fh mntfh
+				   nfs4_submount
+					nfs4_proc_lookup_mountpoint
+					 nfs4_proc_lookup_common
+<---------------- 远程调用 NFSPROC4_CLNT_LOOKUP ---------------->
+/********************* _nfs4_proc_lookup *********************/
+					  _nfs4_proc_lookup
+					   ...
+					   nfs4_xdr_enc_lookup
+					   nfs4_xdr_dec_lookup
+					   // "/sdb" 对应的 nfs_fh 保存到 ctx->mntfh 中
+					nfs_do_submount
+					 nfs_clone_server
+					  nfs_probe_fsinfo
+/********************* nfs4_server_capabilities *********************/
+					   nfs4_server_capabilities
+					   nfs4_proc_fsinfo
+/********************* nfs4_do_fsinfo *********************/
+					    nfs4_do_fsinfo
+/********************* nfs4_proc_pathconf *********************/
+					   nfs4_proc_pathconf
+					 vfs_get_tree
+					  nfs_get_tree
+					   nfs_get_tree_common
+					    nfs_get_root
+						 nfs4_proc_get_root
+/********************* nfs4_server_capabilities *********************/
+						  nfs4_server_capabilities
+				   vfs_create_mount / 创建 "/sdb" 对应的 root_mnt (struct mount)
+
+1、获取 fsid=0 的文件系统对应的 root nfs_fh
+2、获取当前导出目录的文件系统对应的 nfs_fh
+
+struct nfs_inode {
+    __u64              fileid;
+    struct nfs_fh      fh;
+...
+    struct inode       vfs_inode;
+};
+
+struct nfs_fh {
+    short unsigned int size;
+    // 保存服务端文件句柄，用于提供给服务端识别，指定当前操作的目标文件
+    unsigned char      data[128];
+};
+
+
+mount 与 submount 之间延时，延时
+```
