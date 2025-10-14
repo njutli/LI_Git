@@ -8,7 +8,6 @@ nfs4_xdr_dec_xxx
 
 tcpdump -i any -w file.cap
 
-
 /********************* 挂载 *********************/
 
 // OP_SEQUENCE
@@ -18,7 +17,6 @@ The SEQUENCE operation is used by the server to implement session request contro
 https://www.rfc-editor.org/rfc/rfc5661#page-553
 如果一个COMPOUND请求有SEQUENCE操作，则SEQUENCE操作一定是请求的第一个操作
 除了 SEQUENCE, BIND_CONN_TO_SESSION, EXCHANGE_ID, CREATE_SESSION, and DESTROY_SESSION 其他任何操作不能是请求的第一个操作
-
 
 // NFSPROC4_CLNT_EXCHANGE_ID
 // OP_EXCHANGE_ID
@@ -70,8 +68,6 @@ res->impl_id->domain
 res->impl_id->name
 res->impl_id->date.nseconds
 
-
-
 // NFSPROC4_CLNT_CREATE_SESSION
 // OP_CREATE_SESSION
 server创建 nfsd4_session，为新的session分配 sequence，关联 nfs4_client；server根据自身情况设置 max_reqs 等参数返回给client
@@ -86,7 +82,6 @@ nfs4_proc_create_session
   nfs4_xdr_enc_create_session
    encode_create_session // nfs_opnum4 OP_CREATE_SESSION
   nfs4_xdr_dec_create_session
-
 
 server端
 nfsd4_create_session
@@ -144,9 +139,6 @@ res->fc_attrs
  attrs->max_ops <-- sess->fore_channel.maxops
  attrs->max_reqs <-- sess->fore_channel.maxreqs
 res->bc_attrs
-
-
-
 
 
 // NFSPROC4_CLNT_RECLAIM_COMPLETE(client) == OP_SEQUENCE+OP_RECLAIM_COMPLETE(server)
@@ -300,10 +292,6 @@ nfsd4_encode_secinfo_no_name
 当服务器收到 OP_PUTFH 请求时，会将实例中的 current_fh 设置为客户端指定的文件句柄
 
 
-
-
-
-
 // NFSPROC4_CLNT_LOOKUP_ROOT(client) = OP_SEQUENCE+OP_PUTROOTFH+OP_GETFH+OP_GETATTR
 // 获取 root filehandle
 client端
@@ -381,11 +369,6 @@ cache_write_procfs
 	   // 设置 CACHE_VALID
 
 
-
-
-
-
-
 // OP_GETFH
 nfsd4_getfh
  // 获取 cstate->current_fh
@@ -427,9 +410,6 @@ nfsd4_putfh
  fh_verify // 校验 current_fh
 
 
-
-
-
 // NFSPROC4_CLNT_FSINFO(client) = OP_SEQUENCE+OP_PUTFH+OP_GETATTR
 // 获取指定 filehandle 的属性
 client端
@@ -447,9 +427,6 @@ nfs4_do_fsinfo
 
 server端
 与 NFSPROC4_CLNT_SERVER_CAPS 类似，返回文件不同的属性
-
-
-
 
 
 // NFSPROC4_CLNT_PATHCONF(client) = OP_SEQUENCE+OP_PUTFH+OP_GETATTR
@@ -471,8 +448,6 @@ server端
 与 NFSPROC4_CLNT_SERVER_CAPS 类似，返回文件不同的属性
 
 
-
-
 // NFSPROC4_CLNT_GETATTR(client) = OP_SEQUENCE+OP_PUTFH+OP_GETATTR
 client端
 nfs4_proc_getattr
@@ -489,9 +464,6 @@ nfs4_proc_getattr
 
 server端
 与 NFSPROC4_CLNT_SERVER_CAPS 类似，返回文件不同的属性
-
-
-
 
 
 // NFSPROC4_CLNT_ACCESS(client) = OP_SEQUENCE+OP_PUTFH+OP_ACCESS+OP_GETATTR
@@ -525,10 +497,6 @@ nfsd4_access
   nfsd_permission // 根据客户端请求的权限校验是否允许对应的操作
    *access = result // 经校验后当前客户端可获取的权限
    *supported = sresult // 当前服务端能支持的权限
-
-
-
-
 
 
 // NFSPROC4_CLNT_LOOKUP(client) = OP_SEQUENCE+OP_PUTFH+OP_LOOKUP+OP_GETFH+OP_GETATTR
@@ -568,10 +536,6 @@ nfsd4_lookup
   nfsd_lookup_dentry // 查找目标文件的 dentry
   check_nfsd_access // 校验访问权限
   fh_compose // 将 current_fh 设置为查找的文件
-
-
-
-
 
 
 /********************* 查看目录 *********************/
@@ -632,9 +596,6 @@ nfsd4_encode_readdir
    iterate_dir // 读取server端本地文件夹内容
    nfsd4_encode_dirent // server端本地文件夹的内容保存到xdr中
 
-
-
-
 /********************* 读文件 *********************/
 挂载点为 /mnt/sdb
 
@@ -674,8 +635,6 @@ nfs4_do_open
   _nfs4_open_and_get_state
    _nfs4_proc_open
     nfs4_run_open_task
-
-
 
 
 nfs4_xdr_enc_open
@@ -781,11 +740,6 @@ nfsd4_open
  fh_dup2(&cstate->current_fh, resfh) // current_fh 设置成目标文件
 
 
-
-
-
-
-
 nfsd4_encode_open
  nfsd4_encode_stateid // open->op_stateid
 
@@ -825,7 +779,6 @@ nfsd4_encode_read
  nfsd4_encode_readv // 从 file 中读数据
 
 
-
 <---------------- 关闭文件 ---------------->
 // NFSPROC4_CLNT_CLOSE(client) = OP_SEQUENCE+OP_PUTFH+OP_CLOSE
 
@@ -841,7 +794,6 @@ nfs4_close_sync
 	 arg->seqid
 	 arg->stateid
    nfs4_xdr_dec_close
-
 
 server端
 nfsd4_decode_close
@@ -910,8 +862,6 @@ nfsd_file_put
 , nfsd]: 1
 
 
-
-
 /********************* 写文件 *********************/
 echo 445566 > /mnt/sdb/dir/dir1/dir2/testfile
 
@@ -923,7 +873,6 @@ echo 445566 > /mnt/sdb/dir/dir1/dir2/testfile
 // open testfile
 // write testfile
 // close testfile
-
 
 <---------------- 写文件 ---------------->
 // NFSPROC4_CLNT_WRITE(client) = OP_SEQUENCE+OP_PUTFH+OP_WRITE
@@ -973,8 +922,6 @@ nfsd4_write
   vfs_iter_write // 调用 vfs 接口向底层文件系统的文件写入数据
 
 nfsd4_encode_write
-
-
 
 
 /********************* 卸载 *********************/
@@ -1040,7 +987,6 @@ nfsd4_destroy_clientid
   __destroy_client
 
 
-
 <---------------- client端返还 delegation ---------------->
 NFSPROC4_CLNT_DELEGRETURN
 
@@ -1079,7 +1025,6 @@ nfsd4_delegreturn
 		 locks_wake_up_blocks // 唤醒被阻塞的锁
 
 
-
 <---------------- nfs4.0 客户端续约 ---------------->
 需要客户端发送专门的RENEW操作实现续约
 
@@ -1109,8 +1054,6 @@ nfsd4_renew
     renew_client_locked
 	 list_move_tail(&clp->cl_lru, &nn->client_lru) // 将client移到链表末尾
 	 clp->cl_time = ktime_get_boottime_seconds() // 更新 cl_time
-
-
 
 <---------------- nfs4.1 客户端续约 ---------------->
 每一个复合请求都能实现续约
@@ -1143,8 +1086,6 @@ nfsd
 	   nfsd4_put_session_locked
 	    put_client_renew_locked
 		 renew_client_locked
-
-
 
 
  438                 { NFS_MOUNT_SOFT, ",soft", "" },
@@ -1184,7 +1125,6 @@ dev_name 192.168.240.251:/sdb
 dir_name // 挂载目录，用户态字符串，打印不出来
 type_page nfs4
 data_page vers=4.2,addr=192.168.240.251,clientaddr=192.168.240.250
-
 
 inode 所在的 nfs_inode 包含 nfs_fh ，指向 server 的文件(目录)
 
@@ -2019,13 +1959,6 @@ laundromat_main
 [2024-05-06 16:23:14]  [  369.477105]  ret_from_fork+0x1f/0x30
 
 
-
-
-
-
-
-
-
 515 @y[
 516     nfs4_schedule_state_renewal+1
 517     nfs4_setup_state_renewal+317
@@ -2175,4 +2108,324 @@ nfs_pgio_result
 nfs_commit_release // ops->rpc_release
  nfs_write_completion
   nfs_mapping_set_error(req->wb_page, hdr->error)
+```
+
+## 宽限期分析
+```
+mount /dev/sda /mnt1
+echo "/mnt1 *(rw,acl,no_root_squash,fsid=0)" > /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o rw,vers=4 127.0.0.1:/ /mnt2 && mount|grep nfs && touch /mnt1/tmpfile_1 && umount /mnt2
+
+[root@localhost nfsd_test]# cat test.sh
+#!/bin/bash
+
+counter=1
+
+while true; do
+    systemctl restart nfs-server
+    mount -t nfs -o rw,vers=4.0 127.0.0.1:/ /mnt2 && mount | grep nfs && touch /mnt2/tmpfile_$counter && umount /mnt2
+    counter=$((counter + 1))
+done
+
+[root@localhost nfsd_test]#
+
+open 操作之所以卡住，是因为当前服务端处理宽限期。
+
+大致流程：
+服务端重启 --> 服务端进入宽限期 --> 客户端心跳失败 --> 客户端检测到服务端重启，尝试恢复原来状态 --> 服务端宽限期结束
+
+宽限期用于在服务端重启后，对重启前各客户端的文件打开状态进行恢复，在此期间，不接受任何普通打开请求。
+当前NFSv4.0宽限期为固定时长，NFSv4.1在客户端恢复完成后宽限期立刻结束
+
+// open 操作卡住位置
+[root@nfs_test3 test]# cat /proc/3368/stack
+[<0>] nfs4_handle_exception+0x16f/0x200
+[<0>] nfs4_do_open+0x1d7/0x240
+[<0>] nfs4_atomic_open+0xf1/0x100
+[<0>] nfs_atomic_open+0x2c5/0x810
+[<0>] lookup_open.isra.0+0x50d/0x750
+[<0>] open_last_lookups+0x202/0x4c0
+[<0>] path_openat+0x9c/0x2b0
+[<0>] do_filp_open+0xbb/0x170
+[<0>] do_sys_openat2+0x218/0x290
+[<0>] __x64_sys_open+0x53/0xa0
+[<0>] do_syscall_64+0x70/0x120
+[<0>] entry_SYSCALL_64_after_hwframe+0x78/0xe2
+[root@nfs_test3 test]#
+
+客户端卡住状态
+nfs4_do_open
+ _nfs4_do_open // 发送open请求，服务端返回 NFS4ERR_GRACE
+ nfs4_handle_exception
+  nfs4_do_handle_exception
+   exception->delay = 1
+  nfs4_delay // 延时重试
+
+服务端开启宽限期
+nfsd_svc
+ nfsd_startup_net
+  nfs4_state_start_net
+   locks_start_grace // 宽限期开始
+    list_add // nn->nfsd4_manager 加入链表
+   queue_delayed_work // 90秒后运行 laundromat_work
+
+宽限期期间操作及宽限期恢复
+// 普通open操作 NFSv4.0
+nfsd4_open
+ opens_in_grace
+  __state_in_grace
+   list_for_each_entry // 获取到 nfsd4_manager
+   lm->block_opens // return true
+ // return nfserr_grace
+
+// laundromat_work
+// 用于 NFSv4.0 恢复
+laundromat_main
+ nfs4_laundromat
+  nfsd4_end_grace // 宽限期结束
+   locks_end_grace
+    list_del_init // nn->nfsd4_manager 移出链表
+
+// 普通open操作 NFSv4.1
+nfsd4_open
+ test_bit // NFSD4_CLIENT_RECLAIM_COMPLETE
+ // return nfserr_grace
+
+// OP_RECLAIM_COMPLETE
+// 用于 NFSv4.1 恢复
+// 客户端 发送 reclaim complete 请求
+nfs4_state_manager
+ nfs4_state_end_reclaim_reboot
+  nfs4_reclaim_complete
+   nfs41_proc_reclaim_complete // NFSPROC4_CLNT_RECLAIM_COMPLETE
+// 服务端 处理 reclaim complete 请求
+nfsd4_reclaim_complete
+ test_and_set_bit // NFSD4_CLIENT_RECLAIM_COMPLETE
+
+// 特殊open操作 (open->op_claim_type == NFS4_OPEN_CLAIM_PREVIOUS)
+// 客户端 发送 特殊open操作
+nfs4_state_manager
+ nfs4_do_reclaim
+  nfs4_reclaim_open_state
+   __nfs4_reclaim_open_state
+    ops->recover_open
+     nfs4_open_reclaim
+      nfs4_do_open_reclaim
+       _nfs4_do_open_reclaim
+        nfs4_open_recoverdata_alloc // NFS4_OPEN_CLAIM_PREVIOUS
+// 服务端 处理 特殊open操作
+nfsd4_reclaim_complete
+ test_bit // NFSD4_CLIENT_RECLAIM_COMPLETE 通过检测，继续执行
+
+```
+
+## 挂载与fsid
+```
+挂载的导出目录是3级目录，不指定fsid，会生成3个sb，并且销毁前两个
+导出目录是服务端挂载点下一级
+mkfs.ext4 -F /dev/sdb
+mount /dev/sdb /mnt/sdb
+mkdir /mnt/sdb/test_dir2
+echo "/mnt/sdb *(rw,no_root_squash)" > /etc/exports
+echo "/mnt/sdb/test_dir2 *(ro,no_root_squash)" >> /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+
+2root@nfs_test2 ~]# mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+[ 3796.053574][ T3761] nfs_get_tree not internal fc ffff98b98dcbfa00 fc->sb_flags 0x1
+[ 3796.092017][ T3761] nfs_get_tree internal fc ffff98b98dcb8200 fc->sb_flags 0x1
+[ 3796.093712][ T3761] sget_fc new s ffff98b9c2761000
+[ 3796.094520][ T3761] nfs_get_tree_common get s ffff98b9c2761000 s_flags 0x1 fc ffff98b98dcb8200 fc->sb_flags 0x1
+[ 3796.098551][ T3761] nfs_d_automount 155
+[ 3796.099250][ T3761] nfs_d_automount fc ffff98b98dcb8200 fc->sb_flags 0x0
+[ 3796.102148][ T3761] nfs_get_tree internal fc ffff98b98dcb8200 fc->sb_flags 0x0
+[ 3796.103492][ T3761] nfs_compare_super 1194
+[ 3796.104188][ T3761] nfs_compare_super 1197
+[ 3796.104867][ T3761] nfs_compare_super 1201
+[ 3796.105851][ T3761] sget_fc new s ffff98b9c4899000
+[ 3796.106658][ T3761] nfs_compare_super 1194
+[ 3796.107358][ T3761] nfs_compare_super 1197
+[ 3796.108036][ T3761] nfs_compare_super 1201
+[ 3796.108734][ T3761] nfs_get_tree_common get s ffff98b9c4899000 s_flags 0x0 fc ffff98b98dcb8200 fc->sb_flags 0x0
+[ 3796.112736][ T3761] nfs_d_automount 155
+[ 3796.113513][ T3761] nfs_d_automount fc ffff98b9a65d7a00 fc->sb_flags 0x0
+[ 3796.116430][ T3761] nfs_get_tree internal fc ffff98b9a65d7a00 fc->sb_flags 0x0
+[ 3796.117653][ T3761] nfs_compare_super 1194
+[ 3796.118346][ T3761] nfs_compare_super 1197
+[ 3796.119043][ T3761] nfs_compare_super 1201
+[ 3796.119752][ T3761] nfs_compare_super 1194
+[ 3796.120662][ T3761] nfs_compare_super 1197
+[ 3796.121372][ T3761] nfs_compare_super 1201
+[ 3796.122377][ T3761] sget_fc new s ffff98b9c2774000
+[ 3796.123179][ T3761] nfs_compare_super 1194
+[ 3796.123862][ T3761] nfs_compare_super 1197
+[ 3796.124562][ T3761] nfs_compare_super 1201
+[ 3796.125257][ T3761] nfs_compare_super 1194
+[ 3796.125940][ T3761] nfs_compare_super 1197
+[ 3796.126640][ T3761] nfs_compare_super 1201
+[ 3796.127344][ T3761] nfs_get_tree_common get s ffff98b9c2774000 s_flags 0x0 fc ffff98b9a65d7a00 fc->sb_flags 0x0
+[ 3796.160604][ T3096] destroy_super_work free s ffff98b9c4899000
+[root@nfs_test2 ~]# [ 3796.171313][  T125] destroy_super_work free s ffff98b9c2761000
+
+[root@nfs_test2 ~]#
+
+
+挂载的导出目录是2级目录，不指定fsid，会生成3个sb，并且销毁前两个
+导出目录是服务端挂载点
+echo "/mnt/ *(rw,no_root_squash)" > /etc/exports
+echo "/mnt/sdb/ *(ro,no_root_squash)" >> /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/ /mnt/sdbb
+
+[root@nfs_test2 ~]# mount -t nfs -o ro 127.0.0.1:/mnt/sdb/ /mnt/sdbb
+[ 4105.659603][ T3993] nfs_get_tree not internal fc ffff98b98c65be00 fc->sb_flags 0x1
+[ 4105.703301][ T3993] nfs_get_tree internal fc ffff98b9a26b5c00 fc->sb_flags 0x1
+[ 4105.704820][ T3993] sget_fc new s ffff98b9a3444000
+[ 4105.705643][ T3993] nfs_get_tree_common get s ffff98b9a3444000 s_flags 0x1 fc ffff98b9a26b5c00 fc->sb_flags 0x1
+[ 4105.710623][ T3993] nfs_d_automount 155
+[ 4105.711399][ T3993] nfs_d_automount fc ffff98b9a26b0800 fc->sb_flags 0x0
+[ 4105.715594][ T3993] nfs_get_tree internal fc ffff98b9a26b0800 fc->sb_flags 0x0
+[ 4105.716929][ T3993] nfs_compare_super 1194
+[ 4105.717643][ T3993] nfs_compare_super 1197
+[ 4105.718354][ T3993] nfs_compare_super 1201
+[ 4105.719335][ T3993] sget_fc new s ffff98b9a302c000
+[ 4105.720144][ T3993] nfs_compare_super 1194
+[ 4105.720826][ T3993] nfs_compare_super 1197
+[ 4105.721523][ T3993] nfs_compare_super 1201
+[ 4105.722217][ T3993] nfs_get_tree_common get s ffff98b9a302c000 s_flags 0x0 fc ffff98b9a26b0800 fc->sb_flags 0x0
+[ 4105.730068][ T3993] nfs_d_automount 155
+[ 4105.730849][ T3993] nfs_d_automount fc ffff98b9a26b0800 fc->sb_flags 0x0
+[ 4105.735134][ T3993] nfs_get_tree internal fc ffff98b9a26b0800 fc->sb_flags 0x0
+[ 4105.736343][ T3993] nfs_compare_super 1194
+[ 4105.737025][ T3993] nfs_compare_super 1197
+[ 4105.737732][ T3993] nfs_compare_super 1201
+[ 4105.738560][ T3993] nfs_compare_super 1194
+[ 4105.739268][ T3993] nfs_compare_super 1197
+[ 4105.739950][ T3993] nfs_compare_super 1201
+[ 4105.740960][ T3993] sget_fc new s ffff98b9c5974000
+[ 4105.741777][ T3993] nfs_compare_super 1194
+[ 4105.742479][ T3993] nfs_compare_super 1197
+[ 4105.743182][ T3993] nfs_compare_super 1201
+[ 4105.743860][ T3993] nfs_compare_super 1194
+[ 4105.744562][ T3993] nfs_compare_super 1197
+[ 4105.745607][ T3993] nfs_compare_super 1201
+[ 4105.746335][ T3993] nfs_get_tree_common get s ffff98b9c5974000 s_flags 0x0 fc ffff98b9a26b0800 fc->sb_flags 0x0
+[ 4105.770824][ T3096] destroy_super_work free s ffff98b9a302c000
+[root@nfs_test2 ~]# [ 4105.783182][ T3096] destroy_super_work free s ffff98b9a3444000
+
+[root@nfs_test2 ~]#
+
+挂载的导出目录是1级目录，不指定fsid，会生成1个sb
+
+挂载根目录"/"
+mount /dev/sda /mnt2
+echo "/mnt2 *(rw,no_root_squash)" >/etc/exports
+systemctl restart nfs-server
+mount -t nfs -o ro,vers=4 127.0.0.1:/ /mnt/sdaa
+[root@nfs_test2 ~]# mount -t nfs -o ro,vers=4 127.0.0.1:/ /mnt/sdaa
+[ 4976.158275][ T4376] nfs_get_tree not internal fc ffff98b9c599be00 fc->sb_flags 0x1
+[ 4976.174583][ T4376] nfs_get_tree internal fc ffff98b9c599a600 fc->sb_flags 0x1
+[ 4976.175846][ T4376] nfs_compare_super 1194
+[ 4976.176552][ T4376] nfs_compare_super 1197
+[ 4976.177255][ T4376] nfs_compare_super 1201
+[ 4976.178289][ T4376] sget_fc new s ffff98b9e18d4000
+[ 4976.179098][ T4376] nfs_compare_super 1194
+[ 4976.179783][ T4376] nfs_compare_super 1197
+[ 4976.180489][ T4376] nfs_compare_super 1201
+[ 4976.181189][ T4376] nfs_get_tree_common get s ffff98b9e18d4000 s_flags 0x1 fc ffff98b9c599a600 fc->sb_flags 0x1
+[root@nfs_test2 ~]#
+
+挂载导出目录"/mnt2"
+mount /dev/sda /mnt2
+echo "/mnt2 *(rw,no_root_squash)" >/etc/exports
+systemctl restart nfs-server
+mount -t nfs -o ro,vers=4 127.0.0.1:/mnt2 /mnt/sdaa
+[root@nfs_test2 ~]# mount -t nfs -o ro,vers=4 127.0.0.1:/mnt2 /mnt/sdaa
+[ 1309.890702][ T2826] nfs_get_tree not internal fc ffff99f3a9835000 fc->sb_flags 0x1
+[ 1309.922871][ T2811] NFS: SECINFO: security flavor 390003 is not supported
+[ 1309.928290][ T2811] NFS: SECINFO: security flavor 390004 is not supported
+[ 1309.933505][ T2811] NFS: SECINFO: security flavor 390005 is not supported
+[ 1309.936396][ T2826] nfs_get_tree internal fc ffff99f3937d9400 fc->sb_flags 0x1
+[ 1309.938010][ T2826] sget_fc new s ffff99f393a09000
+[ 1309.938833][ T2826] nfs_get_tree_common get s ffff99f393a09000 s_flags 0x1 fc ffff99f3937d9400 fc->sb_flags 0x1
+[ 1309.951307][ T2826] nfs_d_automount 155
+[ 1309.952069][ T2826] nfs_d_automount fc ffff99f3937de800 fc->sb_flags 0x0
+[ 1309.956728][ T2826] nfs_get_tree internal fc ffff99f3937de800 fc->sb_flags 0x0
+[ 1309.957970][ T2826] nfs_compare_super 1194
+[ 1309.958719][ T2826] nfs_compare_super 1197
+[ 1309.959478][ T2826] nfs_compare_super 1201
+[ 1309.960453][ T2826] sget_fc new s ffff99f3a95f9000
+[ 1309.961292][ T2826] nfs_compare_super 1194
+[ 1309.962046][ T2826] nfs_compare_super 1197
+[ 1309.962736][ T2826] nfs_compare_super 1201
+[ 1309.963453][ T2826] nfs_get_tree_common get s ffff99f3a95f9000 s_flags 0x0 fc ffff99f3937de800 fc->sb_flags 0x0
+[root@nfs_test2 ~]# [ 1310.004409][ T2792] destroy_super_work free s ffff99f393a09000
+
+
+挂载的导出目录是3级目录，指定fsid
+echo "/mnt/sdb *(rw,no_root_squash,fsid=0)" > /etc/exports
+echo "/mnt/sdb/test_dir2 *(ro,no_root_squash,fsid=1)" >> /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+
+echo "/mnt/sdb *(rw,no_root_squash)" > /etc/exports
+echo "/mnt/sdb/test_dir2 *(ro,no_root_squash)" >> /etc/exports
+
+
+mount /dev/sdb /mnt/sdb
+echo "/mnt *(rw,no_root_squash,fsid=0)" > /etc/exports
+echo "/mnt/sdb *(rw,no_root_squash,fsid=1)" >> /etc/exports
+systemctl restart nfs-server
+
+mount -t nfs -o ro,vers=4 127.0.0.1:/sdb /mnt/sdbb
+mount -t nfs -o remount,ro,vers=4 127.0.0.1:/sdb /mnt/sdbb
+mount -t nfs -o ro,vers=4 127.0.0.1:/sdb /mnt/sdbb
+[root@nfs_test2 ~]# mount -t nfs -o ro,vers=4 127.0.0.1:/sdb /mnt/sdbb
+[ 4528.496750][ T4132] nfs_get_tree not internal fc ffff98b9c599c400 fc->sb_flags 0x1
+[ 4528.528356][ T4132] nfs_get_tree internal fc ffff98b9c599ac00 fc->sb_flags 0x1
+[ 4528.529903][ T4132] sget_fc new s ffff98b9a5f89000
+[ 4528.530735][ T4132] nfs_get_tree_common get s ffff98b9a5f89000 s_flags 0x1 fc ffff98b9c599ac00 fc->sb_flags 0x1
+[ 4528.538067][ T4132] nfs_d_automount 155
+[ 4528.538759][ T4132] nfs_d_automount fc ffff98b98b3e0800 fc->sb_flags 0x0
+[ 4528.542789][ T4132] nfs_get_tree internal fc ffff98b98b3e0800 fc->sb_flags 0x0
+[ 4528.544024][ T4132] nfs_compare_super 1194
+[ 4528.544732][ T4132] nfs_compare_super 1197
+[ 4528.545430][ T4132] nfs_compare_super 1201
+[ 4528.546407][ T4132] sget_fc new s ffff98b98b4f1000
+[ 4528.547227][ T4132] nfs_compare_super 1194
+[ 4528.547912][ T4132] nfs_compare_super 1197
+[ 4528.548620][ T4132] nfs_compare_super 1201
+[ 4528.549325][ T4132] nfs_get_tree_common get s ffff98b98b4f1000 s_flags 0x0 fc ffff98b98b3e0800 fc->sb_flags 0x0
+[root@nfs_test2 ~]# [ 4528.585885][  T153] destroy_super_work free s ffff98b9a5f89000
+
+
+
+echo "/mnt/ *(rw,no_root_squash)" > /etc/exports
+echo "/mnt/sdb/ *(ro,no_root_squash)" >> /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o ro,vers=4 127.0.0.1:/mnt/sdb /mnt/sdbb
+
+
+
+[root@nfs_test2 ~]# mount  | grep nfs
+nfsd on /proc/fs/nfsd type nfsd (rw,relatime)
+sunrpc on /var/lib/nfs/rpc_pipefs type rpc_pipefs (rw,relatime)
+127.0.0.1:/sdb on /mnt/sdbb type nfs4 (ro,relatime,vers=4.2,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=127.0.0.1,local_lock=none,a)
+127.0.0.1:/mnt/sdb/test_dir2 on /mnt/test_mp2 type nfs4 (rw,relatime,vers=4.2,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=127.0.0.1)
+[root@nfs_test2 ~]#
+
+在nfs的compare函数中通过源目录比较，让不同的挂载点用不同的sb
+
+疑问：unshare标记的语义是什么，这样改会不会影响unshare
+
+unshare 共享缓存，当前只有分配sb会使用，让不同的挂载点共享sb
+如果设置了 unshare，不会共享sb，直接将compare回调置NULL
+默认是share的，当前我们通过字符串区分挂载点的方式应该没问题
+
+1) 当前挂载的nfs是不是unshare
+if (server->flags & NFS_MOUNT_UNSHARED)
+
+2) 找到的superblock是不是unshare
+if (old->flags & NFS_MOUNT_UNSHARED)
 ```
