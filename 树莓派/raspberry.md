@@ -9,6 +9,9 @@ nnrv zslv idyw wkum
 export http_proxy="http://192.168.43.192:26001"
 export https_proxy="http://192.168.43.192:26001"
 
+export http_proxy="http://192.168.0.108:7890"
+export https_proxy="http://192.168.0.108:7890"
+
 sudo global -u -v
 sudo htags -v
 sudo htags -fosa
