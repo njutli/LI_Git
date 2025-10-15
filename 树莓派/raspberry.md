@@ -5,6 +5,10 @@ gyesLLF1026...
 RaspberryPi01
 nnrv zslv idyw wkum
 
+thunderbird 专用密码
+bjev mdml xyff oupb
+bjevmdmlxyffoupb
+
 配置 PC 作为外网访问代理
 export http_proxy="http://192.168.43.192:26001"
 export https_proxy="http://192.168.43.192:26001"
