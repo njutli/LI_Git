@@ -44,3 +44,4 @@ style.css
 gtags
 htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux -m 'start_kernel'
 
+htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux-stable -m 'start_kernel'
