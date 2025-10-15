@@ -170,6 +170,7 @@ spinfs结构：
 #### 1) mount
 ```
 mount("/dev/sde", "/mnt/sde", "ext4", 0, NULL) = 0
+生成 root dentry, mount, root inode, superblock
 do_mount
  path_mount
   do_new_mount
@@ -244,6 +245,28 @@ dentry 怎么释放？
 ```
 #### 3) open
 ```
+https://zhuanlan.zhihu.com/p/471175983
+根据路径字符和指定fd，先找到起始path/dentry，再一级级查找生成path/dentry，最后返回与新 file 关联的 fd
+do_sys_open
+ do_sys_openat2
+  get_unused_fd_flags // 获取可用的fd
+  do_filp_open // 打开文件
+   set_nameidata // 初始化 nameidata ，包含待打开文件的路径信息
+   path_openat // 使用 nameidata 和 open_flags 打开文件
+    alloc_empty_file // 分配新的 file
+	path_init // 返回查询路径
+			  // 1) 全路径，直接返回
+			  // 2) 相对路径，dfd是当前目录，则获取当前目录的 path 和 inode 保存到 nd 中
+			  // 3) 相对路径，dfd是指定路径，则获取当前目录的 path 和 inode 保存到 nd 中
+	link_path_walk
+	 walk_component
+	  lookup_fast // 快速路径，当前查找位置对应的hash表上是否有与 nd->last 匹配的 dentry
+	  lookup_slow // 慢速路径
+	   __lookup_slow
+	    d_alloc_parallel // 分配新的 dentry ，加入对应的hash表
+	  step_into
+	do_open
+  fd_install // 关联 file 和 fd
 ```
 
 #### 4) close
