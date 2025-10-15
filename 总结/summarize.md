@@ -242,19 +242,19 @@ dentry 怎么释放？
     do_syscall_64+453
     entry_SYSCALL_64_after_hwframe+118
 ```
-#### open
+#### 3) open
 ```
 ```
 
-#### close
+#### 4) close
 ```
 ```
 
-#### read
+#### 5) read
 ```
 ```
 
-#### write
+#### 6) write
 ```
 ```
 
