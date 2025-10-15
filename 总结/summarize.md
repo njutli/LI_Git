@@ -271,6 +271,13 @@ do_sys_open
 
 #### 4) close
 ```
+close
+ file_close_fd // 根据 fd 获取 file
+ filp_flush
+ fput_close_sync
+  __fput
+   dput // 释放 dentry
+   file_free // 释放 file
 ```
 
 #### 5) read
