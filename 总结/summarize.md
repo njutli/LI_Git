@@ -165,7 +165,54 @@ spinfs结构：
 
 ```
 
-## NFSD
+## 文件系统
+### vfs
+#### 1) mount
+```
+mount("/dev/sde", "/mnt/sde", "ext4", 0, NULL) = 0
+do_mount
+ path_mount
+  do_new_mount
+   get_fs_type // 根据文件系统类型获取 file_system_type
+   fs_context_for_mount
+    alloc_fs_context // 分配初始化 fs_context
+   vfs_parse_fs_string // 通过kv将设备名保存在fc中
+   do_new_mount_fc
+    fc_mount
+	 vfs_get_tree
+	  ext4_get_tree // fc->ops->get_tree
+	   get_tree_bdev
+	    get_tree_bdev_flags
+		 lookup_bdev // 查找源设备
+		 sget_dev
+		  sget_fc // 分配初始化 superblock
+		   alloc_super
+		 ext4_fill_super
+		  __ext4_fill_super
+		   ext4_iget // 获取 root inode
+		    __ext4_iget
+			 iget_locked // 查找到则使用，否则新分配并初始化，加入全局hash表
+		   d_make_root // sb->s_root
+		    d_alloc_anon // 分配初始化 root dentry
+			 __d_alloc
+			d_instantiate // 在 dentry 中填充 inode 信息
+		 fc->root = dget(s->s_root) // 设置 root dentry
+	 vfs_create_mount
+	  alloc_vfsmnt // 分配 mount，返回内嵌的 vfsmount
+    do_add_mount
+	 graft_tree
+	  attach_recursive_mnt // 将 mount 添加到 mount 树中
+```
+#### 2) umount
+### ext4
+```
+https://blog.csdn.net/xuhaitao23/article/details/112404331
+```
+### xfs
+```
+https://zhuanlan.zhihu.com/p/352464797
+```
+### NFSD
 ```
 向华为GTS产品交付NFSD，对相关内核版本进行质量加固，提升服务稳定性
 
@@ -257,12 +304,5 @@ io_submit_sqe
 	    list_add_tail_rcu // worker->all_list --> wqe->all_list io_worker 由wqe管理
 ```
 
-## ext4
-```
-https://blog.csdn.net/xuhaitao23/article/details/112404331
-```
-## xfs
-```
-https://zhuanlan.zhihu.com/p/352464797
-```
+
 
