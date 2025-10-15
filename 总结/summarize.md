@@ -289,6 +289,17 @@ ksys_read
    init_sync_kiocb // 初始化 kiocb ，包含源信息(文件，偏移)
    iov_iter_ubuf // 初始化 iov_iter ，包含目的信息(buf, len)
   ext4_file_read_iter // file->f_op->read_iter
+
+DAX
+ext4_dax_read_iter
+
+DIO
+ext4_dio_read_iter
+
+buffer io
+generic_file_read_iter
+
+
 ```
 
 #### 6) write
