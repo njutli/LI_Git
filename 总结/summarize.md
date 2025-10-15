@@ -282,6 +282,13 @@ close
 
 #### 5) read
 ```
+ksys_read
+ file_ppos // 获取文件偏移
+ vfs_read
+  new_sync_read
+   init_sync_kiocb // 初始化 kiocb ，包含源信息(文件，偏移)
+   iov_iter_ubuf // 初始化 iov_iter ，包含目的信息(buf, len)
+  ext4_file_read_iter // file->f_op->read_iter
 ```
 
 #### 6) write
