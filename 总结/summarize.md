@@ -202,8 +202,46 @@ do_mount
     do_add_mount
 	 graft_tree
 	  attach_recursive_mnt // 将 mount 添加到 mount 树中
+	   get_mountpoint // 标记当前挂载目录为挂载点，DCACHE_MOUNTED，在后续查找文件时可以从dentry上或许最新的一个mount(最后一次在这个目录上挂载的文件系统的mount)
 ```
 #### 2) umount
+```
+umount2("/mnt/sde", 0)
+ksys_umount
+ path_umount
+  can_umount // 判断是否可以卸载
+  do_umount
+   nfs_umount_begin // sb->s_op->umount_begin ，带有 MNT_FORCE 标记时执行，如nfs会终止所有rpc_task
+   umount_tree
+  mntput_no_expire
+   schedule_delayed_work // delayed_mntput_work
+
+delayed_mntput_work
+ delayed_mntput
+  cleanup_mnt
+   deactivate_super
+    deactivate_locked_super
+	 put_super // 释放 superblock
+   call_rcu // delayed_free_vfsmnt
+
+delayed_free_vfsmnt // 异步释放 mount
+ free_vfsmnt
+
+dentry 怎么释放？
+    dentry_free+1
+    __dentry_kill+328
+    dput.part.0+548
+    shrink_dcache_for_umount+135
+    generic_shutdown_super+32
+    kill_block_super+26
+    ext4_kill_sb+34
+    deactivate_locked_super+51
+    cleanup_mnt+186
+    task_work_run+92
+    exit_to_user_mode_loop+292
+    do_syscall_64+453
+    entry_SYSCALL_64_after_hwframe+118
+```
 ### ext4
 ```
 https://blog.csdn.net/xuhaitao23/article/details/112404331
