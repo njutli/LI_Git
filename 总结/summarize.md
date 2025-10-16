@@ -291,6 +291,8 @@ ksys_read
   ext4_file_read_iter // file->f_op->read_iter
 
 DAX
+绕过页缓存 + 绕过块层，直接映射文件页到用户地址空间
+直接通过映射的设备地址将数据读到用户态buf
 ext4_dax_read_iter
  dax_iomap_rw
   iomap_iter
@@ -303,7 +305,8 @@ ext4_dax_read_iter
     _copy_to_iter
 
 DIO
-不涉及文件 mapping ，直接将数据读到 page 中，再将数据传递给用户态
+绕过页缓存，直接 DMA 到用户缓冲区
+不涉及文件 mapping ，分配page结构体描述用户态buf，关联page和bio后下发bio，将数据直接传递给用户态buf
 ext4_dio_read_iter
  iomap_dio_rw // ext4_iomap_ops
   __iomap_dio_rw
@@ -335,6 +338,7 @@ iomap_dio_bio_end_io
 
 
 Buffer io
+通过页缓存读写文件
 将数据读到 folio 中，再重 folio 拷贝到用户态buf
 generic_file_read_iter
  filemap_read
