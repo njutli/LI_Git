@@ -307,8 +307,9 @@ ext4_dio_read_iter
 	  bio_iov_iter_get_pages_aligned
 	   __bio_iov_iter_get_pages
 	    iov_iter_extract_pages
-		 iov_iter_extract_kvec_pages
+		 iov_iter_extract_user_pages
 		  want_pages_array // 当前要读取的数据量需要多少个page，分配对应数量的page
+		  pin_user_pages_fast // 使用用户态buf地址设置page，这样DIO读的数据就直接读到用户态buf中了
 	    bio_add_folio
 		 bio_add_page
 		  __bio_add_page
@@ -317,6 +318,12 @@ ext4_dio_read_iter
     iomap_dio_submit_bio 
 	 submit_bio // 提交bio
  iomap_dio_complete
+
+// DIO 完成后
+iomap_dio_bio_end_io
+ iomap_dio_done
+  blk_wake_io_task // 唤醒等待的进程 dio->submit.waiter
+
 
 Buffer io
 将数据读到 folio 中，再重 folio 拷贝到用户态buf
