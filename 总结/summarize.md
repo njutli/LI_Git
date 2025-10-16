@@ -354,7 +354,6 @@ generic_file_read_iter
 		 submit_bio // 提交bio
   copy_folio_to_iter // 将 folio 中的数据拷贝到用户态buf
 
-
 ```
 
 #### 6) write
