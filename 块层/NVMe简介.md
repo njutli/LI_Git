@@ -3,8 +3,6 @@
 
 NVMe是一种Host与SSD之间通讯的协议，它在协议栈中隶属高层，制定了Host与SSD之间通讯的命令，以及命令如何执行的
 
-![](D:\4-oskernel\学习小结\block\NVME协议层级.PNG)
-
 **NVMe**属于**应用层**，通过使用**传输层PCIe**的服务实现通信
 
 # 二、NVME命令
@@ -12,15 +10,14 @@ NVMe是一种Host与SSD之间通讯的协议，它在协议栈中隶属高层，
 NVMe有三种命令（基于spec 2.0），
 第一种是**Admin Command**，用以Host管理和控制SSD；
 第二种是**I/O Command**，用以Host和SSD之间数据的传输；
-第三种是**Fabrics Command**，用于支持基于RDMA（Remote Direct Memory Access，远程直接内存访问）的命令和数据传输(drivers\nvme\host\fabrics.c)![image-20230323113120408](C:\Users\l00503603\AppData\Roaming\Typora\typora-user-images\image-20230323113120408.png)
+第三种是**Fabrics Command**，用于支持基于RDMA（Remote Direct Memory Access，远程直接内存访问）的命令和数据传输(drivers\nvme\host\fabrics.c)
+Figure 5: TYpes of NVMe Command Sets
 
 （spec 1.2中只介绍了Admin Command Set与NVM Command Set）
 
 # 三、NVME组成介绍
 
 ## （一）整体组成
-
-![](D:\4-oskernel\学习小结\block\NVME组成.PNG)
 
 1、**SQ**：Submission Queue，提交队列，存放HOST提交的命令
 2、**CQ**：Completion Queue，完成队列，存放SSD执行指令的结果
