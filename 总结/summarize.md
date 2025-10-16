@@ -292,6 +292,15 @@ ksys_read
 
 DAX
 ext4_dax_read_iter
+ dax_iomap_rw
+  iomap_iter
+   ext4_iomap_begin_report // ops->iomap_begin
+  dax_iomap_iter
+   dax_direct_access
+    pmem_dax_direct_access // dax_dev->ops->direct_access
+	 __pmem_direct_access // 读出数据，返回地址 kaddr
+   dax_copy_to_iter // 将地址 kaddr 中的数据数据拷贝到用户态buf
+    _copy_to_iter
 
 DIO
 不涉及文件 mapping ，直接将数据读到 page 中，再将数据传递给用户态
