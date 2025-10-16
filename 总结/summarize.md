@@ -294,10 +294,49 @@ DAX
 ext4_dax_read_iter
 
 DIO
+不涉及文件 mapping ，直接将数据读到 page 中，再将数据传递给用户态
 ext4_dio_read_iter
+ iomap_dio_rw // ext4_iomap_ops
+  __iomap_dio_rw
+   inode_dio_begin
+   iomap_dio_iter
+    iomap_dio_bio_iter
+	 iomap_dio_alloc_bio // 分配初始化 bio
+	 iomap_sector // 获取磁盘位置，设置 bio->bi_iter.bi_sector ， IO 起始位置
+	 bio_iov_iter_get_bdev_pages
+	  bio_iov_iter_get_pages_aligned
+	   __bio_iov_iter_get_pages
+	    iov_iter_extract_pages
+		 iov_iter_extract_kvec_pages
+		  want_pages_array // 当前要读取的数据量需要多少个page，分配对应数量的page
+	    bio_add_folio
+		 bio_add_page
+		  __bio_add_page
+		   bvec_set_page // 关联 bio 与 page。 这个 page 是什么，和 mapping 中的 page 什么差别？
+		   bio->bi_iter.bi_size += len // IO 大小
+    iomap_dio_submit_bio 
+	 submit_bio // 提交bio
+ iomap_dio_complete
 
-buffer io
+Buffer io
+将数据读到 folio 中，再重 folio 拷贝到用户态buf
 generic_file_read_iter
+ filemap_read
+  folio_batch_init // 初始化 folio_batch 用于保存文件对应的 folio
+  filemap_get_pages
+   filemap_get_read_batch // 从文件的 mapping 中查找待读取范围对应的 folio
+   page_cache_sync_ra // 没找到则做预读
+    do_page_cache_ra
+	 page_cache_ra_unbounded
+	  ractl_alloc_folio // 分配 folio
+	  filemap_add_folio // folio 加入 mapping
+	  read_pages
+	   ext4_read_folio // aops->read_folio
+	    ext4_mpage_readpages
+		 bio_alloc // 分配 bio
+		 bio_add_folio // 关联 bio 和 folio
+		 submit_bio // 提交bio
+  copy_folio_to_iter // 将 folio 中的数据拷贝到用户态buf
 
 
 ```
