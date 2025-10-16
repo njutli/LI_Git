@@ -165,7 +165,7 @@ spinfs结构：
 
 ```
 
-## 文件系统
+## （三）文件系统
 ### vfs
 #### 1) mount
 ```
@@ -323,7 +323,8 @@ https://zhuanlan.zhihu.com/p/352464797
 输出DT用例10+，提升NFSD覆盖率80%+，为后续版本可靠性提供保障。
 
 ```
-## io_uring
+## （四）其他
+### io_uring
 <img width="724" height="841" alt="image" src="https://github.com/user-attachments/assets/bb739a91-4c18-496d-a465-594ad5a5311b" />
 <img width="724" height="630" alt="image" src="https://github.com/user-attachments/assets/087cd837-cd88-4f2c-9fdd-04e3d11a5b1f" />
 <img width="242" height="763" alt="image" src="https://github.com/user-attachments/assets/e6e9dc8d-5881-42cd-9f7c-bb92e5963dfd" />
@@ -405,6 +406,7 @@ io_submit_sqe
 	   io_init_new_worker
 	    list_add_tail_rcu // worker->all_list --> wqe->all_list io_worker 由wqe管理
 ```
-
+### folio
+https://blog.csdn.net/feelabclihu/article/details/131485936
 
 
