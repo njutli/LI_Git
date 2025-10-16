@@ -362,6 +362,27 @@ generic_file_read_iter
 
 #### 6) write
 ```
+ksys_write
+ vfs_write
+  new_sync_write
+   init_sync_kiocb // 初始化 kiocb ，包含目的信息(文件，偏移)
+   iov_iter_ubuf // 初始化 iov_iter ，包含源信息(buf, len)
+   ext4_file_write_iter // filp->f_op->write_iter
+
+DAX
+ext4_dax_write_iter
+ dax_iomap_rw
+  iomap_iter
+  dax_iomap_iter
+   dax_direct_access // 获取对应的设备地址
+   dax_copy_from_iter // 将用户态数据拷贝到设备地址
+
+DIO
+用新分配的page描述用户buf，再下发IO直接将数据写入设备
+ext4_dio_write_iter
+
+Buffer io
+nfs回写流程
 ```
 
 ### ext4
