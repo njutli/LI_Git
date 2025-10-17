@@ -47,5 +47,13 @@ style.css
 gtags
 htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux -m 'start_kernel'
 
+# 6.6
 gtags
 htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux-stable -m 'start_stable-kernel'
+
+# 5.10
+gtags
+htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux-stable -m 'start_stable-5.10-kernel'
+
+sudo vim /etc/apache2/sites-available/000-default.conf
+sudo systemctl reload apache2
