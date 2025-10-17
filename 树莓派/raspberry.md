@@ -10,11 +10,14 @@ bjev mdml xyff oupb
 bjevmdmlxyffoupb
 
 配置 PC 作为外网访问代理
-export http_proxy="http://192.168.43.192:26001"
-export https_proxy="http://192.168.43.192:26001"
+export http_proxy="http://192.168.43.192:4780"
+export https_proxy="http://192.168.43.192:4780"
 
 export http_proxy="http://192.168.0.108:7890"
 export https_proxy="http://192.168.0.108:7890"
+
+export http_proxy="http://192.168.0.108:4780"
+export https_proxy="http://192.168.0.108:4780"
 
 sudo global -u -v
 sudo htags -v
@@ -44,4 +47,5 @@ style.css
 gtags
 htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux -m 'start_kernel'
 
-htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux-stable -m 'start_kernel'
+gtags
+htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux-stable -m 'start_stable-kernel'
