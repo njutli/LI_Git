@@ -491,6 +491,7 @@ https://zhuanlan.zhihu.com/p/352464797
 ```
 ## （四）其他
 ### io_uring
+#### io_uring基本结构和流程
 <img width="724" height="841" alt="image" src="https://github.com/user-attachments/assets/bb739a91-4c18-496d-a465-594ad5a5311b" />
 <img width="724" height="630" alt="image" src="https://github.com/user-attachments/assets/087cd837-cd88-4f2c-9fdd-04e3d11a5b1f" />
 <img width="242" height="763" alt="image" src="https://github.com/user-attachments/assets/e6e9dc8d-5881-42cd-9f7c-bb92e5963dfd" />
@@ -572,6 +573,449 @@ io_submit_sqe
 	   io_init_new_worker
 	    list_add_tail_rcu // worker->all_list --> wqe->all_list io_worker 由wqe管理
 ```
+#### io_uring问题
+
+老版本 io_uring 经常遇到 uaf 问题，合入重构补丁后解决
+io_uring: import 5.15-stable io_uring
+https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/?h=v5.10.245&id=788d0824269bef539fe31a785b1517882eafed93
+回合5.15上io_uring的实现到5.10(其中删除io_identity可修复CVE-2023-0240)
+修复补丁带有如下补丁的修改：
+https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?h=v6.2-rc7&id=3bfe6106693b6b4ba175ad1f929c4660b8f59ca8
+该补丁修改了进程信息的传递方式，原本通过io_identity传递，现在修改了worker进程的创建方式，由后台线程创建修改为manager创建，可直接继承父进程信息
+worker线程原本由后台线程创建，处理req时所需的fs/mm/nsproxy等信息由io_identity携带，当前修改为manager进程创建，直接继承父进程的信息
+
+1、printk bug导致CPU不调度，阻塞io_uring实例释放
+io_ring_exit_work 退出流程中，io_ring_ctx 内嵌的 percpu_ref 已经被 kill(percpu_ref_kill)，最后一个计数一直没释放
+```
+percpu_ref_kill
+ percpu_ref_kill_and_confirm
+  __percpu_ref_switch_mode
+   __percpu_ref_switch_to_atomic
+    percpu_ref_get // 获取计数
+     call_rcu // percpu_ref_switch_to_atomic_rcu
+
+percpu_ref_switch_to_atomic_rcu
+ atomic_long_add // 将data->count减去 PERCPU_COUNT_BIAS
+ percpu_ref_call_confirm_rcu
+  percpu_ref_put // 预期这里释放计数
+从count计数为 0x8000000000000001 可确定 percpu_ref_switch_to_atomic_rcu 未执行
+未执行原因为宽限期未结束
+```
+从dmesg和core中发现进程 3386 一直占用着CPU0，导致CPU0无法调度，宽限期无法结束
+
+2、文件系统只读，无法刷脏页，worker退出流程hungtask
+```
+INFO: task io_uring_stress:290554 blocked for more than 606 seconds.
+      Not tainted 5.10.0-00002-g642474be0f3a-dirty #2
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+task:io_uring_stress state:D stack:    0 pid:290554 ppid:     1 flags:0x00000209
+Call trace:
+ __switch_to+0x98/0xf0 arch/arm64/kernel/process.c:600
+ context_switch kernel/sched/core.c:4233 [inline]
+ __schedule+0x620/0xed8 kernel/sched/core.c:5448
+ schedule+0xd8/0x1cc kernel/sched/core.c:5526
+ schedule_timeout+0x390/0x43c kernel/time/timer.c:2113
+ do_wait_for_common kernel/sched/completion.c:85 [inline]
+ __wait_for_common kernel/sched/completion.c:106 [inline]
+ wait_for_common+0x14c/0x260 kernel/sched/completion.c:117
+ wait_for_completion+0x20/0x40 kernel/sched/completion.c:138
+ io_wq_exit_workers+0x23c/0x4e0 io_uring/io-wq.c:1258
+ io_wq_put_and_exit+0x30/0x80 io_uring/io-wq.c:1293
+ io_uring_clean_tctx io_uring/io_uring.c:9706 [inline]
+ io_uring_cancel_generic+0x464/0x53c io_uring/io_uring.c:9775
+ __io_uring_cancel+0x1c/0x40 io_uring/io_uring.c:9789
+ io_uring_files_cancel include/linux/io_uring.h:47 [inline]
+ do_exit+0xe0/0x770 kernel/exit.c:767
+ do_group_exit+0x64/0x124 kernel/exit.c:916
+ do_notify_qmp_cmd_name: human-monitor-command, arguments: {"command-line": "info registers", "cpu-index": 1}
+ work_pending+0xc/0xa0
+```
+
+故障注入导致文件系统变只读，无法刷脏页，请求无法完成
+```
+// 一直尝试刷脏页，但脏页无法正常下刷，无法满足门限，导致无法退出
+balance_dirty_pages
+ wb_start_background_writeback
+  wb_wakeup
+   mod_delayed_work // wb->dwork
+
+// ext4返回了 -EROFS，导致脏页无法下刷
+wb_workfn
+ wb_do_writeback
+  wb_writeback
+   writeback_sb_inodes
+    __writeback_single_inode
+     do_writepages
+      ext4_writepages
+       ext4_test_mount_flag(inode->i_sb, EXT4_MF_FS_ABORTED)
+       // ret = -EROFS
+
+// 故障注入导致IO错误，设置了 EXT4_MF_FS_ABORTED
+__ext4_error
+ // "EXT4-fs error (device %s): %s:%d: comm %s: %pV\n"
+ ext4_handle_error
+  ext4_set_mount_flag(sb, EXT4_MF_FS_ABORTED)
+```
+
+kill -9 无法杀死worker进程，可使用tkill
+
+```
+#include <signal.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+
+void main()
+{
+        syscall(SYS_tkill, 263105, 9);
+}
+
+[2025-06-10 20:14:07]  [root@localhost tracing]# cat /proc/t263105263105/stack 
+[2025-06-10 20:14:17]  
+[2025-06-10 20:14:17]  [<0>] balance_dirty_pages+0x466/0x1420
+[2025-06-10 20:14:17]  [<0>] balance_dirty_pages_ratelimited+0x996/0xf30
+[2025-06-10 20:14:17]  [<0>] generic_perform_write+0x22e/0x2f0
+[2025-06-10 20:14:17]  [<0>] ext4_buffered_write_iter+0x11e/0x200
+[2025-06-10 20:14:17]  [<0>] io_write+0x250/0x5b0
+[2025-06-10 20:14:17]  [<0>] io_issue_sqe+0x2a4/0x13d0
+[2025-06-10 20:14:17]  [<0>] io_wq_submit_work+0xe5/0x1b0
+[2025-06-10 20:14:17]  [<0>] io_worker_handle_work+0x219/0x610
+[2025-06-10 20:14:17]  [<0>] io_wqe_worker+0x461/0x4b0
+[2025-06-10 20:14:17]  [<0>] ret_from_fork+0x1f/0x30
+[2025-06-10 20:14:20]  [root@localhost tracing]# cat /proc/263105/stack 
+[2025-06-10 20:16:07]  
+[2025-06-10 20:16:07]  cat: /proc/263105/stack: No such file or directory
+[2025-06-10 20:16:10]  
+[2025-06-10 20:16:11]  [root@localhost tracing]# 
+```
+
+```
+balance_dirty_pages
+ fatal_signal_pending
+  __fatal_signal_pending // 检测 p->pending.signal
+
+kill系统调用
+kill_something_info
+ kill_proc_info
+  kill_pid_info
+   group_send_sig_info // type 为 PIDTYPE_TGID
+    do_send_sig_info
+	 send_signal
+	  __send_signal
+	   pending = (type != PIDTYPE_PID) ? &t->signal->shared_pending : &t->pending
+	   // 信号设置在 shared_pending 上
+
+tkill系统调用
+do_tkill
+ do_send_specific
+  do_send_sig_info // PIDTYPE_PID
+  // 信号设置在 pending 上
+```
+
+3、用户态unregister buffer请求卡住
+```
+[root@nfs_test3 ~]# ps aux | grep debug
+polkitd    442  0.0  0.0 534192 17024 ?        Ssl  15:33   0:00 /usr/lib/polkit-1/polkitd --no-debug
+root      2938  0.5  0.0   6492   688 ttyS0    S+   16:38   0:00 ./debug
+root      2940  0.0  0.0 119468   964 pts/0    S+   16:38   0:00 grep --color=auto debug
+[root@nfs_test3 ~]# cat /proc/2938/stack
+[<0>] io_rsrc_ref_quiesce.part.0.constprop.0.cold+0x71/0x14e
+[<0>] __io_uring_register+0x62f/0x8c0
+[<0>] __se_sys_io_uring_register+0x143/0x230
+[<0>] do_syscall_64+0x2c/0x40
+[<0>] entry_SYSCALL_64_after_hwframe+0x6c/0xd6
+[root@nfs_test3 ~]# 
+```
+
+问题流程
+```
+io_uring_register
+ __io_uring_register
+  io_sqe_buffers_unregister
+   io_rsrc_ref_quiesce
+    io_rsrc_node_switch
+	 rsrc_node->rsrc_data = data_to_kill // data 关联 node
+	 list_add_tail // node 加入 ctx->rsrc_ref_list
+	 atomic_inc // 增加 data 计数，表示链表对 data 的引用，当前计数为 2
+	            // 在等待过程中如果被强制kill，会再次循环加入链表，计数会再增加
+	 percpu_ref_kill // rsrc_node->refs 减 node 计数，若减为0则调用 io_rsrc_node_ref_zero
+	atomic_dec_and_test // 减去 data 初始化计数，当前计数为 1
+	wait_for_completion_interruptible // 等待 done 被设置
+
+// 每个node在计数减为0的时候都会调用一次这个release回调，将node->done置位true
+io_rsrc_node_ref_zero
+ list_first_entry // 遍历 ctx->rsrc_ref_list 处理已插入的 node
+ 1) 当前遍历到的node没有设置 node->done，直接退出循环
+ 2) 当前遍历到的node设置了 node->done，node 加入 ctx->rsrc_put_llist
+ // 如果有 node 设置了 node->done ，会唤醒 put_work
+ mod_delayed_work // 触发 rsrc_put_work io_rsrc_put_work
+
+// 预期情况
+io_rsrc_put_work
+ llist_del_all // 从 ctx->rsrc_put_llist 中获取 node
+ __io_rsrc_put_work
+  atomic_dec_and_test // 减 rsrc_data->refs 计数
+  complete // 计数减为0，设置 &rsrc_data->done，唤醒 unregister 进程
+
+// 实际情况
+有一个node的计数没有减为0，不会 queue io_rsrc_put_work
+
+io_req_set_rsrc_node
+ percpu_ref_get // req 获取 node 计数
+
+io_dismantle_req
+ percpu_ref_put // req 释放 node 计数
+
+10:52:17 localhost.localdomain kernel: io_rsrc_node_alloc 7925 node ffff888107e62688 done false
+10:53:33 localhost.localdomain kernel: io_req_set_rsrc_node req ffff88812c6c2340 get node ffff888107e62688 refs ffff888107e62688 done
+10:53:33 localhost.localdomain kernel: io_req_set_rsrc_node req ffff88812c6c2340 get node ffff888107e62688 refs ffff888107e62688 done
+10:53:33 localhost.localdomain kernel: io_dismantle_req req ffff88812c6c2340 put node refs ffff888107e62688 done
+10:53:33 localhost.localdomain kernel: io_req_set_rsrc_node req ffff88817a9961c0 get node ffff888107e62688 refs ffff888107e62688 done
+10:53:33 localhost.localdomain kernel: io_req_set_rsrc_node req ffff88817a9961c0 get node ffff888107e62688 refs ffff888107e62688 done
+10:53:33 localhost.localdomain kernel: io_req_set_rsrc_node req ffff88811d9a8cc0 get node ffff888107e62688 refs ffff888107e62688 done
+10:53:33 localhost.localdomain kernel: io_req_set_rsrc_node req ffff88811d9a8cc0 get node ffff888107e62688 refs ffff888107e62688 done
+10:53:33 localhost.localdomain kernel: io_dismantle_req req ffff88811d9a8cc0 put node refs ffff888107e62688 done
+10:53:35 localhost.localdomain kernel: io_req_set_rsrc_node req ffff888150b6afc0 get node ffff888107e62688 refs ffff888107e62688 done
+10:53:35 localhost.localdomain kernel: io_req_set_rsrc_node req ffff888150b6afc0 get node ffff888107e62688 refs ffff888107e62688 done
+10:53:35 localhost.localdomain kernel: io_dismantle_req req ffff888150b6afc0 put node refs ffff888107e62688 done
+10:53:51 localhost.localdomain kernel: io_req_set_rsrc_node req ffff88812c6c0f40 get node ffff888107e62688 refs ffff888107e62688 done
+10:53:51 localhost.localdomain kernel: io_req_set_rsrc_node req ffff88812c6c0f40 get node ffff888107e62688 refs ffff888107e62688 done
+10:53:51 localhost.localdomain kernel: io_dismantle_req req ffff88812c6c0f40 put node refs ffff888107e62688 done
+10:54:00 localhost.localdomain kernel: io_req_set_rsrc_node req ffff88811d9af5c0 get node ffff888107e62688 refs ffff888107e62688 done
+10:54:00 localhost.localdomain kernel: io_req_set_rsrc_node req ffff88811d9af5c0 get node ffff888107e62688 refs ffff888107e62688 done
+10:54:00 localhost.localdomain kernel: io_dismantle_req req ffff88811d9af5c0 put node refs ffff888107e62688 done
+10:54:02 localhost.localdomain kernel: io_req_set_rsrc_node req ffff88812c6c0cc0 get node ffff888107e62688 refs ffff888107e62688 done
+10:54:02 localhost.localdomain kernel: io_req_set_rsrc_node req ffff88812c6c0cc0 get node ffff888107e62688 refs ffff888107e62688 done
+10:54:02 localhost.localdomain kernel: io_dismantle_req req ffff88812c6c0cc0 put node refs ffff888107e62688 done
+10:54:09 localhost.localdomain kernel: io_req_set_rsrc_node req ffff88812c6c34c0 get node ffff888107e62688 refs ffff888107e62688 done
+10:54:09 localhost.localdomain kernel: io_req_set_rsrc_node req ffff88812c6c34c0 get node ffff888107e62688 refs ffff888107e62688 done
+10:54:09 localhost.localdomain kernel: io_dismantle_req req ffff88812c6c34c0 put node refs ffff888107e62688 done
+10:54:09 localhost.localdomain kernel: io_rsrc_node_switch data ffff8881328e6648 refs 2 node ffff888107e62688
+10:54:09 localhost.localdomain kernel: io_rsrc_node_switch kill node ffff888107e62688 done
+10:54:11 localhost.localdomain kernel: io_rsrc_node_ref_zero 7892 node ffff888107e62688 done false
+10:54:11 localhost.localdomain kernel: io_rsrc_node_ref_zero 7901 node ffff888107e62688
+
+复现后通过打印确认 req ffff88817a9961c0 没有释放 node 计数
+```
+
+让io_uring实例文件的poll回调返回0导致的该问题
+```
+static __poll_t io_uring_poll(struct file *file, poll_table *wait)
+{
+	struct io_ring_ctx *ctx = file->private_data;
+	__poll_t mask = 0;
+
+	poll_wait(file, &ctx->poll_wait, wait);
+	/*
+	 * synchronizes with barrier from wq_has_sleeper call in
+	 * io_commit_cqring
+	 */
+	smp_rmb();
+//	if (!io_sqring_full(ctx))
+//		mask |= EPOLLOUT | EPOLLWRNORM;
+
+	/*
+	 * Don't flush cqring overflow list here, just do a simple check.
+	 * Otherwise there could possible be ABBA deadlock:
+	 *      CPU0                    CPU1
+	 *      ----                    ----
+	 * lock(&ctx->uring_lock);
+	 *                              lock(&ep->mtx);
+	 *                              lock(&ctx->uring_lock);
+	 * lock(&ep->mtx);
+	 *
+	 * Users may get EPOLLIN meanwhile seeing nothing in cqring, this
+	 * pushs them to do the flush.
+	 */
+//	if (io_cqring_events(ctx) || test_bit(0, &ctx->check_cq_overflow))
+//		mask |= EPOLLIN | EPOLLRDNORM;
+
+	return mask;
+}
+```
+
+```
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <liburing.h>
+
+#define BUF_SIZE 4096
+#define QUEUE_DEPTH 8
+#define FILE_NAME "fixed_write_test.txt"
+
+int main() {
+    struct io_uring ring;
+    int file_fd, ret;
+
+    // ===== 1. 初始化 io_uring 实例 =====
+    if (io_uring_queue_init(QUEUE_DEPTH, &ring, 0) != 0) {
+        perror("io_uring_queue_init");
+        return -1;
+    }
+
+    // ===== 2. 准备固定缓冲区 =====
+    char *fixed_buf;
+    if (posix_memalign((void**)&fixed_buf, BUF_SIZE, BUF_SIZE)) {
+        perror("posix_memalign");
+        io_uring_queue_exit(&ring);
+        return -1;
+    }
+    strcpy(fixed_buf, "Hello, io_uring fixed write!");  // 写入测试数据
+
+    // ===== 3. 注册固定缓冲区到内核 =====
+    struct iovec iov = { .iov_base = fixed_buf, .iov_len = BUF_SIZE };
+    if (io_uring_register_buffers(&ring, &iov, 1) < 0) {
+        perror("io_uring_register_buffers");
+        free(fixed_buf);
+        io_uring_queue_exit(&ring);
+        return -1;
+    }
+
+    // ===== 4. 打开目标文件 =====
+    file_fd = open(FILE_NAME, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (file_fd < 0) {
+        perror("open");
+        free(fixed_buf);
+        io_uring_queue_exit(&ring);
+        return -1;
+    }
+
+    // ===== 5. 准备并提交 fixed_write 请求 =====
+    struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
+    if (!sqe) {
+        perror("io_uring_get_sqe");
+        close(file_fd);
+        free(fixed_buf);
+        io_uring_queue_exit(&ring);
+        return -1;
+    }
+
+    // 设置 fixed_write 参数 [3,8](@ref)
+    io_uring_prep_write_fixed(
+        sqe,                    // SQE 指针
+        ring.ring_fd,                // 文件描述符
+        fixed_buf,              // 缓冲区地址
+        strlen(fixed_buf),      // 数据长度
+        0,                      // 文件偏移（0=从文件头开始）
+        0                       // 缓冲区索引（固定缓冲区的索引）
+    );
+
+    // 提交请求到内核 [2,10](@ref)
+    io_uring_submit(&ring);
+
+    // ===== 6. 等待并处理完成事件 =====
+/*
+    struct io_uring_cqe *cqe;
+    if (io_uring_wait_cqe(&ring, &cqe) < 0) {
+        perror("io_uring_wait_cqe");
+        close(file_fd);
+        free(fixed_buf);
+        io_uring_queue_exit(&ring);
+        return -1;
+    }
+*/
+    // 检查写入结果 [11](@ref)
+ /*
+    if (cqe->res < 0) {
+        fprintf(stderr, "Write error: %s\n", strerror(-cqe->res));
+    } else {
+        printf("Success! Wrote %d bytes to %s\n", cqe->res, FILE_NAME);
+    }
+*/
+    // ===== 7. 清理资源 =====
+  /*
+    io_uring_cqe_seen(&ring, cqe);      // 标记 CQE 已处理
+ */
+    if (io_uring_unregister_buffers(&ring) < 0) {
+            perror("io_uring_unregister_buffers");
+    }
+
+    close(file_fd);                     // 关闭文件
+    free(fixed_buf);                     // 释放缓冲区
+    io_uring_queue_exit(&ring);          // 销毁 io_uring 实例
+
+    return 0;
+}
+
+```
+
+
+
+4、写socket文件发送消息后对端不接收，导致请求无法完成
+写socket文件卡住
+```
+[root@localhost ~]# ps -eT | grep io_uring
+   2184    2184 ttyS0    00:00:00 io_uring_stress
+   2186    2186 ?        00:00:00 io_uring_stress
+   2186    2195 ?        00:00:00 io_uring_stress
+[root@localhost ~]# cat /proc/2186/stack
+[<0>] hrtimer_nanosleep+0x120/0x230
+[<0>] common_nsleep+0x5f/0x70
+[<0>] __se_sys_clock_nanosleep+0x18e/0x230
+[<0>] do_syscall_64+0x2b/0x40
+[<0>] entry_SYSCALL_64_after_hwframe+0x6c/0xd6
+[root@localhost ~]# cat /proc/2195/stack
+[<0>] io_rsrc_ref_quiesce.part.0+0x168/0x2b0
+[<0>] __io_uring_register+0x583/0x1100
+[<0>] __se_sys_io_uring_register+0x176/0x370
+[<0>] do_syscall_64+0x2b/0x40
+[<0>] entry_SYSCALL_64_after_hwframe+0x6c/0xd6
+[root@localhost ~]# netstat -tuanp
+Active Internet connections (servers and established)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0      0 0.0.0.0:8080            0.0.0.0:*               LISTEN      2184/./tools/io_uri
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      1235/sshd: /usr/sbi
+tcp        0      0 192.168.1.18:840        192.168.1.254:2049      ESTABLISHED -
+tcp        0      0 192.168.1.18:22         192.168.1.254:35720     ESTABLISHED 2274/sshd: root [pr
+tcp    81280 2537798 127.0.0.1:36696         127.0.0.1:8080          ESTABLISHED 2184/./tools/io_uri
+tcp    81482 2540160 127.0.0.1:8080          127.0.0.1:36696         ESTABLISHED 2184/./tools/io_uri
+tcp6       0      0 :::22                   :::*                    LISTEN      1235/sshd: /usr/sbi
+
+卡住直接原因同：http://hulk.rnd.huawei.com/issue/info/27030
+req未完成，导致无法释放node
+不同点在于这里操作的是"TCP"文件，在调用 sock_write_iter 时返回了 EAGAIN
+
+__io_queue_sqe
+ io_issue_sqe // 返回EAGAIN
+  io_write
+   call_write_iter
+    sock_write_iter // Send-Q 满返回EAGAIN
+ io_arm_poll_handler // 返回IO_APOLL_OK直接退出
+  vfs_poll
+   sock_poll
+    sock_poll_wait
+	 poll_wait // &sock->wq.wait
+	  io_async_queue_proc
+	   __io_queue_proc
+	    add_wait_queue // io_uring的poll加入 sock 的链表中
+
+预期情况：
+网络层在接收到对端ack后从链表中取出poll，执行对应回调
+io_poll_wake
+ __io_poll_execute
+  io_req_task_work_add
+
+io_apoll_task_func
+ io_req_task_submit
+  __io_queue_sqe
+
+实际情况：
+网络层一直未接收到ack
+```
+
+```
+tcp_rcv_established
+  tcp_data_snd_check
+    tcp_check_space
+	  tcp_new_space
+	    sk_stream_write_space
+
+等sk_stream_write_space的EPOLLOUT事件
+```
+
+
 ### folio
 https://blog.csdn.net/feelabclihu/article/details/131485936
 
