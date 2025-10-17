@@ -392,6 +392,84 @@ ext4_buffered_write_iter
 	 block_commit_write
 	  mark_buffer_dirty
 	   __mark_inode_dirty
+
+ksys_write
+ vfs_write
+  new_sync_write
+   init_sync_kiocb // 初始化 kiocb ，包含目的信息(文件，偏移)
+   iov_iter_ubuf // 初始化 iov_iter ，包含源信息(buf, len)
+   ext4_file_write_iter // filp->f_op->write_iter
+
+DAX
+ext4_dax_write_iter
+ dax_iomap_rw
+  iomap_iter
+  dax_iomap_iter
+   dax_direct_access // 获取对应的设备地址
+   dax_copy_from_iter // 将用户态数据拷贝到设备地址
+
+DIO
+用新分配的page描述用户buf，再下发IO直接将数据写入设备
+ext4_dio_write_iter
+
+Buffer io
+ext4_buffered_write_iter
+ generic_perform_write
+  ext4_da_write_begin // a_ops->write_begin 准备 folio
+  copy_folio_from_iter_atomic // 拷贝用户态数据到 folio
+  ext4_da_write_end // a_ops->write_end
+   ext4_da_do_write_end
+    block_write_end
+	 block_commit_write
+	  mark_buffer_dirty
+	   __mark_inode_dirty
+	    inode_attach_wb
+		 __inode_attach_wb
+		  cmpxchg // 设置 &inode->i_wb
+	    wb_wakeup_delayed
+
+
+后台回写进程的初始化流程：
+创建设备的时候和 gendisk 一起初始化
+__alloc_disk_node
+ bdi_alloc
+  bdi_init
+   cgwb_bdi_init
+    wb_init
+	 INIT_DELAYED_WORK // &wb->dwork wb_workfn
+
+后台回写进程怎么跑起来的：
+1) buffer write 写完数据后 queue work
+generic_perform_write
+ ...
+ a_ops->write_end
+  ...
+  __mark_inode_dirty
+   wb_wakeup_delayed
+    queue_delayed_work // wb->dwork
+2) 脏页超水线后 queue work
+generic_perform_write
+ balance_dirty_pages_ratelimited
+  balance_dirty_pages_ratelimited_flags
+   balance_dirty_pages
+    wb_start_background_writeback
+	 wb_wakeup
+	  mod_delayed_work // wb->dwork
+3) sync 后 queue work
+do_fsync
+ vfs_fsync
+  vfs_fsync_range
+   mark_inode_dirty_sync
+    __mark_inode_dirty
+	 wb_wakeup_delayed
+	  queue_delayed_work // wb->dwork
+
+
+后台回写流程怎么确认哪些数据需要回写：
+
+
+
+回写的数据是怎么来的：
 ```
 
 ### ext4
