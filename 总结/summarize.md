@@ -382,7 +382,16 @@ DIO
 ext4_dio_write_iter
 
 Buffer io
-nfs回写流程
+ext4_buffered_write_iter
+ generic_perform_write
+  ext4_da_write_begin // a_ops->write_begin 准备 folio
+  copy_folio_from_iter_atomic // 拷贝用户态数据到 folio
+  ext4_da_write_end // a_ops->write_end
+   ext4_da_do_write_end
+    block_write_end
+	 block_commit_write
+	  mark_buffer_dirty
+	   __mark_inode_dirty
 ```
 
 ### ext4
