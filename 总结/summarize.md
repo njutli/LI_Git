@@ -574,7 +574,7 @@ io_submit_sqe
 	    list_add_tail_rcu // worker->all_list --> wqe->all_list io_worker 由wqe管理
 ```
 #### 2) io_uring高级特性
-2.1) SQPOLL
+**2.1) SQPOLL**
 适用于高频小IO的场景
 让内核端有一个专用的内核线程持续轮询 SQ（Submission Queue），从而消除用户态→内核态提交 I/O 时的系统调用开销
 在普通 io_uring 模式下，用户每次提交 I/O 都需要调用一次：
@@ -646,7 +646,7 @@ SQPOLL 线程的 current->files 为 NULL，无法解析用户提交的 fd
  }
 ```
 
-2.2) IOPOLL
+**2.2) IOPOLL**
 ```
 传统模式：
 提交 I/O → 等待 → 硬件中断 → 中断处理 → 唤醒进程 → 收割完成事件
@@ -661,7 +661,7 @@ IOPOLL 模式：
 启用 IOPOLL 的情况下，需要用户发起查询请求后，内核向驱动层发起 poll 请求，驱动再向设备发 poll 请求，确认 IO 完成后内核才会填充 CQ。如果用户不调用 poll，内核不会主动感知 I/O 完成，也不会触发 CQ 填充
 
 
-2.3) register file
+**2.3) register file**
 适用于高频小IO的场景
 允许应用一次性注册一批 file 对象到内核，从而避免每次 I/O 都查 fd 表
 ```
