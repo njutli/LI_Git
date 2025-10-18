@@ -585,21 +585,21 @@ io_uring_enter(ring_fd, to_submit, min_complete, flags, sigset)
 而启用 IORING_SETUP_SQPOLL 后，用户空间线程只需将 SQE 写入共享的 ring buffer，
 内核态的 poll 线程（sq thread） 会主动从 ring 中取出请求并提交到内核 I/O 栈中，无需用户态系统调用唤醒内核。
 
-**SQPOLL 线程创建：**
+**SQPOLL 线程创建：**<br>
 当创建 io_uring 实例时，如果 params.flags 设置了 IORING_SETUP_SQPOLL，内核会为该 ring 创建一个 专用内核线程（sq thread） 来轮询 SQ。
 
-**SQPOLL 线程生命周期：**
+**SQPOLL 线程生命周期：**<br>
 线程启动：创建 ring 时由内核 io_sq_thread 创建；
 线程常驻内核，不退出；
 如果超过 sq_thread_idle（默认 2s）未检测到新请求，会自动休眠；
 当用户下次调用 io_uring_enter(..., IORING_ENTER_SQ_WAKEUP, ...) 时再唤醒。
 
-**性能收益分析：**
+**性能收益分析：**<br>
 避免系统调用：提交请求时无需 io_uring_enter()，减少 syscall 开销；
 批量处理更高效：SQPOLL 线程能一次性取多个 SQE 进行提交；
 CPU cache 亲和性好：SQPOLL 线程通常绑定在特定 CPU 核上（SQPOLL线程和下IO线程在同一NUMA上）
 
-**Redis特殊需求**
+**Redis特殊需求**<br>
 为保证性能，在启动sq_poll的情况下，需要io_uring-sq线程与redis进程始终在同一NUMA上运行。
 在拉起io_uring-sq线程时，继承调用者redis进程的cpumask。由于io_uring-sq线程只会初始化一次cpumask，当redis被重新调度时，由调度模块保证同NUMA，io_uring则保证io_uring-sq线程可由用户态设置cpumask，回合补丁 a5fc1441af77 ("io_uring/sqpoll: Do not set PF_NO_SETAFFINITY on sqpoll threads")
 
@@ -611,11 +611,11 @@ CPU cache 亲和性好：SQPOLL 线程通常绑定在特定 CPU 核上（SQPOLL�
 | CPU 占用  | 持续运行，可能较高                | 可控制轮询时间               |
 | 典型场景    | 高频提交、低延迟                 | NVMe 驱动、极低延迟 I/O      |
 
-**使用限制：**
+**使用限制：**<br>
 5.11前所有 I/O 必须使用注册文件（Registered Files），5.11消除了这个限制
 https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=28cea78af44918b920306df150afbd116bd94301
 
-**之前 SQPOLL 必须使用固定文件的原因：**
+**之前 SQPOLL 必须使用固定文件的原因：**<br>
 SQPOLL 线程是独立的内核线程，运行在不同的进程上下文中
 普通文件描述符（fd）是进程相关的，通过 current->files 访问
 SQPOLL 线程的 current->files 为 NULL，无法解析用户提交的 fd
