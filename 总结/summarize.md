@@ -574,7 +574,7 @@ io_submit_sqe
 	    list_add_tail_rcu // worker->all_list --> wqe->all_list io_worker 由wqe管理
 ```
 #### 2) io_uring高级特性
-**2.1) SQPOLL**
+#### 2.1) SQPOLL
 适用于高频小IO的场景
 让内核端有一个专用的内核线程持续轮询 SQ（Submission Queue），从而消除用户态→内核态提交 I/O 时的系统调用开销
 在普通 io_uring 模式下，用户每次提交 I/O 都需要调用一次：
@@ -646,7 +646,7 @@ SQPOLL 线程的 current->files 为 NULL，无法解析用户提交的 fd
  }
 ```
 
-**2.2) IOPOLL**
+#### 2.2) IOPOLL
 ```
 **传统模式：**
 提交 I/O → 等待 → 硬件中断 → 中断处理 → 唤醒进程 → 收割完成事件
@@ -660,8 +660,7 @@ SQPOLL 线程的 current->files 为 NULL，无法解析用户提交的 fd
 ```
 启用 IOPOLL 的情况下，需要用户发起查询请求后，内核向驱动层发起 poll 请求，驱动再向设备发 poll 请求，确认 IO 完成后内核才会填充 CQ。如果用户不调用 poll，内核不会主动感知 I/O 完成，也不会触发 CQ 填充
 
-
-**2.3) register file**
+#### 2.3) register file
 适用于高频小IO的场景
 允许应用一次性注册一批 file 对象到内核，从而避免每次 I/O 都查 fd 表
 ```
@@ -676,6 +675,55 @@ SQPOLL 线程的 current->files 为 NULL，无法解析用户提交的 fd
                     ↑_______________|
                    O(1) 直接访问
 ```
+
+#### 2.4) register buffer
+适用于高频小IO的场景<br>
+https://zhuanlan.zhihu.com/p/12853597708<br>
+
+**为什么需要 register buffer ———— 减少处理用户地址的开销**<br>
+在常规 I/O（包括普通 read/write 或 DIO）中，内核要处理用户空间的缓冲区指针：
+<ol>
+<li>检查用户地址是否合法（access_ok()）；
+<li>分页映射：get_user_pages()（GUP）；
+<li>建立页表映射或拷贝数据；
+<li>I/O 完成后 put_page() 释放引用。
+</ol>
+
+这些步骤在高频小块 I/O 中开销非常大。
+如果同一批缓冲区被频繁复用（例如数据库读写页缓存、网络 ring buffer），
+不断做 GUP / unmap 是完全没必要的。
+于是：
+> io_uring 提供了“register buffer”机制，允许应用**一次性注册一批内存页到内核中，之后反复使用这些 buffer 进行零拷贝 I/O**。
+
+**基本机制：**<br>
+应用通过：
+```
+struct iovec iovecs[nr];
+io_uring_register(ring_fd, IORING_REGISTER_BUFFERS, iovecs, nr);
+```
+每个 iovec 描述一块用户空间缓冲区：
+```
+struct iovec {
+    void *iov_base; // 起始地址
+    size_t iov_len; // 长度
+};
+```
+注册时内核会：
+<ol>
+<li>检查缓冲区可访问；
+<li>将用户空间虚拟地址锁定（防止被换出）；
+<li>调用 pin_user_pages() 将其固定为物理页；
+<li>保存到 io_ring_ctx->user_bufs[]；
+<li>维护引用计数，直到 unregister。
+</ol>
+
+**使用方式**<br>
+注册成功后，提交 SQE 时：
+```
+sqe->buf_index = index;             // 指向注册的 buffer
+sqe->flags |= IOSQE_BUFFER_SELECT;  // 或通过 BUFFER_GROUP 动态选择
+```
+这样 I/O 不再传递 `addr` 字段，而是直接引用已注册的缓冲区。
 
 **基本机制：**
 应用通过
