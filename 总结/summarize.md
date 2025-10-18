@@ -1,6 +1,6 @@
 # summarize
 ## （一）互联网场景性能优化
-### redis
+### （1）redis
 ```
 内存数据库,用于实时性很强的场景
 高性能缓存和中间态存储组件，承接大量短小、频繁的请求
@@ -13,14 +13,14 @@ io_uring 通过减少系统调用、批量化提交与完成、内核态流水�
 （关键还是减少系统调用，减少普通的read/write系统调用，也减少原本epoll查询结果的系统调用，使用io_uring的话可以直接检查CQ，不需要系统调用）
 
 ```
-### spark
+### （2）spark
 ```
 Apache Spark 是一个 分布式大数据处理框架，特点是 内存计算为主，支持批处理和流处理，是 互联网公司处理 PB 级数据、做复杂分析和实时计算的核心引擎。
 
 内存计算为主，内存不足时才落盘？瓶颈不在磁盘IO
 
 ```
-### clickhouse
+### （3）clickhouse
 ```
 面向联机分析处理（OLAP）的列式数据库，主打极高吞吐和低延迟的分析查询
 
@@ -166,7 +166,7 @@ spinfs结构：
 ```
 
 ## （三）文件系统
-### vfs
+### （1）vfs
 #### 1) mount
 ```
 mount("/dev/sde", "/mnt/sde", "ext4", 0, NULL) = 0
@@ -472,15 +472,15 @@ do_fsync
 回写的数据是怎么来的：
 ```
 
-### ext4
+### （2）ext4
 ```
 https://blog.csdn.net/xuhaitao23/article/details/112404331
 ```
-### xfs
+### （3）xfs
 ```
 https://zhuanlan.zhihu.com/p/352464797
 ```
-### NFSD
+### （4）NFSD
 ```
 向华为GTS产品交付NFSD，对相关内核版本进行质量加固，提升服务稳定性
 
@@ -490,8 +490,8 @@ https://zhuanlan.zhihu.com/p/352464797
 
 ```
 ## （四）其他
-### io_uring
-#### io_uring基本结构和流程
+### （1）io_uring
+#### 1) io_uring基本结构和流程
 <img width="724" height="841" alt="image" src="https://github.com/user-attachments/assets/bb739a91-4c18-496d-a465-594ad5a5311b" />
 <img width="724" height="630" alt="image" src="https://github.com/user-attachments/assets/087cd837-cd88-4f2c-9fdd-04e3d11a5b1f" />
 <img width="242" height="763" alt="image" src="https://github.com/user-attachments/assets/e6e9dc8d-5881-42cd-9f7c-bb92e5963dfd" />
@@ -573,7 +573,10 @@ io_submit_sqe
 	   io_init_new_worker
 	    list_add_tail_rcu // worker->all_list --> wqe->all_list io_worker 由wqe管理
 ```
-#### io_uring问题
+#### 2) io_uring高级特性
+
+
+#### 3) io_uring问题
 
 老版本 io_uring 经常遇到 uaf 问题，合入重构补丁后解决
 io_uring: import 5.15-stable io_uring
