@@ -574,7 +574,7 @@ io_submit_sqe
 	    list_add_tail_rcu // worker->all_list --> wqe->all_list io_worker 由wqe管理
 ```
 #### 2) io_uring高级特性
-#### 2.1) SQPOLL
+#### 2.1) SQPOLL<br>
 适用于高频小IO的场景
 让内核端有一个专用的内核线程持续轮询 SQ（Submission Queue），从而消除用户态→内核态提交 I/O 时的系统调用开销
 在普通 io_uring 模式下，用户每次提交 I/O 都需要调用一次：
@@ -725,7 +725,7 @@ sqe->flags |= IOSQE_BUFFER_SELECT;  // 或通过 BUFFER_GROUP 动态选择
 ```
 这样 I/O 不再传递 `addr` 字段，而是直接引用已注册的缓冲区。
 
-**基本机制：**
+**基本机制：**<br>
 应用通过
 ```
 io_uring_register(ring_fd, IORING_REGISTER_FILES, files, nr_files);
