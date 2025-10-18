@@ -599,6 +599,10 @@ SQPOLL 线程生命周期：
 批量处理更高效：SQPOLL 线程能一次性取多个 SQE 进行提交；
 CPU cache 亲和性好：SQPOLL 线程通常绑定在特定 CPU 核上（SQPOLL线程和下IO线程在同一NUMA上）
 
+**Redis特殊需求**
+为保证性能，在启动sq_poll的情况下，需要io_uring-sq线程与redis进程始终在同一NUMA上运行。
+在拉起io_uring-sq线程时，继承调用者redis进程的cpumask。由于io_uring-sq线程只会初始化一次cpumask，当redis被重新调度时，由调度模块保证同NUMA，io_uring则保证io_uring-sq线程可由用户态设置cpumask，回合补丁 a5fc1441af77 ("io_uring/sqpoll: Do not set PF_NO_SETAFFINITY on sqpoll threads")
+
 | 特性      | SQPOLL                   | IOPOLL                |
 | ------- | ------------------------ | --------------------- |
 | 全称      | Submission Queue Polling | IO Completion Polling |
@@ -641,6 +645,68 @@ SQPOLL 线程的 current->files 为 NULL，无法解析用户提交的 fd
 +       }
  }
 ```
+
+2.2) IOPOLL
+```
+传统模式：
+提交 I/O → 等待 → 硬件中断 → 中断处理 → 唤醒进程 → 收割完成事件
+        ↑_______________________________________|
+                    上下文切换开销
+
+IOPOLL 模式：
+提交 I/O → 主动轮询设备状态 → 发现完成 → 立即处理
+                ↑________________|
+                   无中断，低延迟
+```
+启用 IOPOLL 的情况下，需要用户发起查询请求后，内核向驱动层发起 poll 请求，驱动再向设备发 poll 请求，确认 IO 完成后内核才会填充 CQ。如果用户不调用 poll，内核不会主动感知 I/O 完成，也不会触发 CQ 填充
+
+
+2.3) register file
+适用于高频小IO的场景
+允许应用一次性注册一批 file 对象到内核，从而避免每次 I/O 都查 fd 表
+```
+传统方式（每次 I/O）：
+用户 fd → fget(fd) → 文件表查找 → 引用计数++ → 使用 → fput() → 引用计数--
+         ↑______________________________________________|
+              每次都要加锁、查表、操作引用计数
+
+Register File 方式：
+注册阶段：fd → 构建索引数组 → 增加引用计数（一次性）
+使用阶段：index → 直接数组访问 → 使用文件（无锁、无查表）
+                    ↑_______________|
+                   O(1) 直接访问
+```
+
+基本机制：
+应用通过
+```
+io_uring_register(ring_fd, IORING_REGISTER_FILES, files, nr_files);
+```
+把一组文件描述符注册到 io_uring 的上下文中（io_ring_ctx）。
+内核会：
+把每个用户态 fd 转换成 struct file *；
+存入 ctx->file_data[]；
+为这些 file * 增加引用计数；
+后续 I/O 直接引用这些 file 指针。
+注册成功后，提交 SQE（submission queue entry）时不再使用 fd 字段，而改用：
+```
+sqe->flags |= IOSQE_FIXED_FILE;
+sqe->fd = registered_index;   // 对应注册数组下标
+```
+这样，在提交阶段，io_uring 不再执行 fget() 查表，而是：
+```
+req->file = ctx->file_data[sqe->fd];
+```
+直接获取到已缓存的 struct file *。
+
+性能收益分析：
+| 路径       | 标准 I/O           | 使用 register files |
+| -------- | ---------------- | ----------------- |
+| 每次提交 I/O | fget() + fput()  | 直接取缓存指针           |
+| 系统调用     | 每次 1 次           | 通常批量提交            |
+| 内核锁竞争    | 有 (files_struct) | 无                 |
+| 上下文切换    | 较多               | 可完全避免             |
+
 
 #### 3) io_uring问题
 
