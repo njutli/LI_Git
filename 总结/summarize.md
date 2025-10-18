@@ -675,6 +675,35 @@ SQPOLL 线程的 current->files 为 NULL，无法解析用户提交的 fd
                     ↑_______________|
                    O(1) 直接访问
 ```
+**基本机制：**<br>
+应用通过
+```
+io_uring_register(ring_fd, IORING_REGISTER_FILES, files, nr_files);
+```
+把一组文件描述符注册到 io_uring 的上下文中（io_ring_ctx）。
+内核会：
+把每个用户态 fd 转换成 struct file *；
+存入 ctx->file_data[]；
+为这些 file * 增加引用计数；
+后续 I/O 直接引用这些 file 指针。
+注册成功后，提交 SQE（submission queue entry）时不再使用 fd 字段，而改用：
+```
+sqe->flags |= IOSQE_FIXED_FILE;
+sqe->fd = registered_index;   // 对应注册数组下标
+```
+这样，在提交阶段，io_uring 不再执行 fget() 查表，而是：
+```
+req->file = ctx->file_data[sqe->fd];
+```
+直接获取到已缓存的 struct file *。
+
+**性能收益分析：**
+| 路径       | 标准 I/O           | 使用 register files |
+| -------- | ---------------- | ----------------- |
+| 每次提交 I/O | fget() + fput()  | 直接取缓存指针           |
+| 系统调用     | 每次 1 次           | 通常批量提交            |
+| 内核锁竞争    | 有 (files_struct) | 无                 |
+| 上下文切换    | 较多               | 可完全避免             |
 
 #### 2.4) register buffer
 适用于高频小IO的场景<br>
@@ -724,37 +753,6 @@ sqe->buf_index = index;             // 指向注册的 buffer
 sqe->flags |= IOSQE_BUFFER_SELECT;  // 或通过 BUFFER_GROUP 动态选择
 ```
 这样 I/O 不再传递 `addr` 字段，而是直接引用已注册的缓冲区。
-
-**基本机制：**<br>
-应用通过
-```
-io_uring_register(ring_fd, IORING_REGISTER_FILES, files, nr_files);
-```
-把一组文件描述符注册到 io_uring 的上下文中（io_ring_ctx）。
-内核会：
-把每个用户态 fd 转换成 struct file *；
-存入 ctx->file_data[]；
-为这些 file * 增加引用计数；
-后续 I/O 直接引用这些 file 指针。
-注册成功后，提交 SQE（submission queue entry）时不再使用 fd 字段，而改用：
-```
-sqe->flags |= IOSQE_FIXED_FILE;
-sqe->fd = registered_index;   // 对应注册数组下标
-```
-这样，在提交阶段，io_uring 不再执行 fget() 查表，而是：
-```
-req->file = ctx->file_data[sqe->fd];
-```
-直接获取到已缓存的 struct file *。
-
-**性能收益分析：**
-| 路径       | 标准 I/O           | 使用 register files |
-| -------- | ---------------- | ----------------- |
-| 每次提交 I/O | fget() + fput()  | 直接取缓存指针           |
-| 系统调用     | 每次 1 次           | 通常批量提交            |
-| 内核锁竞争    | 有 (files_struct) | 无                 |
-| 上下文切换    | 较多               | 可完全避免             |
-
 
 #### 3) io_uring问题
 
