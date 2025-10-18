@@ -754,7 +754,10 @@ sqe->flags |= IOSQE_BUFFER_SELECT;  // 或通过 BUFFER_GROUP 动态选择
 ```
 这样 I/O 不再传递 `addr` 字段，而是直接引用已注册的缓冲区。
 
-#### 3) io_uring问题
+#### 3) 优化实践
+SQPOLL+register file优化redis性能
+
+#### 4) io_uring问题
 
 老版本 io_uring 经常遇到 uaf 问题，合入重构补丁后解决
 io_uring: import 5.15-stable io_uring
