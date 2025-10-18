@@ -754,7 +754,7 @@ sqe->flags |= IOSQE_BUFFER_SELECT;  // 或通过 BUFFER_GROUP 动态选择
 ```
 这样 I/O 不再传递 `addr` 字段，而是直接引用已注册的缓冲区。
 
-> &#9888; register buffer 的缓冲区必须页对齐（page aligned）
+> &#9888; register buffer 的缓冲区需要页对齐（page aligned）
 >> 1. 内核通过“页粒度”来固定（pin）用户空间内存，如果缓冲区不是页对齐的，首尾两页就需要特殊处理，这会导致多页被部分 pin，带来复杂性和性能损失。
 >> 2. man 手册没有要求“注册缓冲必须页对齐”。非页对齐可以注册，但会按页粒度 pin，造成更多内存被锁定；若对 O_DIRECT 路径做 I/O，不对齐会导致 I/O 本身失败（通常 EINVAL）。为性能与稳健，建议按页甚至设备扇区对齐分配并注册缓冲区。
 
