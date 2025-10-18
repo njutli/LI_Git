@@ -574,7 +574,73 @@ io_submit_sqe
 	    list_add_tail_rcu // worker->all_list --> wqe->all_list io_worker 由wqe管理
 ```
 #### 2) io_uring高级特性
+2.1) SQPOLL
+适用于高频小IO的场景
+让内核端有一个专用的内核线程持续轮询 SQ（Submission Queue），从而消除用户态→内核态提交 I/O 时的系统调用开销
+在普通 io_uring 模式下，用户每次提交 I/O 都需要调用一次：
+```
+io_uring_enter(ring_fd, to_submit, min_complete, flags, sigset)
+```
+这仍然是一次系统调用。
+而启用 IORING_SETUP_SQPOLL 后，用户空间线程只需将 SQE 写入共享的 ring buffer，
+内核态的 poll 线程（sq thread） 会主动从 ring 中取出请求并提交到内核 I/O 栈中，无需用户态系统调用唤醒内核。
 
+SQPOLL 线程创建：
+当创建 io_uring 实例时，如果 params.flags 设置了 IORING_SETUP_SQPOLL，内核会为该 ring 创建一个 专用内核线程（sq thread） 来轮询 SQ。
+
+SQPOLL 线程生命周期：
+线程启动：创建 ring 时由内核 io_sq_thread 创建；
+线程常驻内核，不退出；
+如果超过 sq_thread_idle（默认 2s）未检测到新请求，会自动休眠；
+当用户下次调用 io_uring_enter(..., IORING_ENTER_SQ_WAKEUP, ...) 时再唤醒。
+
+性能收益分析：
+避免系统调用：提交请求时无需 io_uring_enter()，减少 syscall 开销；
+批量处理更高效：SQPOLL 线程能一次性取多个 SQE 进行提交；
+CPU cache 亲和性好：SQPOLL 线程通常绑定在特定 CPU 核上（SQPOLL线程和下IO线程在同一NUMA上）
+
+| 特性      | SQPOLL                   | IOPOLL                |
+| ------- | ------------------------ | --------------------- |
+| 全称      | Submission Queue Polling | IO Completion Polling |
+| 线程      | 独立内核线程轮询 SQ              | 用户态主动轮询 CQ            |
+| 减少的系统调用 | 提交 syscall               | 完成 syscall            |
+| CPU 占用  | 持续运行，可能较高                | 可控制轮询时间               |
+| 典型场景    | 高频提交、低延迟                 | NVMe 驱动、极低延迟 I/O      |
+
+使用限制：
+5.11前所有 I/O 必须使用注册文件（Registered Files），5.11消除了这个限制
+https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=28cea78af44918b920306df150afbd116bd94301
+
+之前 SQPOLL 必须使用固定文件的原因：
+SQPOLL 线程是独立的内核线程，运行在不同的进程上下文中
+普通文件描述符（fd）是进程相关的，通过 current->files 访问
+SQPOLL 线程的 current->files 为 NULL，无法解析用户提交的 fd
+
+```
++static void __io_sq_thread_acquire_files(struct io_ring_ctx *ctx)
++{
++       if (!current->files) {
++               struct files_struct *files;
++               struct nsproxy *nsproxy;
++
++               task_lock(ctx->sqo_task);
++               files = ctx->sqo_task->files;
++               if (!files) {
++                       task_unlock(ctx->sqo_task);
++                       return;
++               }
++               atomic_inc(&files->count); // 增加引用计数
++               get_nsproxy(ctx->sqo_task->nsproxy);
++               nsproxy = ctx->sqo_task->nsproxy;
++               task_unlock(ctx->sqo_task);
++
++               task_lock(current);
++               current->files = files; // 保留请求提交进程的 files_struct
++               current->nsproxy = nsproxy;
++               task_unlock(current);
++       }
+ }
+```
 
 #### 3) io_uring问题
 
