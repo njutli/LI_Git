@@ -66,8 +66,7 @@ sudo rm -rf HTML GPATH GRTAGS GTAGS
 sudo gtags --gtagslabel=ctags --statistics
 
 # 3️⃣ 正确生成网页，指定有效起始函数
-sudo htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux-stable -m start_kernel
-
+sudo htags -DfFnvahoIstx --fixed-guide --auto-completion --symbol -t linux-stable-5.10 -m start_kernel
 
 sudo vim /etc/apache2/sites-available/000-default.conf
 sudo systemctl reload apache2
