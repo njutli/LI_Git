@@ -51,12 +51,23 @@ sudo htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux -m 'start_kern
 # 6.6
 sudo rm -f GPATH GRTAGS GTAGS
 sudo gtags
-sudo htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux-stable -m 'start_stable-kernel'
+sudo htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux-stable-6.6 -m 'start_kernel'
 
 # 5.10
 sudo rm -f GPATH GRTAGS GTAGS
 sudo gtags
-sudo htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux-stable -m 'start_stable-5.10-kernel'
+sudo htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux-stable-5.10 -m 'start_kernel'
+
+
+# 1️⃣ 清理旧索引与HTML
+sudo rm -rf HTML GPATH GRTAGS GTAGS
+
+# 2️⃣ 重新生成索引数据库
+sudo gtags --gtagslabel=ctags --statistics
+
+# 3️⃣ 正确生成网页，指定有效起始函数
+sudo htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux-stable -m start_kernel
+
 
 sudo vim /etc/apache2/sites-available/000-default.conf
 sudo systemctl reload apache2
