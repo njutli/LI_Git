@@ -523,6 +523,7 @@ Squashfs文件系统挂载时初始化的buffer，用于保存从磁盘读到的
 包含Page Cache2及相关操作的集合，在通过direct方式读取文件时初始化
 
 <img width="508" height="300" alt="image" src="https://github.com/user-attachments/assets/6467178e-0ae4-4ab4-8eb1-cbd23368482d" />
+
 squashfs支持FILE_CACHE/FILE_DIRECT两种数据读取方式。
 1. FILE_CACHE：<br>
 **磁盘→PageCache1**<br>
