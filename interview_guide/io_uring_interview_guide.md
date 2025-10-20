@@ -26,7 +26,7 @@ io_uring 是 Linux 5.1 引入的异步 I/O 框架，由 Jens Axboe 设计，用�
 2. **CQ（Completion Queue）**：返回完成事件的队列。
 3. **SQE（Submission Queue Entry）**：一次 I/O 请求描述。
 4. **CQE（Completion Queue Entry）**：I/O 完成的结果项。
-
+5. **SQ索引数组**：保存SQE的索引，当前与SQE是一一对应关系。
 ---
 
 ### Q4：io_uring 如何减少系统调用开销？
