@@ -1,0 +1,309 @@
+From bb0fbcaab864da3bf0ceaf523ba6636d4ec1acc7 Mon Sep 17 00:00:00 2001
+From: Li Lingfeng <lilingfeng3@huawei.com>
+Date: Wed, 11 Oct 2023 09:24:32 +0800
+Subject: [PATCH 1/2] [Huawei] dm snapshot: add persistent option of "PE"
+
+Offering: HULK
+hulk inclusion
+category: feature
+bugzilla: 189077
+
+--------------------------------
+
+Add persistent option of "PE"
+
+Signed-off-by: Li Lingfeng <lilingfeng3@huawei.com>
+---
+ drivers/md/dm-exception-store.h | 1 +
+ drivers/md/dm-snap-persistent.c | 9 ++++++---
+ 2 files changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/md/dm-exception-store.h b/drivers/md/dm-exception-store.h
+index 3f4139ac1f60..3b48e1c7d9ab 100644
+--- a/drivers/md/dm-exception-store.h
++++ b/drivers/md/dm-exception-store.h
+@@ -125,6 +125,7 @@ struct dm_exception_store {
+ 	void *context;
+ 
+ 	bool userspace_supports_overflow;
++	bool userspace_supports_eio;
+ };
+ 
+ /*
+diff --git a/drivers/md/dm-snap-persistent.c b/drivers/md/dm-snap-persistent.c
+index 8e329c3f3a78..a7214af55cc3 100644
+--- a/drivers/md/dm-snap-persistent.c
++++ b/drivers/md/dm-snap-persistent.c
+@@ -874,9 +874,11 @@ static int persistent_ctr(struct dm_exception_store *store, char *options)
+ 	}
+ 
+ 	if (options) {
+-		char overflow = toupper(options[0]);
+-		if (overflow == 'O')
++		char support_opt = toupper(options[0]);
++		if (support_opt == 'O')
+ 			store->userspace_supports_overflow = true;
++		else if (support_opt == 'E')
++			store->userspace_supports_eio = true;
+ 		else {
+ 			DMERR("Unsupported persistent store option: %s", options);
+ 			r = -EINVAL;
+@@ -906,7 +908,8 @@ static unsigned persistent_status(struct dm_exception_store *store,
+ 	case STATUSTYPE_INFO:
+ 		break;
+ 	case STATUSTYPE_TABLE:
+-		DMEMIT(" %s %llu", store->userspace_supports_overflow ? "PO" : "P",
++		DMEMIT(" %s %llu", store->userspace_supports_overflow ? "PO" :
++		       (store->userspace_supports_eio ? "PE" : "P"),
+ 		       (unsigned long long)store->chunk_size);
+ 	}
+ 
+-- 
+CodeHub
+
+
+From af8bb42dc0b82bcfef60ca4c82d0b2e20b6b60d3 Mon Sep 17 00:00:00 2001
+From: Li Lingfeng <lilingfeng3@huawei.com>
+Date: Wed, 11 Oct 2023 09:39:47 +0800
+Subject: [PATCH 2/2] [Huawei] dm snapshot: add support of no invalid snap and
+ re-validation when EIO
+
+Offering: HULK
+hulk inclusion
+category: feature
+bugzilla: 189077
+
+--------------------------------
+
+Add support of no invalid snap and re-validation when EIO
+
+Signed-off-by: Li Lingfeng <lilingfeng3@huawei.com>
+---
+ drivers/md/dm-exception-store.h |  4 ++
+ drivers/md/dm-snap-persistent.c | 76 ++++++++++++++++++++++++++++-----
+ drivers/md/dm-snap.c            | 30 +++++++++++--
+ 3 files changed, 97 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/md/dm-exception-store.h b/drivers/md/dm-exception-store.h
+index 3b48e1c7d9ab..5ad3204e0b2d 100644
+--- a/drivers/md/dm-exception-store.h
++++ b/drivers/md/dm-exception-store.h
+@@ -124,8 +124,12 @@ struct dm_exception_store {
+ 
+ 	void *context;
+ 
++	int last_error;
++
+ 	bool userspace_supports_overflow;
+ 	bool userspace_supports_eio;
++
++	bool commit_exception_failed;
+ };
+ 
+ /*
+diff --git a/drivers/md/dm-snap-persistent.c b/drivers/md/dm-snap-persistent.c
+index a7214af55cc3..992b8eaa5dc9 100644
+--- a/drivers/md/dm-snap-persistent.c
++++ b/drivers/md/dm-snap-persistent.c
+@@ -278,6 +278,14 @@ static void skip_metadata(struct pstore *ps)
+ 		ps->next_free++;
+ }
+ 
++static void rollback_skip_metadata(struct pstore *ps)
++{
++	uint32_t stride = ps->exceptions_per_area + 1;
++	chunk_t next_free = ps->next_free;
++	if (sector_div(next_free, stride) == NUM_SNAPSHOT_HDR_CHUNKS)
++		ps->next_free--;
++}
++
+ /*
+  * Read or write a metadata area.  Remembering to skip the first
+  * chunk which holds the header.
+@@ -699,8 +707,8 @@ static void persistent_commit_exception(struct dm_exception_store *store,
+ 	struct core_exception ce;
+ 	struct commit_callback *cb;
+ 
+-	if (!valid)
+-		ps->valid = 0;
++	if (!store->userspace_supports_eio && !ps->valid)
++		valid = 0;
+ 
+ 	ce.old_chunk = e->old_chunk;
+ 	ce.new_chunk = e->new_chunk;
+@@ -721,22 +729,29 @@ static void persistent_commit_exception(struct dm_exception_store *store,
+ 	 * filled this metadata area there's nothing more to do.
+ 	 */
+ 	if (!atomic_dec_and_test(&ps->pending_count) &&
+-	    (ps->current_committed != ps->exceptions_per_area))
++	    (ps->current_committed != ps->exceptions_per_area)) {
++		if (!store->userspace_supports_eio && !valid)
++			ps->valid = 0;
+ 		return;
++	}
+ 
+ 	/*
+ 	 * If we completely filled the current area, then wipe the next one.
+ 	 */
+ 	if ((ps->current_committed == ps->exceptions_per_area) &&
+-	    zero_disk_area(ps, ps->current_area + 1))
+-		ps->valid = 0;
++	    zero_disk_area(ps, ps->current_area + 1)) {
++		store->commit_exception_failed = true;
++		valid = 0;
++	}
+ 
+ 	/*
+ 	 * Commit exceptions to disk.
+ 	 */
+-	if (ps->valid && area_io(ps, REQ_OP_WRITE,
+-				 REQ_PREFLUSH | REQ_FUA | REQ_SYNC))
+-		ps->valid = 0;
++	if (valid && area_io(ps, REQ_OP_WRITE,
++				 REQ_PREFLUSH | REQ_FUA | REQ_SYNC)) {
++		store->commit_exception_failed = true;
++		valid = 0;
++	}
+ 
+ 	/*
+ 	 * Advance to the next area if this one is full.
+@@ -744,15 +759,55 @@ static void persistent_commit_exception(struct dm_exception_store *store,
+ 	if (ps->current_committed == ps->exceptions_per_area) {
+ 		ps->current_committed = 0;
+ 		ps->current_area++;
+-		zero_memory_area(ps);
++		/*
++		 * Move zero_memory_area() after checking "valid" if support EIO.
++		 */
++		if (!store->userspace_supports_eio)
++			zero_memory_area(ps);
+ 	}
+ 
+ 	for (i = 0; i < ps->callback_count; i++) {
+ 		cb = ps->callbacks + i;
+-		cb->callback(cb->context, ps->valid);
++		cb->callback(cb->context, valid);
+ 	}
+ 
++	if (!valid) {
++		if (!store->userspace_supports_eio)
++			ps->valid = 0;
++		else {
++			/*
++			 * current_committed will be set as zero when grow
++			 * up to exceptions_per_area.
++			 */
++			if (!ps->current_committed) {
++				ps->current_committed = ps->exceptions_per_area - ps->callback_count;
++				ps->current_area--;
++			} else
++				ps->current_committed = ps->current_committed - ps->callback_count;
++
++			for (i = 0; i < ps->callback_count; i++) {
++				ps->next_free--;
++				rollback_skip_metadata(ps);
++			}
++
++		}
++	} else {
++		/*
++		 * Snapshot is valid, zero_memory_area() can be called since no need to rollback.
++		 */
++		if (store->userspace_supports_eio && !ps->current_committed)
++			zero_memory_area(ps);
++	}
+ 	ps->callback_count = 0;
++
++	/*
++	 * reset flags which record err when all pending IO have been processed
++	 */
++	if(!atomic_read(&ps->pending_count)) {
++		store->commit_exception_failed = false;
++		store->last_error = 0;
++	}
++
+ }
+ 
+ static int persistent_prepare_merge(struct dm_exception_store *store,
+@@ -887,6 +942,7 @@ static int persistent_ctr(struct dm_exception_store *store, char *options)
+ 	}
+ 
+ 	store->context = ps;
++	store->commit_exception_failed = false;
+ 
+ 	return 0;
+ 
+diff --git a/drivers/md/dm-snap.c b/drivers/md/dm-snap.c
+index 41735a25d50a..fed6e9492327 100644
+--- a/drivers/md/dm-snap.c
++++ b/drivers/md/dm-snap.c
+@@ -1638,6 +1638,15 @@ static void __invalidate_snapshot(struct dm_snapshot *s, int err)
+ 	if (!s->valid)
+ 		return;
+ 
++	if (s->store->userspace_supports_eio) {
++		/*
++		 * Invalidate snapshot temporarily when IO err
++		 */
++		if (err == -EIO)
++			s->valid = 0;
++		return;
++	}
++
+ 	if (err == -EIO)
+ 		DMERR("Invalidating snapshot: Error reading/writing.");
+ 	else if (err == -ENOMEM)
+@@ -1749,10 +1758,18 @@ static void pending_complete(void *context, int success)
+ static void complete_exception(struct dm_snap_pending_exception *pe)
+ {
+ 	struct dm_snapshot *s = pe->snap;
++	int valid;
+ 
++	if (s->store->userspace_supports_eio)
++		valid = !pe->copy_error && !s->store->commit_exception_failed;
++	else
++		valid = !pe->copy_error;
+ 	/* Update the metadata if we are persistent */
+-	s->store->type->commit_exception(s->store, &pe->e, !pe->copy_error,
++	s->store->type->commit_exception(s->store, &pe->e, valid,
+ 					 pending_complete, pe);
++
++	if (s->store->userspace_supports_eio && !s->store->last_error && !s->store->commit_exception_failed)
++		s->valid = 1;
+ }
+ 
+ /*
+@@ -1765,12 +1782,15 @@ static void copy_callback(int read_err, unsigned long write_err, void *context)
+ 	struct dm_snapshot *s = pe->snap;
+ 
+ 	pe->copy_error = read_err || write_err;
++	s->store->last_error |= pe->copy_error;
+ 
+ 	if (pe->exception_sequence == s->exception_complete_sequence) {
+ 		struct rb_node *next;
+ 
+-		s->exception_complete_sequence++;
++		if (s->store->userspace_supports_eio)
++			pe->copy_error |= s->store->last_error;
+ 		complete_exception(pe);
++		s->exception_complete_sequence++;
+ 
+ 		next = rb_first(&s->out_of_order_tree);
+ 		while (next) {
+@@ -1779,9 +1799,13 @@ static void copy_callback(int read_err, unsigned long write_err, void *context)
+ 			if (pe->exception_sequence != s->exception_complete_sequence)
+ 				break;
+ 			next = rb_next(next);
+-			s->exception_complete_sequence++;
+ 			rb_erase(&pe->out_of_order_node, &s->out_of_order_tree);
++			if (s->store->userspace_supports_eio) {
++				pe->copy_error |= s->store->last_error;
++				s->store->last_error |= pe->copy_error;
++			}
+ 			complete_exception(pe);
++			s->exception_complete_sequence++;
+ 			cond_resched();
+ 		}
+ 	} else {
+-- 
+CodeHub
