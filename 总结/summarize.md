@@ -496,6 +496,28 @@ IO下发流程
 	IO调度器
 	rq-qos(iocost)
 ## （五）驱动层
+### dm
+#### dm-snapshot
+
+**基本使用流程：**
+1. 创建dm-linear设备base；
+2. 向base中写入数据；
+3. 创建快照
+创建dm-linear设备base-real，映射关系同base；
+将base设备reload成snapshot-origin类型，一比一映射在base-real上（保证后续对base设备下发IO会触发快照的同步）；
+创建dm-linear设备snap-cow；
+创建snapshot设备snap，load到base-real和snap-cow上
+4. 向base设备下发读写IO
+读IO直接下发到实际物理设备上；
+写IO会先将对应位置的数据备份到cow设备上，再修改实际物理设备上的数据，保证从snap读到的数据不变（因此打完快照后，对某个区域的第一次写，会触发一次备份，影响性能）
+5. 使用snap恢复base中的数据
+
+**可提升点：**
+1、snapshot失效后可恢复成有效状态
+将snapshot作为实际的存储设备，一旦出现cow溢出或者IO错误，会导致设备失效变只读，且再也无法恢复，限制使用场景
+2、base设备在打快照后大量数据写的场景，不备份，改映射
+备份数据有读写开销，对于大量数据的修改，让snapshot直接映射到原数据区域，新写入数据写到另一个块区域，再映射给base设备（需要给base设备增加映射管理机制）
+
 ### SCSI
 iscsi target使用流程：
 https://gitee.com/openeuler/kernel/issues/I8ZUL1
