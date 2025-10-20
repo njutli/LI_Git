@@ -551,6 +551,13 @@ https://lore.kernel.org/all/20250619111806.3546162-1-yi.zhang@huaweicloud.com/
 
 通过 dm-snapshot 为文件系统创建快照，基于快照进行fsck扫描，根据扫描结果将 bad inodes 标记为 corrupted
 
+### （3）大IO拆分 + 并发场景，顺序IO变随机导致性能劣化
+
+背景
+从sq切换成mq后，在多个进程同时下发IO场景，mq无法再保证大IO拆分出来的顺序IO连续下发到设备，将导致性能劣化。
+
+目前通用块层已支持批量申请与下发requests，目前只有io_uring使用。在io拆分场景应用 request批量申请与下发 解决该场景性能问题；
+
 ## （七）其他
 ### （1）io_uring
 #### 1) io_uring基本结构和流程
