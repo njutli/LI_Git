@@ -492,11 +492,12 @@ https://zhuanlan.zhihu.com/p/352464797
 ## （四）其他
 ### （1）io_uring
 #### 1) io_uring基本结构和流程
+##### 1.1) 基本结构
 <img width="724" height="841" alt="image" src="https://github.com/user-attachments/assets/bb739a91-4c18-496d-a465-594ad5a5311b" />
 <img width="724" height="630" alt="image" src="https://github.com/user-attachments/assets/087cd837-cd88-4f2c-9fdd-04e3d11a5b1f" />
 <img width="242" height="763" alt="image" src="https://github.com/user-attachments/assets/e6e9dc8d-5881-42cd-9f7c-bb92e5963dfd" />
 <img width="430" height="833" alt="image" src="https://github.com/user-attachments/assets/c553d908-0eec-43a3-a34a-497cf9eb7155" />
-
+##### 1.2) 关键流程
 ```
 /*
  * entries -- 指定SQ的规模，CQ规模为SQ两倍
@@ -572,15 +573,18 @@ io_submit_sqe
 	   io_init_new_worker
 	    list_add_tail_rcu // worker->all_list --> wqe->all_list io_worker 由wqe管理
 
+```
+**IO下发方式**
 1、同步下发
 普通的读写请求下发后是同步下发，请求也可能变成异步下发，例如请求结果是 -EAGAIN，同时请求没有 REQ_F_NOWAIT 标记
-
 2、异步下发
 1) 用户态指定异步标记 REQ_F_FORCE_ASYNC
 2) 普通请求失败重试
 3) 特殊请求，如 IORING_OP_ASYNC_CANCEL
 
-```
+**worker 线程**
+处理异步下发的请求，空闲链表上有可用worker则使用，否则新建 io_wqe_worker
+
 #### 2) io_uring高级特性
 ##### 2.1) SQPOLL<br>
 适用于高频小IO的场景
