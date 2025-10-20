@@ -491,7 +491,17 @@ https://zhuanlan.zhihu.com/p/352464797
 输出DT用例10+，提升NFSD覆盖率80%+，为后续版本可靠性提供保障。
 
 ```
-## （四）其他
+## （四）块层
+IO下发流程
+	IO调度器
+	rq-qos(iocost)
+## （五）驱动层
+### SCSI
+iscsi target使用流程：
+https://gitee.com/openeuler/kernel/issues/I8ZUL1
+### NVME
+
+## （六）其他
 ### （1）io_uring
 #### 1) io_uring基本结构和流程
 ##### 1.1) 基本结构
@@ -1218,7 +1228,42 @@ tcp_rcv_established
 ```
 
 
-### folio
+### （二）folio
 https://blog.csdn.net/feelabclihu/article/details/131485936
 
+### （三）workqueue
+https://www.cnblogs.com/arnoldlu/p/8659988.html
+
+https://www.cnblogs.com/zxc2man/p/6604290.html
+
+[kworker/u515:4-flush-253:4]这个不是进程名，是在 wq_worker_comm 里拼接出来的 task->comm + worker->desc
+
+一般是在process_one_work()这里通过strscpy设置workqueue的名字到worker->desc里
+当前这个是在wb_workfn()这里是通过set_worker_desc()把“flush-%s”加设备号设置到desc里
+
+中断上下文和进程上下文
+
+https://www.cnblogs.com/stemon/p/5148869.html
+
+workqueue的基本概念
+
+http://www.wowotech.net/irq_subsystem/workqueue.html
+
+CMWQ概述
+
+http://www.wowotech.net/irq_subsystem/cmwq-intro.html
+
+创建workqueue代码分析
+
+http://www.wowotech.net/irq_subsystem/alloc_workqueue.html
+
+workqueue如何处理work
+
+http://www.wowotech.net/irq_subsystem/queue_and_handle_work.html
+
+Linux Workqueue到CMWQ的技术演进
+
+https://blog.csdn.net/rikeyone/article/details/100710920
+
+### （四）cgroup
 
