@@ -68,5 +68,37 @@ sudo gtags --gtagslabel=ctags --statistics
 # 3️⃣ 正确生成网页，指定有效起始函数
 sudo htags -DfFnvahoIstx --fixed-guide --auto-completion --symbol -t linux-stable-5.10 -m start_kernel
 
+
+升级版本？
+```
+[root@szvphis18908837 hulk-5.10]# global --version
+global (GNU Global) 6.6.13
+Powered by Berkeley DB 1.85.
+Copyright (c) 1996-2024 Tama Communications Corporation
+License GPLv3+: GNU GPL version 3 or later <http://www.gnu.org/licenses/gpl.html>
+This is free software; you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+[root@szvphis18908837 hulk-5.10]# htags --version
+htags (GNU Global) 6.6.13
+Powered by Berkeley DB 1.85.
+Copyright (c) 1996-2024 Tama Communications Corporation
+License GPLv3+: GNU GPL version 3 or later <http://www.gnu.org/licenses/gpl.html>
+This is free software; you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+[root@szvphis18908837 hulk-5.10]#
+
+[root@szvphis18908837 httpd]# ls
+auto_update_code.sh  code  daily_update_code.sh  gitproxy.sh  nohup.out
+[root@szvphis18908837 httpd]# ls code/
+css        fscryptctl  hulk-4.1   hulk-4.4   hulk-5.10-next  index.html     linux-next    mtd-utils  nfs-utils  olk-6.6      rh-7.3  rh-8.1
+e2fsprogs  gssproxy    hulk-4.19  hulk-5.10  hulk-6.6        linux-fs-next  linux-stable  ndctl      olk-5.10   quota-tools  rh-7.5  xfsprogs-dev
+[root@szvphis18908837 httpd]# ls code/linux-next/
+arch   certs    CREDITS  Documentation  fs     GRTAGS  HTML     init      ipc     Kconfig  lib       localversion-next  Makefile  net   README  samples  security  tools  virt
+block  COPYING  crypto   drivers        GPATH  GTAGS   include  io_uring  Kbuild  kernel   LICENSES  MAINTAINERS        mm        Next  rust    scripts  sound     usr
+[root@szvphis18908837 httpd]#
+
+```
+
+
 sudo vim /etc/apache2/sites-available/000-default.conf
 sudo systemctl reload apache2
