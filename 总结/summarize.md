@@ -491,6 +491,51 @@ https://zhuanlan.zhihu.com/p/352464797
 输出DT用例10+，提升NFSD覆盖率80%+，为后续版本可靠性提供保障。
 
 ```
+### （5）squashfs
+
+Squashfs启用FILE_DIRECT方式读取磁盘数据，通过减少数据拷贝次数以及减少buffer锁冲突以提高读取速度，进一步提升系统启动性能及相关业务运行效率。
+
+Squashfs是一种只读的压缩文件系统。该文件系统在存储文件时会选择性地将部分文件数据压缩后存储在磁盘上(使用指定压缩算法处理后所需空间减少则压缩后存储)。
+Squashfs支持FILE_CACHE/FILE_DIRECT两种数据读取方式，主要差别在于FILE_CACHE方式在读取数据时会使用中间buffer。
+相比较而言，FILE_DIRECT方式不使用中间buffer，可以减少了一次数据拷贝，提升启动性能，同时可以优化并发buffer锁冲突。
+
+Squashfs两种数据读取方式的差异主要在于squashfs内部cache的使用，包括拷贝次数的差异以及buffer锁冲突的差异
+1. 单进程单文件读取
+该场景下读取的数据量较小，多一次拷贝对性能影响较小，同时buffer锁冲突概率低，两种数据读取方式的性能基本没有差距。
+2. 多进程多文件读取
+在drop cache后进行文件读取，性能瓶颈为读磁盘操作，两种方式的差异在于拷贝次数，由于内存拷贝速度较快，该场景下两种数据读取方式的性能差距较小；
+在文件读取前不进行drop cache操作，在数据量较大的情况下FILE_CACHE数据读取方式的性能将会因buffer锁冲突概率升高而下降，该场景下两种数据读取方式的性能差距较大
+
+> 技术限制<br>
+从磁盘读取数据到page cache时，需确保page cache连续并可用。对于单个文件，由于多进程同时访问等原因，可能会出现该文件的page cache获取失败，或已处于uptodate状态，从而导致FILE_DIRECT方式不可用。<br>
+相比较而言，由于FILE_CACHE使用Squashfs内部空闲的page cache，并且从内部page cache复制到文件page cache过程中若发现目标文件page cache不可用可以跳过，因此不存在该限制。<br>
+综上，当目标文件page cache的page cache获取失败或处于uptodate状态时，FILE_DIRECT方式将退化成FILE_CACHE方式。
+
+
+**功能设计**<br>
+**Page Cache1：**<br>
+Squashfs文件系统挂载时初始化的buffer，用于保存从磁盘读到的数据，所有读操作共享（Squashfs内部page cache）<br>
+**Page Cache2：**<br>
+读文件时初始化的buffer，用于保存从磁盘读到的文件数据，与特定文件关联（文件系统层page cache）<br>
+**Actor：**<br>
+包含Page Cache1及相关操作的集合，在文件系统挂载时初始化<br>
+**Special Actor：**<br>
+包含Page Cache2及相关操作的集合，在通过direct方式读取文件时初始化
+
+<img width="508" height="300" alt="image" src="https://github.com/user-attachments/assets/6467178e-0ae4-4ab4-8eb1-cbd23368482d" />
+squashfs支持FILE_CACHE/FILE_DIRECT两种数据读取方式。
+1. FILE_CACHE：<br>
+**磁盘→PageCache1**<br>
+Squashfs文件系统挂载时会初始化用于read page的squashfs_cache，其中包含多个entry，每个entry都有一个对应的actor。PageCache1作为actor的成员，可由actor获取。
+在从磁盘读取数据时，首先查找一个空闲的entry，并通过该entry的actor获取可用的PageCache1，然后通过BIO读取磁盘上对应的数据块，如果数据块已压缩，则解压后复制到PageCache1，否则直接复制到PageCache1。
+在一个read page操作结束后可将entry释放给其他操作使用，从而实现了PageCache1的共享使用。
+**PageCache1→PageCache2**<br>
+PageCache1作为Squashfs内部缓存，用户态无法通过read系统调用直接访问，需将PageCache1中的内容复制到目标文件对应的缓存PageCache2中，再由内核将PageCache2中的数据传递到用户态。
+2. FILE_DIRECT：<br>
+**磁盘→PageCache2**<br>
+与FILE_CACHE相比，FILE_DIRECT省略了PageCache1的使用，减少了一次数据复制，同时使用PageCache1所带来的锁冲突也可以消除，因此提升了读操作性能。但该方式也存在一定限制，需确保目标文件的page cache均可用（获取失败或处于uptodate状态均不可用），否则会退化成FILE_CACHE。由于FILE_CACHE使用Squashfs内部空闲的PageCache1，并且从PageCache1复制到PageCache2过程中若发现目标文件page cache不可用可以跳过，因此不存在该限制。
+在从磁盘读取数据时，不再查找空闲entry，也不再使用文件系统挂载时初始化的actor及其关联的PageCache1。首先初始化一个special actor，之后查找目标文件的page cache，并将指针保存在special actor中，再通过BIO将磁盘数据直接读取到PageCache2，最后由内核将PageCache2中的数据传递到用户态。
+
 ## （四）块层
 IO下发流程
 	IO调度器
