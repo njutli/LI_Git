@@ -361,6 +361,8 @@ generic_file_read_iter
 ```
 
 #### 6) write
+> 后台回写一般是超时或脏页超水线，或用户触发sync，保证数据落盘
+> 对本地文件系统而言三者没有差别，对非本地文件系统有差别，例如nfs，超时或脏页超水线的回写只是writepages，保证数据发送到服务端，但sync会保证数据在服务端落盘
 ```
 ksys_write
  vfs_write
