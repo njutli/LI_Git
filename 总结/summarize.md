@@ -514,7 +514,6 @@ io_uring_queue_init
     __sys_mmap // IORING_OFF_SQES 映射 io_uring_sqe(ctx->sq_sqes)，即SQE数组
   sq_array[index] = index; // SQ 与 SQE 一对一映射
 
-
 io_uring_setup
  io_uring_create
   io_ring_ctx_alloc // 分配初始化 io_ring_ctx
@@ -572,6 +571,15 @@ io_submit_sqe
 	   create_io_thread // 创建 io_wqe_worker 进程 --> worker->task
 	   io_init_new_worker
 	    list_add_tail_rcu // worker->all_list --> wqe->all_list io_worker 由wqe管理
+
+1、同步下发
+普通的读写请求下发后是同步下发，请求也可能变成异步下发，例如请求结果是 -EAGAIN，同时请求没有 REQ_F_NOWAIT 标记
+
+2、异步下发
+1) 用户态指定异步标记 REQ_F_FORCE_ASYNC
+2) 普通请求失败重试
+3) 特殊请求，如 IORING_OP_ASYNC_CANCEL
+
 ```
 #### 2) io_uring高级特性
 ##### 2.1) SQPOLL<br>
