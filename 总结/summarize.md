@@ -807,7 +807,7 @@ plug
   超时重试、IO 优先级（ionice）、调度器自适应参数（如 Kyber 的目标延迟反馈、mq-deadline 的读优先窗口）。
 
 ### （5）rq-qos
-(iocost)
+见blk-cgroup框架.md
 
 
 ## （五）驱动层
@@ -1610,10 +1610,10 @@ tcp_rcv_established
 ```
 
 
-### （二）folio
+### （八）folio
 https://blog.csdn.net/feelabclihu/article/details/131485936
 
-### （三）workqueue
+### （九）workqueue
 https://www.cnblogs.com/arnoldlu/p/8659988.html
 
 https://www.cnblogs.com/zxc2man/p/6604290.html
@@ -1647,5 +1647,120 @@ Linux Workqueue到CMWQ的技术演进
 
 https://blog.csdn.net/rikeyone/article/details/100710920
 
-### （四）cgroup
+### （十）cgroup
+#### （1）相关结构
+blkcg	(struct blkcg)
+	表示cgroup中blkio子系统中的一个control group，体现给用户是一个目录
+blkg	(struct blkcg_gq)
+	用来关联blkcg和request_queue(被控制的设备)
+blkcg_policy	(struct blkcg_policy)
+	控制策略，当前不支持以模块的形式，只在系统初始化注册
 
+#### （2）相关流程
+**blkcg**
+-	创建：
+-		blkcg_css_alloc
+```
+// 创建根cgroup根目录
+cgroup_init
+ cgroup_setup_root
+  rebind_subsystems
+   cgroup_apply_control
+    cgroup_apply_control_enable
+	 css_create
+	  blkcg_css_alloc // ss->css_alloc
+	   blkcg = kzalloc
+	   pol->cpd_alloc_fn // 遍历处理所有已注册的控制策略
+
+// 创建子cgroup子目录
+cgroup_mkdir
+ cgroup_apply_control_enable
+
+```
+
+-	删除：
+-		blkcg_css_free
+```
+// cgroup 目录释放
+css_release
+ css_release_work_fn
+  css_free_rwork_fn
+   blkcg_css_free // ss->css_free
+    blkcg_policy[i]->cpd_free_fn // 遍历处理所有已注册的控制策略
+```
+
+**blkg**
+-	创建：
+-		blkg_alloc
+```
+// 初始化 request_queue
+blk_alloc_queue
+ blkcg_init_queue
+  blkg_alloc
+  q->root_blkg = blkg
+
+// 写控制策略对应的文件
+bfq_io_set_weight
+ bfq_io_set_device_weight
+  blkg_conf_prep
+   blkg_alloc
+
+// 初始化bio的时候创建
+bio_associate_blkg_from_css
+ blkg_tryget_closest
+  blkg_lookup_create
+   blkg_create
+    blkg_alloc
+```
+
+-	删除：
+-		blkg_free
+```
+// cgroup删除和删盘，blkg 计数减到0
+blkg_release
+ __blkg_release
+  blkg_free
+```
+
+**blkg-blkcg关联**
+
+bio_init
+ bio_associate_blkg
+  bio_associate_blkg_from_css
+
+bio初始化时，会根据**设备 + 进程**关联一个唯一的blkg，实现在bio_associate_blkg()
+
+#### （3）已知问题：
+在X86平台，使用mul_u64_u64_div_u64()对用户态传递的IO限制与当前IO经历的时间相乘，再除以HZ，若结果溢出，会触发除0异常
+https://lore.kernel.org/all/CACGdZYLFkNs7uOuq+ftSE7oMGNbB19nm40E86xiagCFfLZ1P0w@mail.gmail.com/
+
+**cgroup v1接口**
+```
+blkio.throttle.read_bps_device
+blkio.throttle.write_bps_device
+```
+
+**cgroup v2接口**
+```
+io.max // rbps wbps
+```
+
+**示例**
+```
+// cgroup v1
+mount /dev/sda /home/io_test/
+mkdir -p /sys/fs/cgroup/blkio/throt
+echo "8:0 1000" > /sys/fs/cgroup/blkio/throt/blkio.throttle.write_bps_device
+echo $$ > /sys/fs/cgroup/blkio/throt/cgroup.procs
+dd if=/dev/zero of=/home/io_test/test.file bs=1M count=10 oflag=direct &
+echo "8:0 8375319363688624583" > /sys/fs/cgroup/blkio/throt/blkio.throttle.write_bps_device
+
+// cgroup v2
+cd /sys/fs/cgroup/
+mkdir blktest
+cd blktest/
+echo "8:0 rbps=2" > io.max
+echo $$ > cgroup.procs
+dd if=/dev/sda of=/dev/null bs=4k count=1024 iflag=direct &
+echo "8:0 rbps=8375319363688624583" > io.max
+```
