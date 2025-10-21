@@ -538,7 +538,17 @@ PageCache1作为Squashfs内部缓存，用户态无法通过read系统调用直�
 在从磁盘读取数据时，不再查找空闲entry，也不再使用文件系统挂载时初始化的actor及其关联的PageCache1。首先初始化一个special actor，之后查找目标文件的page cache，并将指针保存在special actor中，再通过BIO将磁盘数据直接读取到PageCache2，最后由内核将PageCache2中的数据传递到用户态。
 
 ## （四）块层
-IO下发流程
+**初始化**
+> 每个硬件队列对应一个tagset
+> 初始化tagset的时候也会初始化对应的request tags->rqs tags->static_rqs ———— 这两个 rqs 集合怎么用？
+> 
+>	tags->static_rqs ———— request 指针数组，初始化的时候分配好对应的 request ，由调用者使用tag作为索引获取
+> 
+>	tags->rqs ———— request 指针数组，保存正在使用的 request
+
+**IO下发流程**
+见代码流程梳理
+
 	IO调度器
 	rq-qos(iocost)
 ## （五）驱动层
