@@ -538,7 +538,7 @@ PageCache1作为Squashfs内部缓存，用户态无法通过read系统调用直�
 在从磁盘读取数据时，不再查找空闲entry，也不再使用文件系统挂载时初始化的actor及其关联的PageCache1。首先初始化一个special actor，之后查找目标文件的page cache，并将指针保存在special actor中，再通过BIO将磁盘数据直接读取到PageCache2，最后由内核将PageCache2中的数据传递到用户态。
 
 ## （四）块层
-### 初始化
+### （1）初始化
 > 每个硬件队列对应一个tagset
 > 初始化tagset的时候也会初始化对应的request tags->rqs tags->static_rqs ———— 这两个 rqs 集合怎么用？
 > 
@@ -546,12 +546,12 @@ PageCache1作为Squashfs内部缓存，用户态无法通过read系统调用直�
 > 
 >	tags->rqs ———— request 指针数组，保存正在使用的 request
 
-### IO下发流程
+### （2）IO下发流程
 见代码流程梳理
 
-### IO调度器
+### （3）IO调度器
 
-elevator_mq_ops回调：
+#### 1) elevator_mq_ops回调
 
 1. 调度器生命周期管理
 
@@ -610,6 +610,8 @@ elevator_mq_ops回调：
 | **`init_icq()`** | 初始化 `io_cq`（例如分配 per-cgroup token）。 |
 | **`exit_icq()`** | 清理 `io_cq`。                         |
 
+#### 2) IO下发流程(经调度器)
+
 ```
 submit_bio
  submit_bio_noacct
@@ -639,10 +641,10 @@ submit_bio
 			 q->mq_ops->queue_rq // 调用对应驱动的 queue_rq 回调下发req
 ```
 
-### IO限速的方式及目的
+### （4）IO限速的方式及目的
 
 
-### rq-qos
+### （5）rq-qos
 (iocost)
 
 
