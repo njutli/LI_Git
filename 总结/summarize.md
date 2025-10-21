@@ -554,6 +554,7 @@ PageCache1作为Squashfs内部缓存，用户态无法通过read系统调用直�
 elevator_mq_ops回调：
 
 1. 调度器生命周期管理
+
 | 回调                    | 作用                                                                  |
 | --------------------- | ------------------------------------------------------------------- |
 | **`init_sched()`**    | 创建调度器实例时调用。分配调度器私有数据、初始化队列结构（如红黑树、heap）。                            |
@@ -563,6 +564,7 @@ elevator_mq_ops回调：
 | **`depth_updated()`** | 当块队列深度（最大并发请求数）变化时调用，用于调度器调整内部参数（如 deadline 队列长度）。                  |
 
 2. I/O 合并逻辑（merge path）
+
 | 回调                      | 功能                                                |
 | ----------------------- | ------------------------------------------------- |
 | **`allow_merge()`**     | 判断某个 `bio` 是否允许与已有 `request` 合并。调度器可拒绝（例如按优先级区分）。 |
@@ -572,6 +574,7 @@ elevator_mq_ops回调：
 | **`requests_merged()`** | 当两个 request 被调度器内部主动合并时调用。                        |
 
 3. 分配与准备阶段
+
 | 回调                      | 功能                                    |
 | ----------------------- | ------------------------------------- |
 | **`limit_depth()`**     | 限制并发深度（队列可用 request 数）。调度器可动态调节，防止过载。 |
@@ -579,6 +582,7 @@ elevator_mq_ops回调：
 | **`finish_request()`**  | 请求完成时调用，清理调度器内部状态或统计信息。               |
 
 4. 请求插入与调度派发
+
 | 回调                       | 功能                                             |
 | ------------------------ | ---------------------------------------------- |
 | **`insert_requests()`**  | 把一组新请求插入调度器队列（或重新插入的请求）。调度器决定放入哪个子队列、按什么排序。    |
@@ -586,22 +590,57 @@ elevator_mq_ops回调：
 | **`has_work()`**         | 快速判断调度器是否有待派发的工作，用于决定是否唤醒 dispatch loop。       |
 
 5. 请求完成与重队列
+
 | 回调                        | 功能                               |
 | ------------------------- | -------------------------------- |
 | **`completed_request()`** | 请求 I/O 完成后调用，可用于测量延迟、更新统计。       |
 | **`requeue_request()`**   | 某请求由于错误或设备繁忙被退回时调用，调度器可重新安排其优先级。 |
 
 6. 请求链辅助函数
+
 | 回调                     | 功能                        |
 | ---------------------- | ------------------------- |
 | **`former_request()`** | 找到某 request 在调度队列中的前一个请求。 |
 | **`next_request()`**   | 找到后一个请求。                  |
 
 7. IO Context Queue (icq) 生命周期
+
 | 回调               | 功能                                  |
 | ---------------- | ----------------------------------- |
 | **`init_icq()`** | 初始化 `io_cq`（例如分配 per-cgroup token）。 |
 | **`exit_icq()`** | 清理 `io_cq`。                         |
+
+```
+submit_bio
+ submit_bio_noacct
+  submit_bio_noacct_nocheck
+   __submit_bio_noacct
+    __submit_bio
+	 blk_mq_submit_bio
+	  blk_mq_get_new_requests
+	   __blk_mq_alloc_requests
+	    data->rq_flags |= RQF_SCHED_TAGS // 有调度器的情况下使用调度器tag
+		data->rq_flags |= RQF_USE_SCHED // 非 flush/passthrough 的req纳入调度器控制
+		ops->limit_depth // 限制并发深度
+		blk_mq_get_tag // 获取tag
+		blk_mq_rq_ctx_init
+		 e->type->ops.prepare_request // 设置调度器私有数据
+	  blk_mq_insert_request
+	   q->elevator->type->ops.insert_requests // 插入调度器队列
+	  blk_mq_run_hw_queue
+	   blk_mq_hw_queue_need_run // 根据硬件队列状态判断是否要下发req，如果是 quiesced 就直接返回，等待unquiesce下发？
+	   blk_mq_run_dispatch_ops
+	    blk_mq_sched_dispatch_requests
+		 __blk_mq_sched_dispatch_requests
+		  blk_mq_do_dispatch_sched
+		   __blk_mq_do_dispatch_sched
+		    e->type->ops.dispatch_request // 取出待下发的req
+			blk_mq_dispatch_rq_list
+			 q->mq_ops->queue_rq // 调用对应驱动的 queue_rq 回调下发req
+```
+
+### IO限速的方式及目的
+
 
 ### rq-qos
 (iocost)
