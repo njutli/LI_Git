@@ -1731,6 +1731,7 @@ bio_init
 bio初始化时，会根据**设备 + 进程**关联一个唯一的blkg，实现在bio_associate_blkg()
 
 #### （3）已知问题：
+##### 3.1) 除0异常
 在X86平台，使用mul_u64_u64_div_u64()对用户态传递的IO限制与当前IO经历的时间相乘，再除以HZ，若结果溢出，会触发除0异常
 https://lore.kernel.org/all/CACGdZYLFkNs7uOuq+ftSE7oMGNbB19nm40E86xiagCFfLZ1P0w@mail.gmail.com/
 
@@ -1763,4 +1764,41 @@ echo "8:0 rbps=2" > io.max
 echo $$ > cgroup.procs
 dd if=/dev/sda of=/dev/null bs=4k count=1024 iflag=direct &
 echo "8:0 rbps=8375319363688624583" > io.max
+```
+
+##### 3.2) 删除cgroup后IO长时间无法完成
+
+进程切换cgroup前下发的IO一直被原cgroup阻塞，切换cgroup后，原cgroup删除后，用户态的接口已经删除，但内部的数据结构仍被未完成的IO给ping住，从而导致IO一直被限制，但解除限制的接口已经不存在，无法解除限制
+
+```
+cgroup_rmdir
+ cgroup_destroy_locked
+  kill_css // 子系统下线
+   percpu_ref_kill_and_confirm
+    ...
+    css_killed_ref_fn
+     css_killed_work_fn
+      offline_css
+       blkcg_css_offline // ss->css_offline
+        blkcg_unpin_online
+         blkcg_destroy_blkgs
+          blkg_destroy
+           throtl_pd_offline // pol->pd_offline_fn throttle的offline回调只清除了LIMIT_LOW的限制
+  kernfs_remove // 删除 kernfs 目录
+
+目录删除后并不会清除blkg，因此对IO的限制仍然存在
+具体体现为 tg->disptime 较大，当前时间未达到，不会下发IO，且由于目录删除，无法修改限制，也无法触发 disptime 的更新，导致IO一直被限制
+```
+
+```
+cd /sys/fs/cgroup/
+mkdir blktest
+cd blktest/
+echo "8:0 rbps=2" > io.max
+echo $$ > cgroup.procs
+dd if=/dev/sda of=/dev/null bs=4k count=1024 iflag=direct &
+cd ..
+echo $$ > cgroup.procs
+echo 2783 > cgroup.procs # dd进程
+rmdir blktest
 ```
