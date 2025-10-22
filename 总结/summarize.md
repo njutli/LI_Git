@@ -877,7 +877,7 @@ https://lore.kernel.org/all/20250619111806.3546162-1-yi.zhang@huaweicloud.com/
 
 背景
 云场景存储LUN使用网盘，在不使用dm-crypt时，在导入镜像时可以跨过全零的块，只写有数据的部分即可。但在使用dm-crypt时，为保证数据加解密正常，全零数据也需要写入（防止磁盘上的脏数据影响解密），从而降低了数据读写效率。
-当前采用基于dm-zero + dm-snapshot创建dm-crypt的方式构建稀疏盘，从而去除了读写入全零数据的动作，写入时仅加密并写入非零数据，读取时只读出并解密非零数据，提高了读写效率。
+当前采用基于dm-zero + dm-snapshot创建dm-crypt的方式构建稀疏盘(dm-snapshot基于dm-zero和cow设备创建，dm-crypt基于dm-snapshot创建，从dm-crypt下发的写IO，数据为零则和dm-zero返回的数据匹配，不发生任何写入，数据非零则向cow设备中写入数据与映射)，从而去除了读写全零数据的动作，写入时仅加密并写入非零数据，读取时只读出并解密非零数据，提高了读写效率。
 
 **dm-snapshot在IO错误或cow溢出时会失效，且无法恢复**
 
