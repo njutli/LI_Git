@@ -50,7 +50,7 @@ Apache Spark 是一个 分布式大数据处理框架，特点是 内存计算�
 完成图形环境的选定与搭建调试，保证视频文件归档及播放等基本功能正常演示。
 
 磁电盘硬件结构：
-	Client(搭载spinfs) + Server(SSD + 磁电盘)
+	Client(搭载spinfs，提供本地缓存目录) + Server(SSD存储container写入情况等日志数据 + 磁电盘存储归档数据)
 
 spinfs结构：
 	fuse + spinfs(overlayfs + erofs)
