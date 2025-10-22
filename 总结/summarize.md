@@ -30,7 +30,7 @@ Apache Spark 是一个 分布式大数据处理框架，特点是 内存计算�
 
 看瓶颈在哪儿，之前没发现存储相关的性能瓶颈
 ```
-### mysql
+### （4）mysql
 ```
 开源关系型数据库管理系统（RDBMS），支持标准 SQL，常用于互联网业务的交易系统、用户/订单/资产等核心数据存储，以及日志/数据仓库的中转与汇总
 美团mysql性能劣化（合入ext4优化补丁，提高读IO并发，NVME盘反压了写IO）
@@ -53,7 +53,7 @@ Apache Spark 是一个 分布式大数据处理框架，特点是 内存计算�
 	Client(搭载spinfs) + Server(SSD + 磁电盘)
 
 spinfs结构：
-	fuse + overlayfs + erofs
+	fuse + spinfs(overlayfs + erofs)
 
 文件系统层操作流程：
 	fuse挂载目录作为用户操作目录，用户对目录的操作由fuse调用spinfs对应的钩子函数进行处理
