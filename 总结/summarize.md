@@ -1802,3 +1802,79 @@ echo $$ > cgroup.procs
 echo 2783 > cgroup.procs # dd进程
 rmdir blktest
 ```
+
+### （十一）性能相关
+
+#### (1)性能案例
+
+查看磁盘调度器
+cat /sys/block/sda/queue/scheduler
+
+查看磁盘配置
+find /sys/block/sda/ -type f | xargs grep .
+
+```
+1、确认IO是否是关键路径
+1) iostat -x 10 // 以10秒为周期查看带宽，可以适当延长周期
+2) 通过cgroup限速
+// cgroup v1
+mkdir -p /sys/fs/cgroup/blkio/throt // 创建新的blk-cgroup
+echo "8:0 1000" > /sys/fs/cgroup/blkio/throt/blkio.throttle.read_bps_device // 设置磁盘和IO限制，IO限制设置为iostat查询到的稳定带宽的90%
+echo $$ > /sys/fs/cgroup/blkio/throt/cgroup.procs // 将下发IO的进程加入控制，"$$"改为对应进程号
+// cgroup v2
+mkdir -p /sys/fs/cgroup/blktest
+echo "8:0 rbps=2" > /sys/fs/cgroup/blktest/io.max
+echo $$ > cgroup.procs
+3) IO下发完成后查看TPS是否有明显变化
+
+2、查看盘配置（IO确认是关键路径）
+find /sys/block/sda/ -type f | xargs grep .
+查看磁盘配置并对比
+
+3、blktrace抓取IO耗时情况（IO确认是关键路径，且配置无差异）
+通过iostat观察带宽是否稳定，在带宽稳定的情况下抓取IO耗时情况（通过延长测试时间或其他业务层手段保证带宽稳定）
+
+sh bmetric.sh -s Q 418.log > 418_Q_res.log
+sh bmetric.sh -s D 418.log > 418_D_res.log
+sh bmetric.sh -s Q 510_none.log > 510_none_Q_res.log
+sh bmetric.sh -s D 510_none.log > 510_none_D_res.log
+
+过滤Q-C和D-C的数据对比
+```
+
+#### (2)iostat
+
+https://www.cnblogs.com/ggjucheng/archive/2013/01/13/2858810.html
+https://bean-li.github.io/dive-into-iostat/
+
+mq模式中，内核主要在两个地方进行IO统计
+开始时，blk_mq_bio_to_request() 中调用 blk_account_io_start
+结束时，blk_mq_end_request() 中调用 blk_account_io_done 和 blk_account_io_completion
+
+bio模式中
+__part_start_io_acct
+__part_end_io_acct
+
+#### (3)wbt
+在不影响读操作和同步写操作的前提下，通过对后台写入请求进行自适应节流，在系统的延迟和吞吐量之间取得平衡。
+1.延迟控制：确保读操作的延迟符合预设的目标，防止异步写和discard请求挤占资源。
+2.并发限制：通过动态控制并发异步写和discard请求数，避免异步写操作导致的队列积压，从而减少对系统资源的过度占用。
+
+1.	整体实现思路
+写回节流（WBT）机制的核心是基于延迟监控和队列深度调节的动态节流机制。根据请求类型进行节流决策，其实现思路如下：
+−	延迟监控：WBT通过监控每个窗口中的最小延迟时间，并与延迟目标进行比较来判断延迟是否超标。如果判断超标，则调整请求队列深度。主要针对读请求。
+−	并发控制：WBT通过跟踪每个等待队列的活动IO数量，并与节流限制进行比较，以控制后台写回请求的并发数量。主要针对异步写、discard请求。
+2.	调试手段
+通过debugfs输出调试信息，记录每个窗口周期内的延迟、队列深度、缩放规则等信息，便于性能调优和监控。
+/sys/kernel/debug/block/<bdev_name>/rqos/wbt
+
+<img width="528" height="274" alt="image" src="https://github.com/user-attachments/assets/af64ca32-7e82-4136-9abe-62130b3fb0ca" />
+
+<img width="531" height="333" alt="image" src="https://github.com/user-attachments/assets/ecd41a23-4f3a-4600-a7d7-8f7dc4acf87b" />
+
+<img width="530" height="550" alt="image" src="https://github.com/user-attachments/assets/41f29c72-d68c-4fe2-b356-f00ccc9bf2f6" />
+
+<img width="532" height="471" alt="image" src="https://github.com/user-attachments/assets/6a78faf0-a3e4-49e5-9248-bfb5633aabfe" />
+
+
+
