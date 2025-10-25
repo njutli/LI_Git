@@ -2007,6 +2007,8 @@ vii.	当请求完成时，触发调用wbt_done，用于清理和重置sync_issue
 
 <img width="530" height="550" alt="image" src="https://github.com/user-attachments/assets/41f29c72-d68c-4fe2-b356-f00ccc9bf2f6" />
 
+<img width="532" height="471" alt="image" src="https://github.com/user-attachments/assets/6a78faf0-a3e4-49e5-9248-bfb5633aabfe" />
+
 a.	IO下发节流过程：
 wbt_wait
     __wbt_wait
@@ -2046,8 +2048,4 @@ https://bean-li.github.io/blktrace-to-report/
 #### (5)fio
 
 https://blog.csdn.net/don_chiang709/article/details/92628623
-
-<img width="532" height="471" alt="image" src="https://github.com/user-attachments/assets/6a78faf0-a3e4-49e5-9248-bfb5633aabfe" />
-
-
 
