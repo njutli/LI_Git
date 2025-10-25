@@ -1651,6 +1651,20 @@ tcp_rcv_established
 等sk_stream_write_space的EPOLLOUT事件
 ```
 
+### （2）文件系统碎片整理
+
+#### 1)碎片预防
+
+ext4 / xfs / btrfs 都内建延迟分配与预分配：
+- 延迟分配（delayed allocation）：写入数据先缓存在页缓存中，不立即分配磁盘块。等确定写入量后再整体分配连续空间。
+- 多块分配器（mballoc, ext4_mb_new_blocks）：一次性为大文件分配整段 extent（ext4 以 extent 为单位记录连续块）。
+
+#### 2)文件系统层碎片整理
+
+e4defrag
+通过内核的 ioctl(EXT4_IOC_MOVE_EXT) 接口触发。
+
+
 
 ### （八）folio
 https://blog.csdn.net/feelabclihu/article/details/131485936
