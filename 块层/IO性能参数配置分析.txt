@@ -8,46 +8,86 @@ bfq：适用于慢速器件，如机械硬盘。提供了IO排序、IO优先级�
 
 https://www.kernel.org/doc/html/v5.3/block/bfq-iosched.html
 
-/sys/block/[device]/queue/iosched/back_seek_max
-向后搜寻的最大值(KiB)
-预测request的访问范围，根据request访问起始位置与向后搜寻的最大值来判断当前磁头是否在request访问范围内。BFQ会根据预测结果选择要下发的下一个request。
-该值设置过大会导致BFQ退化成CFQ，设置过小会导致访问起始位置靠前的request总是优先被下发
+路径	属性	默认值	实现文件	作用	是否性能相关	说明	
+/sys/class/scsi_host/host0/active_mode	644	动态	drivers/scsi/scsi_sysfs.c	查询启动方式	否		
+/sys/class/scsi_host/host0/state	644	动态	drivers/scsi/scsi_sysfs.c	查询配置host的状态	否		
+/sys/class/scsi_host/host0/eh_deadline	644	动态	drivers/scsi/scsi_sysfs.c	查询设置错误处理超时时间	否		
+/sys/class/scsi_device/0:0:0:0/device/timeout	644	30	drivers/scsi/scsi_sysfs.c	查询配置请求超时时间，单位为秒	否		
+/sys/class/scsi_device/0:0:0:0/device/eh_timeout	644	10	drivers/scsi/scsi_sysfs.c	查询配置错误处理请求的超时时间	否		
+/sys/class/scsi_device/0:0:0:0/device/state	644	动态	drivers/scsi/scsi_sysfs.c	查询配置当前设备的状态	否		
+/sys/class/scsi_device/0:0:0:0/device/queue_type	644	动态	drivers/scsi/scsi_sysfs.c	查询配置设备的队列类型	否		
+/sys/block/[device]/device/queue_depth	644	动态	drivers/scsi/scsi_sysfs.c	磁盘驱动的队列深度——并发处理io的数量。只存在于scsi设备。	是	默认值由磁盘驱动配置，最优值与硬件相关，推荐使用默认值。	
+/sys/class/scsi_device/0:0:0:0/device/dh_state	644	动态	drivers/scsi/scsi_sysfs.c	查询/配置 device handler	否		
+/sys/class/scsi_device/0:0:0:0/device/queue_ramp_up_period	644	120*HZ	drivers/scsi/scsi_sysfs.c	错误处理后时间限额，如果处理时间超过该限额，即加速错误处理；	否		
+/proc/scsi/sg/allow_dio	644	0	drivers/scsi/sg.c	是否允许direct IO	否		
+/proc/scsi/sg/def_reserved_size	644	动态	drivers/scsi/sg.c	每个文件描述的buffer size	否		
+/proc/sys/dev/scsi/logging_level	644	动态	drivers/scsi/scsi_sysctl.c	日志调试等级	否		
+/sys/block/[device]/events_poll_msecs	644	动态	block/genhd.c	表示使能events时等待的时间	否		
+/sys/block/[device]/io-timeout-fail	644	0	block/genhd.c	使能io超时故障注入	否		
+/sys/block/[device]/make-it-fail	644	0	block/genhd.c	使能故障注入	否		
+/sys/block/[device]/uevent	644	动态		显示内核传递给udev的设备的基本信息	否		
+/sys/block/[device]/bdi	777			软连接，指向目录 /sys/devices/virtual/bdi/[device]/	否		
+/sys/block/[device]/integrity/read_verify	644	动态	block/blk-integrity.c	读请求是否做校验	否		
+/sys/block/[device]/integrity/write_generate	644	动态	block/blk-integrity.c	block层是否自动生成写请求的checksum	否		
+/sys/block/[device]/power/autosuspend_delay_ms	644	动态	drivers/base/power/sysfs.c	表示设备会在idle对应的时间后自动中止，设为负数则设备永远不中止	否		
+/sys/block/[device]/power/control	644	动态	drivers/base/power/sysfs.c	on表示设备应该一直运行，auto表示内核可以自动中止或者运行设备	否		
+/sys/block/[device]/queue/add_random	644	动态	block/blk-sysfs.c	设为1表示禁止 disk entropy contribution	否		
+/sys/block/[device]/queue/discard_max_bytes	644	动态	block/blk-sysfs.c	0表示不支持discard，非0表示块层下发的discard的最大值	否	只与discard性能相关，普通io无关	
+/sys/block/[device]/queue/io_poll	644	动态	block/blk-sysfs.c	0代表禁用io polling, 非0代表使能io polling	否		
+/sys/block/[device]/queue/io_poll_delay	644	动态	block/blk-sysfs.c	io polling使能时，代表进行polling的模式	否		
+/sys/block/[device]/queue/iostats	644	动态	block/blk-sysfs.c	是否使能 io 统计功能	否		
+/sys/block/[device]/queue/io_timeout	644	300000	block/blk-sysfs.c	io 超时时间	否		
+/sys/block/[device]/queue/max_sectors_kb	644	动态	block/blk-sysfs.c	块层下发request 大小上限	是	默认值为UINT_MAX，推荐使用默认值。若减小会影响大io性能	Q:什么场景会需要调整？
+/sys/block/[device]/queue/nomerges	644	0	block/blk-sysfs.c	设为1表示禁止io合并	是	默认关闭，推荐关闭。相同的数据，磁盘处理少量大io的性能优于大量小io。所以关闭io合并会影响性能	Q:什么场景会需要调整？
+/sys/block/[device]/queue/nr_requests	644	动态	block/blk-sysfs.c	表示对应盘在块层并发处理io的数量	是	会提前分配空间，增加时会带来额外的内存开销	
+/sys/block/[device]/queue/read_ahead_kb	644	动态	block/blk-sysfs.c	最大的预读大小	是	推荐使用默认值，作用与文件系统预读一致。	Q:这个值会影响文件系统的预读窗口大小？
+/sys/block/[device]/queue/rotational	644	动态	block/blk-sysfs.c	设备是否是可旋转的（是否是HDD）	否	与磁盘结构相关，一般不做修改	
+/sys/block/[device]/queue/rq_affinity	644	动态	block/blk-sysfs.c	选择处理io完成的cpu：0表示任意cpu；1表示选择与下发cpu相同节点的cpu；2表示选择下发cpu	是	默认为1，推荐使用默认值。下发完成不在同一个cpu node会带来额外的开销。	Q:CPU IO下发压力较大的场景下推荐使用不同的cpu？压力较小的场景建议使用相同的CPU?
+/sys/block/[device]/queue/scheduler	644	动态	block/blk-sysfs.c	当前设备使用的调度器；	是	"none：简单的fifo，只做io合并，适用于nvme。
+mq-deadline：适用于nvme以外的绝大多数场景。读优先、写尽量晚下发，会导致部分写io延时变大，但综合性能更优。
+kyber：适用于高速器件。对不同类型的IO（read/write/discard/others）设置不同的延迟要求，分开调度，同时监控每个IO调度域的延迟情况，如果某个IO调度域的延迟过高，则动态增加这个IO调度域的队列深度，并减小延迟OK的IO调度域的队列深度，以达到控制IO延迟的目的。
+bfq：适用于慢速器件，如机械硬盘。提供了IO排序、IO优先级、按权重均匀分配IO带宽和组调度的能力，保证每个IO的最大延迟可控的同时充分利用器件IO带宽。调度的软件开销比较高，不适用于高速器件"	Q:对于nvme推荐使用none还是kyber？为什么？
+/sys/block/[device]/queue/stable_writes	644	动态	block/blk-sysfs.c	设为1则脏页只有在回写完成后才能再次修改	否		
+/sys/block/[device]/queue/wbt_lat_usec	644	动态	block/blk-sysfs.c	控制writeback throttling的最小读延时，超过了则会开始限制回写的速率，设为0表示禁用该功能	是	推荐使用默认值。值增大，回写io占比提高，可能会影响前台io性能；值减小，回写io占比变小，会影响回写速度。	关注后台回写带宽，就需要关闭改功能
+/sys/block/[device]/queue/write_cache	644	动态	block/blk-sysfs.c	磁盘是否弃用了回写缓存，write back(是)，write back(否)	是	推荐使用默认值。该值实际上并不影响磁盘是否有缓存，只有wbt和flush有关，如果设置为否，则该磁盘还无法下发flush。	
+/sys/block/[device]/queue/iosched/fifo_batch	644	16	block/mq-deadline.c	用于mq-deadline调度器，一个batch处理的io数量	是	推荐使用默认值，这个值影响单个请求的延时和总吞吐量。值越小单个请求延时越低，值越大总吞吐量越大	
+/sys/block/[device]/queue/iosched/front_merges	644	1	block/mq-deadline.c	用于mq-deadline调度器，是否开启前向合并	是	默认打开，推荐使用默认值。通常io是向后合并，如果明确知道io无法向前合并，则可以关闭该功能来减少尝试前向合并产生的开销。	
+/sys/block/[device]/queue/iosched/read_expire	644	500	block/mq-deadline.c	用于mq-deadline调度器，读请求超时时间	是	推荐使用默认值，当超过该值时，调度器会优先处理这个io	
+/sys/block/[device]/queue/iosched/write_expire	644	5000	block/mq-deadline.c	用于mq-deadline调度器，读请求超时时间	是	推荐使用默认值，当超过该值时，调度器会优先处理这个io	
+/sys/block/[device]/queue/iosched/writes_starved	644	2	block/mq-deadline.c	用于mq-deadline调度器，写请求允许被饥饿的次数	是	推荐使用默认值，只有连续处理的读请求超过该值时才会处理写请求，也是延时与总吞吐量的权衡。	
+/sys/block/[device]/queue/iosched/read_lat_nsec	644	2000000	block/kyber-iosched.c	设置读取操作的目标延迟	是	"kyber调度器使用4个队列管理不同类型的IO(read/write/discard/other)，并且轮询这些队列，将队列中的IO下发；
+在IO压力不变时，将读操作目标延迟减小，将使得更多读IO时延超过，kyber调度器将增加读队列深度；
+每次遍历到读队列时，可以下发更多的读IO，使得读IO不易超时，但会拉长整个轮询周期。"	
+/sys/block/[device]/queue/iosched/write_lat_nsec	644	10000000	block/kyber-iosched.c	设置写入操作的目标延迟	是	功能同上	
+/sys/block/[device]/queue/iosched/back_seek_max	644	16 * 1024	block/bfq-iosched.c	向后搜寻的最大值(KiB)	是	"预测request的访问范围，根据request访问起始位置与向后搜寻的最大值来判断当前磁头是否在request访问范围内。BFQ会根据预测结果选择要下发的下一个request。
+该值设置过大会导致BFQ退化成CFQ，设置过小会导致访问起始位置靠前的request总是优先被下发"	
+/sys/block/[device]/queue/iosched/back_seek_penalty	644	2	block/bfq-iosched.c	此参数用于计算后向查找的开销。	是	"磁头向后移动的成本要低于向前移动的成本。
+在选取下发IO时，若比较的两个request的起始位置，一个在当前磁头之前，一个在当前磁头之后，则在比较时，磁头之前到磁头的位置d1需要乘以该参数，再与磁头之后到磁头的位置d2做比较，使得在绝对距离一样或接近时优先处理磁头之后的IO。"	
+/sys/block/[device]/queue/iosched/fifo_expire_async	644	250	block/bfq-iosched.c	此参数用于设置异步请求的超时时间。	是	若超时时间设置过大，会导致IO可能长时间无法下发；若超时时间设置过小，会导致其他调度策略(如根据磁头位置调度)失效，影响整体IO吞吐量	
+/sys/block/[device]/queue/iosched/fifo_expire_sync	644	125	block/bfq-iosched.c	此参数用于设置同步请求的超时时间	是	同上	
+/sys/block/[device]/queue/iosched/low_latency	644	1	block/bfq-iosched.c	是否开启bfq的低延迟模式	是	如果启用，交互式和软实时应用程序随机下发的IO可以得到较快响应，但会影响整体IO吞吐量	
+/sys/block/[device]/queue/iosched/max_budget	644	0	block/bfq-iosched.c	每次服务时队列完成io扇区数量上限，一旦到达上限将会切换队列	是	在单个进程下发大量IO的场景下，增大该值可增加整体吞吐量，但会导致其他进程的IO延迟增加	
+/sys/block/[device]/queue/iosched/slice_idle	644	8	block/bfq-iosched.c	允许队列在空闲状态死等下一个请求的时间，以毫秒为单位	是	"对于SATA/SAS磁盘和SATA/SAS磁盘的软件RAID，启用slice_idle可以减少寻道总数以提高吞吐量；
+对于单个LUN后有多个磁盘轴的情况，或是基于闪存的快速存储设备，设置slice_idle=0可能会获得更好的吞吐量和延迟。"	
+/sys/block/[device]/queue/iosched/slice_idle_us	644	8000	block/bfq-iosched.c	允许队列在空闲状态死等下一个请求的时间，以纳秒为单位	是	同上	
+/sys/block/[device]/queue/iosched/strict_guarantees	644	0	block/bfq-iosched.c	是否使能严格的带宽保证	是	若使能，则在当前服务队列为空时，会一直死等，且强制要求设备每次只处理一个IO(只有当所有IO完成时才会下发一个新的IO)	
+/sys/block/[device]/queue/iosched/timeout_sync	644	(HZ/8)	block/bfq-iosched.c	每个队列提供服务的最长时间	是	在寻道开销大的设备上，增加此时间通常会增加最大吞吐量，但会导致其他进程的IO延迟增加	
+/sys/block/[device]/trace/act_mask	644		kernel/trace/blktrace.c	显示blktrace抓取的类型	否		
+/sys/block/[device]/trace/enable	644		kernel/trace/blktrace.c		否		
+/sys/block/[device]/trace/end_lba	644		kernel/trace/blktrace.c		否		
+/sys/block/[device]/trace/pid	644		kernel/trace/blktrace.c		否		
+/sys/block/[device]/trace/start_lba	644		kernel/trace/blktrace.c		否		
+/sys/kernel/debug/block/[device]/pm_only	600	动态	block/blk-mq-debugfs.c	queue runtime suspend的次数	否		
+/sys/kernel/debug/block/[device]/state	600	动态	block/blk-mq-debugfs.c	queue的状态	否		
+/sys/kernel/debug/block/[device]/write_hints	600	动态	block/blk-mq-debugfs.c	queue write_hints 信息	否		
+/sys/kernel/debug/block/[device]/hctx[number]/dispatched	600	动态	block/blk-mq-debugfs.c	硬件队列下发io的数量	否		
+/sys/kernel/debug/block/[device]/hctx[number]/io_poll	600	动态	block/blk-mq-debugfs.c	硬件队列io polling的状态	否		
+/sys/kernel/debug/block/[device]/hctx[number]/queued	600	动态	block/blk-mq-debugfs.c	request生成的数量	否		
+/sys/kernel/debug/block/[device]/hctx[number]/run	600	动态	block/blk-mq-debugfs.c	硬件队列 run 的次数	否		
+/sys/kernel/debug/block/[device]/hctx[number]/cpu[number]/completed	600	动态	block/blk-mq-debugfs.c	cpu上完成的io数量	否		
+/sys/kernel/debug/block/[device]/hctx[number]/cpu[number]/dispatched	600	动态	block/blk-mq-debugfs.c	cpu上下发的io数量	否		
+/sys/kernel/debug/block/[device]/hctx[number]/cpu[number]/merged	600	动态	block/blk-mq-debugfs.c	cpu上通过blk_mq_ctx合并的io数量	否		
 
-/sys/block/[device]/queue/iosched/back_seek_penalty
-此参数用于计算后向查找的开销。
-磁头向后移动的成本要低于向前移动的成本。
-在选取下发IO时，若比较的两个request的起始位置，一个在当前磁头之前，一个在当前磁头之后，则在比较时，磁头之前到磁头的位置d1需要乘以该参数，再与磁头之后到磁头的位置d2做比较，使得在绝对距离一样或接近时优先处理磁头之后的IO。
-
-/sys/block/[device]/queue/iosched/fifo_expire_async
-此参数用于设置异步请求的超时时间。
-若超时时间设置过大，会导致IO可能长时间无法下发；若超时时间设置过小，会导致其他调度策略(如根据磁头位置调度)失效，影响整体IO吞吐量
-
-/sys/block/[device]/queue/iosched/fifo_expire_sync
-此参数用于设置同步请求的超时时间
-
-/sys/block/[device]/queue/iosched/low_latency
-是否开启bfq的低延迟模式
-如果启用，交互式和软实时应用程序随机下发的IO可以得到较快响应，但会影响整体IO吞吐量
-
-/sys/block/[device]/queue/iosched/max_budget
-每次服务时队列完成io扇区数量上限，一旦到达上限将会切换队列
-在单个进程下发大量IO的场景下，增大该值可增加整体吞吐量，但会导致其他进程的IO延迟增加
-
-/sys/block/[device]/queue/iosched/slice_idle
-允许队列在空闲状态死等下一个请求的时间，以毫秒为单位
-对于SATA/SAS磁盘和SATA/SAS磁盘的软件RAID，启用slice_idle可以减少寻道总数以提高吞吐量；
-对于单个LUN后有多个磁盘轴的情况，或是基于闪存的快速存储设备，设置slice_idle=0可能会获得更好的吞吐量和延迟。
-
-/sys/block/[device]/queue/iosched/slice_idle_us
-允许队列在空闲状态死等下一个请求的时间，以纳秒为单位
-
-/sys/block/[device]/queue/iosched/strict_guarantees
-是否使能严格的带宽保证
-若使能，则在当前服务队列为空时，会一直死等，且强制要求设备每次只处理一个IO(只有当所有IO完成时才会下发一个新的IO)
-
-/sys/block/[device]/queue/iosched/timeout_sync
-每个队列提供服务的最长时间
-在寻道开销大的设备上，增加此时间通常会增加最大吞吐量，但会导致其他进程的IO延迟增加
 
 
 submit_bio
