@@ -2007,6 +2007,46 @@ vii.	当请求完成时，触发调用wbt_done，用于清理和重置sync_issue
 
 <img width="530" height="550" alt="image" src="https://github.com/user-attachments/assets/41f29c72-d68c-4fe2-b356-f00ccc9bf2f6" />
 
+a.	IO下发节流过程：
+wbt_wait
+    __wbt_wait
+        rq_qos_wait
+                    wbt_inflight_cb中比较inflight和limit（通过get_limit获取）
+在比较inflight与limit时，根据请求类型选择不同limit限值。一共分为三种类型：HIPRIO（SYNC | META | PRIO | SWAP）、BACKGROUND、other，在函数get_limit中设置。
+limit设置：wb_background、wb_normal由rq_depth.max_depth决定，在函数calc_wb_limits中进行设置。
+    在函数rq_depth_calc_max_depth中根据请求队列的当前状态和缩放规则scale_step计算rq_depth.max_depth：
+        1) 特殊情况：设备的队列深度queue_depth为 1：若缩小队列深度，max_depth=1；否则，max_depth=2.
+        2) 一般情况：queue_depth＞ 1：
+                    scale_step默认配置为0，因此max_depth=min(default_depth(默认RWB_DEF_DEPTH), queue_depth(即nr_request))
+            scale_step后续根据latency_exceeded返回的延迟状态进行更新。根据scale_step正负情况，利用位移操作对应调整队列深度。
+b.	IO完成放流过程：
+  wbt_done
+    __wbt_done
+     wbt_rqw_done中：
+                    ①更新limit：如果是 discard 请求：limit=wb_background；如果设备启用了写缓存（wc）且最近没有请求因被节流进入等待状态（!wb_recent_wait(rwb)），limit=0，表示几乎不允许等待；否则，limit=wb_normal。
+                    ②比较inflight和limit：如果inflight >= limit，不唤醒任何等待的请求，保持节流状态函数返回。
+                    ③检查等待队列中是否有等待的请求并判断是否唤醒。唤醒条件：如果inflight为0或limit - inflight差值diff大于等于wb_background/2，则也唤醒所有等待请求。
+c.	limit的更新原理
+定时器rwb_arm_timer根据cur_win_nsec（监控窗口大小）定时触发wb_timer_fn调整limit。
+wb_timer_fn调用latency_exceeded获取当前延迟状态，并根据延时状态调整请求队列深度以及回写限值wb_background和wb_normal。
+wb_timer_fn的实现流程：
+
+    latency_exceeded延迟状态判断流程：
+
+i.	当前请求的延迟thislat由rwb_sync_issue_lat函数计算得到。该函数返回的值是当前时间和同步写操作发起时间之间的差值。
+ii.	检查同步IO是否延迟的条件：
+1)	thislat大于当前监控窗口的时间长度cur_win_nsec。
+2)	thislat大于最小延迟目标min_lat_nsec，且没有其他读请求完成（即 stat[READ].nr_samples == 0）。其中min_lat_nsec通过queue_wb_lat_store获取。
+iii.	验证统计样本stat的有效性。nr_samples表示统计对象stat所记录的I/O请求的数量。每次有新的请求完成触发blk_mq_end_request，其中blk_stat_add都会调用blk_rq_stat_add，nr_samples通过++操作自增，逐步累积统计样本数。
+
+#### (4)blktrace
+
+https://bean-li.github.io/blktrace-to-report/
+
+#### (5)fio
+
+https://blog.csdn.net/don_chiang709/article/details/92628623
+
 <img width="532" height="471" alt="image" src="https://github.com/user-attachments/assets/6a78faf0-a3e4-49e5-9248-bfb5633aabfe" />
 
 
