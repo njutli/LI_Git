@@ -553,7 +553,6 @@ Squashfs两种数据读取方式的差异主要在于squashfs内部cache的使�
 相比较而言，由于FILE_CACHE使用Squashfs内部空闲的page cache，并且从内部page cache复制到文件page cache过程中若发现目标文件page cache不可用可以跳过，因此不存在该限制。<br>
 综上，当目标文件page cache的page cache获取失败或处于uptodate状态时，FILE_DIRECT方式将退化成FILE_CACHE方式。
 
-
 **功能设计**<br>
 **Page Cache1：**<br>
 Squashfs文件系统挂载时初始化的buffer，用于保存从磁盘读到的数据，所有读操作共享（Squashfs内部page cache）<br>
@@ -595,8 +594,6 @@ PageCache1作为Squashfs内部缓存，用户态无法通过read系统调用直�
 
 #### 1) elevator_mq_ops回调
 
-1. 调度器生命周期管理
-
 | 回调                    | 作用                                                                  |
 | --------------------- | ------------------------------------------------------------------- |
 | **`init_sched()`**    | 创建调度器实例时调用。分配调度器私有数据、初始化队列结构（如红黑树、heap）。                            |
@@ -604,51 +601,21 @@ PageCache1作为Squashfs内部缓存，用户态无法通过read系统调用直�
 | **`init_hctx()`**     | 针对每个硬件队列 (Hardware Context, hctx) 初始化。比如在多核 NVMe 中每个 hctx 对应一个提交队列。 |
 | **`exit_hctx()`**     | 清理对应 hctx 的调度数据结构。                                                  |
 | **`depth_updated()`** | 当块队列深度（最大并发请求数）变化时调用，用于调度器调整内部参数（如 deadline 队列长度）。                  |
-
-2. I/O 合并逻辑（merge path）
-
-| 回调                      | 功能                                                |
-| ----------------------- | ------------------------------------------------- |
 | **`allow_merge()`**     | 判断某个 `bio` 是否允许与已有 `request` 合并。调度器可拒绝（例如按优先级区分）。 |
 | **`bio_merge()`**       | 尝试直接把 `bio` 合并进已有 request（同 LBA 连续时），返回是否成功。      |
 | **`request_merge()`**   | 尝试合并两个 request（back merge 或 front merge）。         |
 | **`request_merged()`**  | 合并成功后通知调度器，可用于更新内部统计或 deadline。                   |
 | **`requests_merged()`** | 当两个 request 被调度器内部主动合并时调用。                        |
-
-3. 分配与准备阶段
-
-| 回调                      | 功能                                    |
-| ----------------------- | ------------------------------------- |
 | **`limit_depth()`**     | 限制并发深度（队列可用 request 数）。调度器可动态调节，防止过载。 |
 | **`prepare_request()`** | 在请求即将发往设备前准备，比如打上调度器 tag、设置截止时间。      |
 | **`finish_request()`**  | 请求完成时调用，清理调度器内部状态或统计信息。               |
-
-4. 请求插入与调度派发
-
-| 回调                       | 功能                                             |
-| ------------------------ | ---------------------------------------------- |
 | **`insert_requests()`**  | 把一组新请求插入调度器队列（或重新插入的请求）。调度器决定放入哪个子队列、按什么排序。    |
 | **`dispatch_request()`** | 从调度器中取出下一个要发往硬件队列的 request。返回 `NULL` 表示暂时无可派发。 |
 | **`has_work()`**         | 快速判断调度器是否有待派发的工作，用于决定是否唤醒 dispatch loop。       |
-
-5. 请求完成与重队列
-
-| 回调                        | 功能                               |
-| ------------------------- | -------------------------------- |
 | **`completed_request()`** | 请求 I/O 完成后调用，可用于测量延迟、更新统计。       |
 | **`requeue_request()`**   | 某请求由于错误或设备繁忙被退回时调用，调度器可重新安排其优先级。 |
-
-6. 请求链辅助函数
-
-| 回调                     | 功能                        |
-| ---------------------- | ------------------------- |
 | **`former_request()`** | 找到某 request 在调度队列中的前一个请求。 |
 | **`next_request()`**   | 找到后一个请求。                  |
-
-7. IO Context Queue (icq) 生命周期
-
-| 回调               | 功能                                  |
-| ---------------- | ----------------------------------- |
 | **`init_icq()`** | 初始化 `io_cq`（例如分配 per-cgroup token）。 |
 | **`exit_icq()`** | 清理 `io_cq`。                         |
 
@@ -688,8 +655,7 @@ submit_bio
 1. mq-deadline — 有截止时间的公平调度
 
 **核心思想：**  
-`mq-deadline` 是 `deadline` 调度器在多队列架构 (`blk-mq`) 下的版本。  
-它使用两个主要队列（按提交顺序和按截止时间排序），以防止请求饥饿。
+`mq-deadline` 使用两个主要队列（按提交顺序和按截止时间排序），以防止请求饥饿。
 
 **机制简述：**
 - 每个 I/O 请求（读/写）都会有一个 **deadline（到期时间）**。
@@ -716,7 +682,6 @@ https://blog.csdn.net/hu1610552336/article/details/125862606?spm=1001.2014.3001.
 
 **基本原理**
 每个进程都先分配一个bfq调度队列bfq_queue，简称bfqq，bfqq与进程绑定。每个进程的bfqq分配一个初始配额budget，进程每派发一个IO请求，就消耗bfqq的一定配额(消耗的配额与传输的IO请求数据量成正比)。等bfqq的配额消耗光、bfqq上没有IO请求要要传输，则令bfqq到期失效。接着切换到其他进程的bfqq，派发这个新的bfqq上的IO请求。
-
 
 **核心思想：**  
 BFQ 为每个进程分配 I/O “预算”，以实现带宽公平与交互性。
@@ -823,32 +788,6 @@ plug
 
 - 适配多设备与多工作负载  
   HDD、SATA SSD、NVMe 行为差异大；在线读敏感 vs. 批量吞吐目标不同，需要可叠加的策略。
-
-#### 除此之外的其他限制/机制
-
-- cgroup I/O 控制  
-  io.max、io.weight（cgroup v2），限制带宽/IOPS或按权重分配，实现多租户隔离与保护。
-
-- 文件系统与写回策略  
-  vm.dirty_ratio/dirty_bytes、dirty_background_*、balance_dirty_pages（写回节流）、FUA/Barrier 顺序点，控制脏页生成与落盘节奏，保障一致性并抑制洪峰。
-
-- 合并与排序限制  
-  合并阈值、requeue 策略、bio 合并开销上限；避免过度 CPU 花费或无效重排序。
-
-- 设备/驱动层限制  
-  队列深度（queue_depth）、nr_requests、ZNS 顺序写约束、SCSI/NVMe 超时与错误恢复、NCQ/TCQ 限幅等。
-
-- 电源与热/寿命保护  
-  设备内部热限制/写放大控制、主机端 runtime PM、NVMe APST；防止持续高并发导致过热或寿命快速消耗。
-
-- NUMA/亲和与软中断背压  
-  blk-mq 队列与 CPU/IRQ 亲和绑定、软中断 NAPI/backpressure，避免跨节点争用引发额外尾延迟。
-
-- 上层应用限流  
-  数据库/存储服务自控并发（如每卷 QD 限制）、token bucket、排队中间件，以业务 SLA 为目标做端到端节流。
-
-- 错误与拥塞反馈  
-  超时重试、IO 优先级（ionice）、调度器自适应参数（如 Kyber 的目标延迟反馈、mq-deadline 的读优先窗口）。
 
 ### （5）rq-qos
 见blk-cgroup框架.md
@@ -1664,7 +1603,20 @@ ext4 / xfs / btrfs 都内建延迟分配与预分配：
 e4defrag
 通过内核的 ioctl(EXT4_IOC_MOVE_EXT) 接口触发。
 
+它不操作磁盘物理布局，而是重新分配 ext4 的逻辑块映射（extent 表），
+从而让文件的数据块尽可能变得连续。
 
+1. 创建一个临时目标文件；
+2. 在磁盘上为该目标文件分配 连续的新块；
+3. 将原文件的数据按页读出，再写入这些新块；
+4. 替换原文件的 extent 映射，释放旧块；
+5. 删除临时文件。
+
+“逻辑层 defrag”：文件块在文件系统内部“重排”
+
+#### 3)设备层碎片整理
+文件系统层下发discard
+SSD 控制器接收这个信息后，就能执行 垃圾回收（GC） 和 FTL 重映射
 
 ### （八）folio
 https://blog.csdn.net/feelabclihu/article/details/131485936
