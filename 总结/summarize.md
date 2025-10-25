@@ -1912,6 +1912,95 @@ __part_end_io_acct
 通过debugfs输出调试信息，记录每个窗口周期内的延迟、队列深度、缩放规则等信息，便于性能调优和监控。
 /sys/kernel/debug/block/<bdev_name>/rqos/wbt
 
+1.	功能域的领域数据类型
+a.	struct rq_wb（请求写回控制块）
+数据对象	数据类型	描述
+wb_background	unsigned int	后台写回的限制，用于与inflight比较以判断是否需要唤醒等待队列中的请求
+wb_normal	unsigned int	正常情况下的写回限制，用于与inflight比较以判断是否需要唤醒等待队列中的请求
+enable_state	short	WBT的当前状态（启用/禁用，手动/默认）
+unknown_cnt	unsigned int	控制节流状态恢复的一个计数器，在缺少有效读写延迟数据时，逐步降低节流力度
+win_nsec	u64	默认的统计窗口大小
+cur_win_nsec	u64	当前的时间窗口大小，用于判断当前操作是否超出预期，触发节流
+cb	struct blk_stat_callback *	块统计回调函数
+sync_issue	u64	同步I/O的发起时间戳，用于跟踪同步操作的发出时间
+sync_cookie	void *	用于跟踪同步I/O的指针
+wc	unsigned int	表示设备的写缓存状态，用于IO完成后在函数wbt_rqw_done中更新limit
+last_issue	unsigned long	最后一次非节流I/O的发起时间，用于判断当前是否有活跃的IO
+通过比较当前时间戳和rwb->last_issue + HZ / 10 来判断
+last_comp	unsigned long	最后一次非节流I/O的完成时间，用于判断当前是否有活跃的IO
+min_lat_nsec	unsigned long	最小延迟目标，用于判断当前操作是否超出预期，触发节流
+rqos	struct rq_qos	请求质量服务结构
+rq_wait[]	struct rq_wait	不同I/O类型的请求等待队列
+rq_depth	struct rq_depth	请求队列深度控制结构
+
+b.	struct rq_wait
+数据对象	数据类型	描述
+wait	wait_queue_head_t	等待队列
+inflight	atomic_t	正在进行的请求的原子计数器
+
+c.	struct rq_depth
+数据对象	数据类型	描述
+max_depth	unsigned int	缩放后的最大深度【可变】
+default_depth	unsigned int	默认深度
+scale_step	int	当前的缩放规则，用于改变请求队列深度。
+当scale_step＞0，队列深度通过右移scale_step位进行缩小；
+当scale_step＜0，队列深度通过左移 -scale_step位进行放大。
+
+d.	struct blk_stat_callback
+数据对象	数据类型	描述
+data	void *	指向rq_wb的指针
+stat	struct blk_rq_stat *	统计数据
+
+数据类型之间关系：
+−	rq_wb包含并管理多个rq_wait
+−	rq_wb使用rq_depth根据延迟反馈调整写回操作的最大深度
+−	blk_stat_callback由rq_wb注册，以接收I/O统计信息，辅助做出缩放决策
+
+2.	涉及的系统元素
+−	后备设备信息（bdi）：包含存储设备信息，WBT使用它了解设备能力和状态。
+−	Sysfs接口：为配置WBT参数和监控其状态提供用户接口
+
+3.	具体实现设计
+a.	QoS（quality of service）钩子函数在WBT机制中的实现
+i.	wbt_wait
+根据I/O请求的类型，判断是否需要对请求进行节流处理并进行相应处理。
+节流决策：
+□	读操作不会被节流，但会记录时间戳以跟踪请求。
+□	同步写也不会被节流，但不会记录时间戳。
+□	写操作和discard操作会通过 __wbt_wait 进行节流，可能会在资源不足时等待。
+ii.	wbt_track
+将bio的wbt标志记录到request结构的wbt_flags中。
+iii.	wbt_issue
+在I/O请求即将发出时，关注读请求，记录它们的开始时间。
+iv.	wbt_requeue
+在某个I/O请求被重新排队时（即该请求未完成且需要被重新处理），尤其是同步读。
+v.	wbt_done
+在请求完成时调用，用于处理与请求相关的写回节流逻辑。在请求被释放或者合并时也会被调用。
+调用层次：wbt_done -> __wbt_done -> wbt_rqw_done
+□	wbt_done：主函数，负责请求完成时的总体管理工作，包括同步请求处理、读请求时间戳更新、追踪请求的进一步处理（通过调用__wbt_done），并清理状态wbt_clear_state(rq);。
+□	__wbt_done：辅助函数，用于处理被标记为WBT_TRACKED的请求，包括获取相应的等待队列并调用wbt_rqw_done进行详细处理。
+□	wbt_rqw_done：处理单个请求等待队列中的逻辑，递减正在处理的请求数，并根据队列状态和请求限制决定是否唤醒等待中的进程。
+vi.	wbt_cleanup
+wbt_cleanup在I/O请求被取消、错误或中止时调用，处理未完成的I/O请求的清理。
+调用内部的清理函数__wbt_done.
+vii.	wbt_queue_depth_changed
+当请求队列的深度RQWB(rqos)->rq_depth发生改变时，修改limits。
+viii.	wbt_exit
+通常在系统关闭或某个设备的I/O请求队列不再需要写回节流管理时调用。
+实现逻辑：注销wbt层次统计-》移除rwb回调-》释放回调资源-》释放rwb
+
+c.	节流过程
+块设备初次挂载会调用int wbt_init(struct request_queue *q)对wbt机制进行初始化配置，用户可以通过sysfs接口wbt_lat_usec手动启用/禁止wbt机制。
+根据设备处理性能的不同，wbt_init会默认配置不同的参数。可以通过cat /sys/kernel/debug/block/<bdev_name>/rqos/wbt查看初始默认配置。
+大致处理流程：
+i.	用户对挂载后的块设备下发大量IO（包含不同IO请求类型，如读、discard、写操作）。
+ii.	由具体文件系统生成bio描述对应请求。
+iii.	块设备层准备提交bio，在将bio封装成request之前调用wbt_wait判断当前是否需要进行回写节流。
+iv.	假设需要节流，调用wbt_track将bio的wbt标志记录到request结构的wbt_flags中。
+v.	针对读请求，在请求将发出时，记录其开始时间。
+vi.	将request发出，请求进入调度器队列中->调度请求->执行请求。
+vii.	当请求完成时，触发调用wbt_done，用于清理和重置sync_issue、根据inflight值更新延迟和并发状态、根据inflight和limit的关系决定是否唤醒等待的请求。
+
 <img width="528" height="274" alt="image" src="https://github.com/user-attachments/assets/af64ca32-7e82-4136-9abe-62130b3fb0ca" />
 
 <img width="531" height="333" alt="image" src="https://github.com/user-attachments/assets/ecd41a23-4f3a-4600-a7d7-8f7dc4acf87b" />
