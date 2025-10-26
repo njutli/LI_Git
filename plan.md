@@ -87,21 +87,13 @@ kexec需求
 5902异步加载固件需求
 
 
-raspberrypi test
-
 
 https://lore.kernel.org/all/tencent_6A84D2E177043C91217A1CF6@qq.com/
 
 
 
 
-mysql 优化
-	滋植的优化点
-	没有直接参与，有了解过优化原理
-
-磁电盘开发的问题
-	xfce
-
+锁相关？
 
 lecode?
 基本数据结构，二叉树？前序中序后序遍历？
