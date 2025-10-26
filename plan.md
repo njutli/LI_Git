@@ -56,42 +56,22 @@ dm层
 2.1 通过 nfs_commit_inode (fsync等操作触发)，发送 NFSPROC4_CLNT_COMMIT 请求，服务端通过 nfsd4_commit 处理commit请求，如果nfsd配置了sync，那么数据就直接落盘
 2.2 通过 nfs_writepages (后台回写等操作触发)， 发送 NFSPROC4_CLNT_WRITE 请求
 
-rq-qos 之前的RCA材料？
-有哪些调度器，调度器有哪些配置 之前整理的接口列表？
+
 虚拟化相关，找找之前的材料？
 脚本工具之类的上传到元宝？
 
 
-
-打印增强特性 https://gitee.com/openeuler/kernel/pulls/3963
-
-美团mysql 5.10读优化导致写被反压，特定场景下写劣化
-
-MindIO，优化内存池分配，异常上报功能
-
-磁电盘文件系统
-	功能介绍
-	重点问题
-
 NFSD 需求
 	重点问题 ———— 社区补丁分析
-
-
-BIOS维护问题：
-1620 GIC 中断丢失 ？
-1215线卡TCP超时攻关 缓冲区被踩，报文异常，重新分配缓冲区
-
-ATF 基本信息：
-kexec需求
-
-5902异步加载固件需求
-
 
 
 https://lore.kernel.org/all/tencent_6A84D2E177043C91217A1CF6@qq.com/
 
 
 
+找到锁补丁反馈给齐江
+
+raid基础？fuse框架？
 
 锁相关？
 
