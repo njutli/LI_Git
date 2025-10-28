@@ -67,7 +67,7 @@ NFSD 需求
 
 https://lore.kernel.org/all/tencent_6A84D2E177043C91217A1CF6@qq.com/
 
-
+https://www.cpolar.com/blog/ubuntu-users-install-cpolar
 
 印象最深的问题？找到锁补丁反馈给齐江
 
