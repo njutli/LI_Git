@@ -3,6 +3,8 @@ cpolar
 http://192.168.0.103:9200/
 ```
 
+升级htags版本
+
 # 树莓派 git send-email
 # 树莓派上的仓远程登录打开
 
