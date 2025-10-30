@@ -86,3 +86,5 @@ raid基础？fuse框架？
 锁相关？
 
 bcache
+
+印象深的nfs问题？
