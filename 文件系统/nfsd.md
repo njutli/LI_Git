@@ -1379,6 +1379,7 @@ mount 与 submount 之间延时，延时
 ```
 
 ## 并发控制
+### 正常冲突处理
 ```
 // client1写打开文件后，client2写打开同一个文件
 // 有冲突
@@ -1591,6 +1592,76 @@ __break_lease
 //client1进程1打开文件后，client1进程1再次打开同一个文件
 // 无冲突
 
+```
+
+### 客户端长时间不返回deleg
+
+> deleg 用来保证数据一致性，服务端发现 deleg 过期，会通知客户端返还
+> 客户端多次全量 test 后都没有返回这个 deleg ，说明客户端并没有把这个 deleg 当做一个有效的 deleg ，当客户端想要获取数据时，依然能从服务端获取到最新数据以更新缓存
+> 在这种情况下，服务端没必要继续保留这个 deleg
+> 因此，这个问题在服务端修改，移除异常deleg比较合适
+
+```
+如果读客户端长时间不返回deleg，写客户端也可以正常打开文件？
+// 服务端返回 nfserr_jukebox ，触发客户端重试
+nfsd4_open
+ nfsd4_process_open2
+  nfs4_get_vfs_file
+   nfsd_file_acquire_opened
+    nfsd_file_do_acquire // 返回 nfserr_jukebox
+     nfsd_open_verified
+      __nfsd_open
+       nfsd_open_break_lease
+        break_lease
+         __break_lease // 返回  -EWOULDBLOCK
+  
+// 客户端打开文件
+nfs4_file_open
+ nfs4_atomic_open // NFS_PROTO(dir)->open_context
+  nfs4_do_open
+   _nfs4_do_open // 服务端返回 NFS4ERR_DELAY
+    _nfs4_open_and_get_state
+     _nfs4_proc_open
+      nfs4_run_open_task
+   nfs4_handle_exception
+    // exception->retry = 1
+   // 客户端不断重试
+
+// 服务端反向调用回收 deleg
+nfsd4_cb_recall_prepare
+ dp->dl_time = ktime_get_boottime_seconds()
+ list_add_tail // dp->dl_recall_lru 加入 nn->del_recall_lru 链表
+
+// 预期客户端返还 deleg ，将 deleg 从 dl_recall_lru 链表中异常
+nfsd4_delegreturn
+ destroy_delegation
+  unhash_delegation_locked
+   list_del_init // dp->dl_recall_lru 
+
+// 由于客户端没有返回 deleg ，服务端在定时任务中发现这个异常的 deleg ，将其加入 cl_revoked 链表
+nfs4_laundromat
+ // 遍历 nn->del_recall_lru
+ state_expired // deleg 超时 <-- 服务端callback请求失败，或callbakc成功客户端未及时返回 deleg
+ revoke_delegation
+  list_add // dp->dl_recall_lru 加入 cl_revoked 链表
+  destroy_unhashed_deleg // 同时服务端在超时后从 flc_lease 链表中移除锁
+   nfs4_unlock_deleg_lease
+    kernel_setlease // F_UNLCK
+     generic_setlease
+      generic_delete_lease
+       lease_modify // fl->fl_lmops->lm_change
+        locks_delete_lock_ctx
+
+// 之后客户端再次发送open请求，服务端返回OK
+nfsd4_open
+ nfsd4_process_open2
+  nfs4_get_vfs_file
+   nfsd_file_acquire_opened
+    nfsd_file_do_acquire // 返回 nfs_ok
+     nfsd_open_verified
+      __nfsd_open
+       nfsd_open_break_lease
+        break_lease // 冲突锁已从 flc_lease 上移除，返回0
 ```
 
 ## 异常处理
