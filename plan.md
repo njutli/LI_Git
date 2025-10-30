@@ -76,15 +76,15 @@ https://lore.kernel.org/all/tencent_6A84D2E177043C91217A1CF6@qq.com/
 
 https://www.cpolar.com/blog/ubuntu-users-install-cpolar
 
-印象最深的问题？找到锁补丁反馈给齐江
 
 leecode 滑动窗口问题 ———— 刷题
 编译链接？ ———— 程序员的自我修养
 
-raid基础？fuse框架？
+raid基础？
 
 锁相关？
 
+erofs
+
 bcache
 
-印象深的nfs问题？
