@@ -87,7 +87,6 @@ _dm_origins │              │          │         │ ......     │
 ```
 
 
-
 ```c
 struct dm_snapshot {
 	struct rw_semaphore lock;
@@ -836,7 +835,6 @@ snapshot(包括 merge)下IO前 track 对应 chunk，IO完成后在 snapshot_end_
 ```
 
 
-
 ```c
 [root@localhost ~]# dmsetup status /dev/mapper/snap
 0 2097152 snapshot 144/204800 16
@@ -850,8 +848,6 @@ NUM_SNAPSHOT_HDR_CHUNKS: 设备头占用的第一个chunk
 例如当前在使用area0,则area0上的第一个chunk为已使用的元数据空间，当前已使用的元数据空间(chunk数)为1+NUM_SNAPSHOT_HDR_CHUNKS
 所以若当前的area为area_n，当前元数据空间为(ps->current_area + 1 + NUM_SNAPSHOT_HDR_CHUNKS) * store->chunk_size
 ```
-
-
 
 
 
@@ -892,7 +888,6 @@ sda        8:0    0   60G  0 disk
 └─sda1     8:1    0   59G  0 part /
 root@lilingfeng-virtual-machine:~#
 
-
 ```
 
 
@@ -923,9 +918,6 @@ umount /mnt/sda
 dmsetup create crypt1 --table "0 `blockdev --getsz $1` crypt aes-cbc-essiv:sha256 babebabebabebabebabebabebabebabe 0 $1 0"
 ```
 
-https://www.cnblogs.com/informatics/p/7903391.html
-
-
 
 ## 2、可选特性
 
@@ -943,7 +935,6 @@ https://www.kernel.org/doc/html/latest/admin-guide/device-mapper/dm-crypt.html
 // 示例
 ./cryptsetup luksFormat -c aes-xts-plain64 --integrity hmac-sha256 /dev/sdc
 ```
-
 
 
 ```
@@ -1175,8 +1166,6 @@ strace -v -s 512 integritysetup open /dev/sdd test
 ```
 
 # 九、dm-verity
-
-https://gitlab.com/cryptsetup/cryptsetup
 
 https://gitlab.com/cryptsetup/cryptsetup.git
 
