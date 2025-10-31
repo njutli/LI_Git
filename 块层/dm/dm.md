@@ -277,8 +277,6 @@ md = dax_get_private(dax_dev) // 获取md
 map = dm_get_live_table(md, &srcu_idx) // 获取map
 
 
-
-
 修复方案：
 在reload流程中检测目标设备是否为自身
 ......
@@ -668,8 +666,6 @@ thin_map
    thin_defer_cell // -ENODATA/-EWOULDBLOCK
 
 
-
-
 ```
 # 四、dm-multipath
 
@@ -869,7 +865,6 @@ do_work
 ```
 
 
-
 #### c. 将读取的数据备份到COW设备
 
 ```c
@@ -911,7 +906,6 @@ do_work
 ```
 
 
-
 ## **2、snapshot**
 
 对snapshot所有的写操作，数据都会落盘到\<COW device\>；读操作，数据可能来源于\<COW device\>，也可能来源于origin。
@@ -945,7 +939,6 @@ discard_passdown_origin：下发 discard 命令会下发至原始设备
 DM_DEV_CREATE name="volumeGroup-snap"
 DM_TABLE_LOAD 252:3 -- 252:1 252:2 P 8
 ```
-
 
 
 ### （1）snapshot_ctr
@@ -1000,7 +993,6 @@ snapshot_preresume
 ```
 
 
-
 ### （3）snapshot_resume
 
 ```
@@ -1013,7 +1005,6 @@ snapshot_resume
 ```
 
 
-
 ### （4）snapshot_status
 
 ```
@@ -1023,7 +1014,6 @@ snapshot_status
  STATUSTYPE_TABLE
  // dm_exception_store 信息与相关 feature
 ```
-
 
 
 ### （5）snapshot_map
@@ -1069,7 +1059,6 @@ snapshot_end_io
  is_bio_tracked // 判断特定 snapshot 的特定 chunk 是否被 track
  stop_tracking_chunk // 如果被 track，则从链表中删除，停止 track
 ```
-
 
 
 ## **3、snapshot-merge**
@@ -1680,59 +1669,7 @@ struct dm_snapshot {
 	struct dm_exception_table pending;
 	struct dm_exception_table complete;
 
-	/*
-	 * pe_lock protects all pending_exception operations and access
-	 * as well as the snapshot_bios list.
-	 */
-	spinlock_t pe_lock;
-
-	/* Chunks with outstanding reads */
-	spinlock_t tracked_chunk_lock;
-	struct hlist_head tracked_chunk_hash[DM_TRACKED_CHUNK_HASH_SIZE];
-
-	/* The on disk metadata handler */
-	struct dm_exception_store *store;
-
-	unsigned in_progress;
-	struct wait_queue_head in_progress_wait;
-
-	struct dm_kcopyd_client *kcopyd_client;
-
-	/* Wait for events based on state_bits */
-	unsigned long state_bits;
-
-	/* Range of chunks currently being merged. */
-	chunk_t first_merging_chunk;
-	int num_merging_chunks;
-
-	/*
-	 * The merge operation failed if this flag is set.
-	 * Failure modes are handled as follows:
-	 * - I/O error reading the header
-	 *   	=> don't load the target; abort.
-	 * - Header does not have "valid" flag set
-	 *   	=> use the origin; forget about the snapshot.
-	 * - I/O error when reading exceptions
-	 *   	=> don't load the target; abort.
-	 *         (We can't use the intermediate origin state.)
-	 * - I/O error while merging
-	 *	=> stop merging; set merge_failed; process I/O normally.
-	 */
-	bool merge_failed:1;
-
-	bool discard_zeroes_cow:1;
-	bool discard_passdown_origin:1;
-
-	/*
-	 * Incoming bios that overlap with chunks being merged must wait
-	 * for them to be committed.
-	 */
-	struct bio_list bios_queued_during_merge;
-
-	/*
-	 * Flush data after merge.
-	 */
-	struct bio flush_bio;
+......
 };
 
 ```
