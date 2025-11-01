@@ -115,6 +115,4 @@ sudo systemctl reload apache2
 grep -n nfs4_state_manager HTML/fs/nfs/nfs4state.c.html | head
 grep -n '<a name="L2582"' HTML/fs/nfs/nfs4state.c.html
 
-加-l参数
-sudo htags -DfFnvahoIstxl --fixed-guide --auto-completion -t linux-stable-5.10 -m 'start_kernel'
 
