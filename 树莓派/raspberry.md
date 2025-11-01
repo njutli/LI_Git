@@ -109,3 +109,12 @@ block  COPYING  crypto   drivers        GPATH  GTAGS   include  io_uring  Kbuild
 
 sudo vim /etc/apache2/sites-available/000-default.conf
 sudo systemctl reload apache2
+
+
+在6.6和主线代码目录下分别检查锚点
+grep -n nfs4_state_manager HTML/fs/nfs/nfs4state.c.html | head
+grep -n '<a name="L2582"' HTML/fs/nfs/nfs4state.c.html
+
+加-l参数
+sudo htags -DfFnvahoIstxl --fixed-guide --auto-completion -t linux-stable-5.10 -m 'start_kernel'
+
