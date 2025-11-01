@@ -1,3 +1,7 @@
+gnu global版本
+https://ftp.gnu.org/gnu/global/
+
+
 a1151488180@gmail.com
 gyesLLF1026...
 
