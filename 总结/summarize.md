@@ -41,6 +41,8 @@ Apache Spark 是一个 分布式大数据处理框架，特点是 内存计算�
 ```
 企业数据快速增长，离线介质成为降成本、绿色节能优选方案。华为推出首款72TB磁电盘，用于替代机械硬盘存储大量冷数据。SSD与磁带系统组成的MED存储设备需要定制的文件系统对数据进行管理
 
+竞品：LTO-9 开放标准的线性磁带存储（Linear Tape-Open，第9代）
+
 子功能方案设计与开发；测试用例开发与问题定位；图形环境的搭建与调试
 
 完成挂载数量限制，mkfs/mount/lseek/unlink等基础功能点的方案设计与实现，累积开发代码3k+；
@@ -508,10 +510,7 @@ do_fsync
 	 wb_wakeup_delayed
 	  queue_delayed_work // wb->dwork
 
-
 后台回写流程怎么确认哪些数据需要回写：
-
-
 
 回写的数据是怎么来的：
 ```
@@ -753,7 +752,7 @@ none 调度器存在的原因是：在现代 SSD、NVMe 等设备上，硬件自
 
 > 生成bio --> throttle限速(rq_qos) --> get tag限速 --> plug限速 --> 调度器限速
 
-在IO下发路径中，会通过throttle（例如wbt），get tag，get budget，plug，还有调度器限制IO的下发。这些“限制/门控”存在的共同目的，是在复杂、多租户、多层缓存/写回的系统里，让块设备始终工作在可控、可预测、效率较高的区间，避免失控的排队、抖动与放大。不同环节针对的问题和目标各不相同，但核心诉求包括：控制队列深度、保护读延迟、抑制写放大/写洪峰、维持设备/缓存的稳态、实现公平/隔离、提升合并率与吞吐、以及配合电源/寿命与系统整体稳定性。
+在IO下发路径中，会通过throttle（例如wbt），get tag，get budget，plug，还有调度器限制IO的下发。这些“限制/门控”存在的共同目的，是在复杂、多租户、多层缓存/写回的系统里，让块设备始终工作在可控、可预测、效率较高的区间，避免失控的排队、抖动与放大。
 
 #### I/O 下发路径中的典型限制与目的
 
@@ -791,7 +790,6 @@ plug
 
 ### （5）rq-qos
 见blk-cgroup框架.md
-
 
 ## （五）驱动层
 ### dm
@@ -864,7 +862,6 @@ https://lore.kernel.org/all/20250619111806.3546162-1-yi.zhang@huaweicloud.com/
 
 **dm-snapshot在IO错误或cow溢出时会失效，且无法恢复**
 
-
 ## （七）其他
 ### （1）io_uring
 #### 1) io_uring基本结构和流程
@@ -920,7 +917,6 @@ io_uring_setup
   io_uring_get_file
    anon_inode_getfile // 基于匿名inode创建一个file， f_op 是 io_uring_fops，private_data 是 io_ring_ctx，主要用于用户态mmap
   io_uring_install_fd // 获取fd返回给用户态
-
 
 // io_sq_thread 在使能 IORING_SETUP_SQPOLL 后会同步处理sqe，处理的方式可能是同步处理，也可能是根据io_wq创建worker后异步处理
 io_sq_thread
