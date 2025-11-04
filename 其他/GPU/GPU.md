@@ -5,7 +5,20 @@ https://zhuanlan.zhihu.com/p/510690054
 https://docs.kernel.org/gpu/drm-internals.html#driver-initialization
 
 # 整体结构
-
+```
+[User Space]  
+  │  
+  ├─ UMD (CUDA/ROCm)  
+  │    │  
+  │    └─ → [Kernel Space]  
+  │           │  
+  │           ├─ KMD (DRM/KMS)  
+  │           │    │  
+  │           │    └─ → [Hardware]  
+  │           │         ├─ GPU MMU  
+  │           │         ├─ SMMU  
+  │           │         └─ PCIe/DRAM Controller  
+```
 https://blog.csdn.net/xiaoheshang_123/article/details/147374247
 
 https://zhuanlan.zhihu.com/p/688902157
