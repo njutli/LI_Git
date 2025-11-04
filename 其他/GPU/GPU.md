@@ -2,7 +2,15 @@
 https://zhuanlan.zhihu.com/p/510690054
 
 内核开发指导<br>
+drivers\gpu\drm\
 https://docs.kernel.org/gpu/drm-internals.html#driver-initialization
+
+GPU驱动开发工程师的主要工作<br>
+https://www.zhihu.com/question/645737536/answer/3422572394
+
+视频<br>
+https://www.bilibili.com/video/BV1QT4y1r7Vq/
+https://yuanheci.site/archives/gpu%E8%BD%AF%E4%BB%B6%E6%A0%88
 
 # 整体结构
 ```
