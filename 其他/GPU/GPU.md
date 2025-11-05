@@ -47,7 +47,7 @@ https://yuanheci.site/archives/gpu%E8%BD%AF%E4%BB%B6%E6%A0%88
 ![CUDA](https://i-blog.csdnimg.cn/direct/c7d931db0d7946e9a9bc2c69835f3a88.png)
 
 # MUSA架构
-
+https://docs.mthreads.com/musa-sdk/musa-sdk-doc-online/programming_guide/Chapter01
 
 
 
