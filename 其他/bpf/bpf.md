@@ -2,7 +2,6 @@
 ulimit -l unlimited
 clang -O2 -target bpf -c bpf_simple.c -o bpf_simple.o
 ./bpf_loader_v2 bpf_simple.o
-```
 
 ┌──────────────────────────────────────────────────┐
 │ 为什么需要两个文件？                              │
@@ -16,3 +15,6 @@ clang -O2 -target bpf -c bpf_simple.c -o bpf_simple.o
 单文件方案：
 ✅ bpftrace/bcc 脚本（Python/DSL）
 ❌ 纯 C 不现实（除非用非常复杂的构建系统）
+
+```
+
