@@ -41,6 +41,7 @@ clang -O2 -target bpf -c bpf_simple.c -o bpf_simple.o
 
 ```
 
+**系统调用参数**
 ```
 bpf(BPF_PROG_LOAD, 
 {
