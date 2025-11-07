@@ -31,6 +31,10 @@ clang -O2 -target bpf -c bpf_simple.c -o bpf_simple.o
 │ 4. 加载器需要解析 ELF、处理系统调用等复杂逻辑      │
 └──────────────────────────────────────────────────┘
 
+两个文件的定位不同：
+一个是内核态执行，功能单一，必须用 clang -target bpf 编译，只能使用受限的 C 子集，只能用 BPF helper 函数
+一个是用户态执行，功能完善，用普通 gcc/clang 编译，是完整的用户空间程序， 可以用 printf、文件操作、网络等，可以解析 ELF、处理参数
+
 单文件方案：
 ✅ bpftrace/bcc 脚本（Python/DSL）
 ❌ 纯 C 不现实（除非用非常复杂的构建系统）
