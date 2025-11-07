@@ -207,3 +207,32 @@ bpf(BPF_PROG_LOAD,
 },
 144) = 3
 ```
+
+**执行结果**
+```
+[root@fedora ebpf]# ./bpf_loader_v2 bpf_simple.o
+=== BPF Loader with Live Trace ===
+
+[1] Loading bpf_simple.o
+Found program section: tracepoint/syscalls/sys_enter_execve
+  Offset: 0x40
+  Size: 152 bytes
+  Instructions: 19
+Found license: GPL
+
+[2] Loading into kernel...
+SUCCESS! Program loaded, fd=3
+
+[3] Attaching to tracepoint...
+Tracepoint ID: 827
+Attached successfully!
+
+Monitoring execve calls... (Press Ctrl+C to stop)
+Trace output will appear below:
+────────────────────────────────────────
+
+
+=== BPF Trace Output ===
+           <...>-3815    [000] d... 92343.604776: bpf_trace_printk: execve: bash
+
+```
