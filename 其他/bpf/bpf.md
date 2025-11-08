@@ -637,7 +637,20 @@ trace_printk 对应的函数编号是6
 
 ## 3. 内核代码分析
 ### 3.1 加载bpf程序
+```
+__sys_bpf // BPF_PROG_LOAD
+ bpf_prog_load
+  bpf_prog_size // 计算可以包含所有指令的 bpf_prog 需要多大空间
+  bpf_prog_alloc // 分配 bpf_prog
+  copy_from_bpfptr // 将指令从 attr->insns 拷贝到 prog->insns
+  bpf_check // 校验 bpf 程序
+  bpf_prog_select_runtime
+   bpf_int_jit_compile
+    do_jit
+  bpf_prog_alloc_id
+  bpf_prog_new_fd
 
+```
 ### 3.2 附加tracepoint
 
 
