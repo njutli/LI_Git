@@ -151,8 +151,7 @@ $ ls
 
 ### 2.2 附加tracepoint
 
-## 3. 二进制分析
-**系统调用参数**
+## 3. 系统调用参数分析
 ```
 bpf(BPF_PROG_LOAD, 
 {
@@ -313,6 +312,33 @@ bpf(BPF_PROG_LOAD,
 	fd_array=NULL
 },
 144) = 3
+```
+
+```
+enum bpf_func_id {
+	__BPF_FUNC_MAPPER(__BPF_ENUM_FN)
+	__BPF_FUNC_MAX_ID,
+};
+#define __BPF_FUNC_MAPPER(FN)		\
+	FN(unspec),			\
+	FN(map_lookup_elem),		\
+	FN(map_update_elem),		\
+	FN(map_delete_elem),		\
+	FN(probe_read),			\
+	FN(ktime_get_ns),		\
+	FN(trace_printk),		\
+	FN(get_prandom_u32),		\
+	FN(get_smp_processor_id),	\
+	FN(skb_store_bytes),		\
+	FN(l3_csum_replace),		\
+	FN(l4_csum_replace),		\
+	FN(tail_call),			\
+	FN(clone_redirect),		\
+	FN(get_current_pid_tgid),	\
+	FN(get_current_uid_gid),	\
+	FN(get_current_comm),		\
+	FN(get_cgroup_classid),		\
+...
 ```
 
 **执行结果**
