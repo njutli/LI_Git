@@ -178,15 +178,15 @@ $ ls
 
 ## 2. 系统调用参数分析
 
-> 已知：
+> 已知：<br>
 > bpf程序是以什么形式传递给内核的？<br>
 >     —— 通过一系列的bpf_insn指令
 >
 > bpf_insn指令怎么来的？<br>
 >     —— 由clang将C语言指令编译而来
 >
-> 分析：
-> bpf_insn指令什么含义？
+> 分析：<br>
+> bpf_insn指令什么含义？<br>
 > bpf_insn指令怎么和C语言程序对应？
 
 ### 2.1 系统调用参数
@@ -352,8 +352,9 @@ bpf(BPF_PROG_LOAD,
 144) = 3
 ```
 
-### 2.2 内核实现
+### 2.2 参数解析
 ```
+内核指令格式定义：
 struct bpf_insn {
 	__u8	code;		/* opcode */
 	__u8	dst_reg:4;	/* dest register */
@@ -362,6 +363,90 @@ struct bpf_insn {
 	__s32	imm;		/* signed immediate constant */
 };
 
+
+偏移    二进制数据 (每条指令 8 字节，对应 struct bpf_insn)
+────────────────────────────────────────────────────────────
+
+0x40:   bf | a6 | 00 00 | 00 00 00 00          指令 0
+        ─┬   ─┬   ──┬──   ─────┬─────
+         │    │     │          └─ imm = 0x00000000 (立即数)
+         │    │     └─ off = 0x0000 (偏移量)
+         │    └─ regs = 0xa6
+         │       dst_reg = 0xa6 & 0x0f = 6 (低4位)
+         │       src_reg = 0xa6 >> 4 = 10 (高4位)
+         └─ code = 0xbf (BPF_ALU64 | BPF_X | BPF_MOV)
+        
+        解析结果：
+        struct bpf_insn {
+            .code = 0xbf,      // MOV 操作，64位，寄存器模式
+            .dst_reg = 6,      // 目标寄存器 r6
+            .src_reg = 10,     // 源寄存器 r10 (栈指针)
+            .off = 0,
+            .imm = 0
+        }
+        语义：r6 = r10  (保存栈指针)
+
+内核中相关操作码定义如下：
+#define BPF_ALU64       0x07    /* alu mode in double word width */
+#define         BPF_X           0x08
+#define BPF_MOV         0xb0    /* mov reg to reg */
+所以 0xbf 对应(BPF_ALU64 | BPF_X | BPF_MOV)，其他指令类似
+
+0x48:   07 | 06 | 00 00 | f0 ff ff ff          指令 1
+        ─┬   ─┬   ──┬──   ─────┬─────
+         │    │     │          └─ imm = 0xfffffff0 (补码表示 -16)
+         │    │     └─ off = 0x0000
+         │    └─ regs = 0x06
+         │       dst_reg = 0x06 & 0x0f = 6
+         │       src_reg = 0x06 >> 4 = 0
+         └─ code = 0x07 (BPF_ALU64 | BPF_K | BPF_ADD)
+        
+        解析结果：
+        struct bpf_insn {
+            .code = 0x07,      // ADD 操作，64位，立即数模式
+            .dst_reg = 6,
+            .src_reg = 0,
+            .off = 0,
+            .imm = -16
+        }
+        语义：r6 += -16  (在栈上分配 16 字节空间)
+
+
+0x50:   bf | 61 | 00 00 | 00 00 00 00          指令 2
+        ─┬   ─┬   ──┬──   ─────┬─────
+         │    │     │          └─ imm = 0x00000000
+         │    │     └─ off = 0x0000
+         │    └─ regs = 0x61
+         │       dst_reg = 0x61 & 0x0f = 1
+         │       src_reg = 0x61 >> 4 = 6
+         └─ code = 0xbf (BPF_ALU64 | BPF_X | BPF_MOV)
+        
+        语义：r1 = r6  (r1 指向栈空间，作为函数参数)
+
+
+0x58:   b7 | 02 | 00 00 | 10 00 00 00          指令 3
+        ─┬   ─┬   ──┬──   ─────┬─────
+         │    │     │          └─ imm = 0x00000010 (16)
+         │    │     └─ off = 0x0000
+         │    └─ regs = 0x02
+         │       dst_reg = 0x02 & 0x0f = 2
+         │       src_reg = 0x02 >> 4 = 0
+         └─ code = 0xb7 (BPF_ALU64 | BPF_K | BPF_MOV)
+        
+        语义：r2 = 16  (字符串缓冲区大小)
+
+
+0x60:   85 | 00 | 00 00 | 10 00 00 00          指令 4
+        ─┬   ─┬   ──┬──   ─────┬─────
+         │    │     │          └─ imm = 0x00000010 (helper 函数 ID = 16)
+         │    │     └─ off = 0x0000
+         │    └─ regs = 0x00
+         │       dst_reg = 0, src_reg = 0
+         └─ code = 0x85 (BPF_JMP | BPF_CALL)
+        
+        语义：call 16  (调用 bpf_get_current_comm helper)
+
+内核中相关函数定义如下：
 enum bpf_func_id {
 	__BPF_FUNC_MAPPER(__BPF_ENUM_FN)
 	__BPF_FUNC_MAX_ID,
@@ -387,17 +472,168 @@ enum bpf_func_id {
 	FN(get_current_comm),		\
 	FN(get_cgroup_classid),		\
 ...
+可知 get_current_comm 对应的函数编号为16，其他函数类似
+
+
+0x68:   b7 | 01 | 00 00 | 25 73 00 00          指令 5
+        ─┬   ─┬   ──┬──   ─────┬─────
+         │    │     │          └─ imm = 0x00007325 (ASCII: 小端序 "%s\0\0")
+         │    │     └─ off = 0x0000
+         │    └─ regs = 0x01
+         │       dst_reg = 1, src_reg = 0
+         └─ code = 0xb7 (BPF_ALU64 | BPF_K | BPF_MOV)
+        
+        语义：r1 = 0x7325  (准备写入 "%s")
+
+
+0x70:   6b | 1a | e8 ff | 00 00 00 00          指令 6
+        ─┬   ─┬   ──┬──   ─────┬─────
+         │    │     │          └─ imm = 0x00000000
+         │    │     └─ off = 0xffe8 (补码表示 -24)
+         │    └─ regs = 0x1a
+         │       dst_reg = 0x1a & 0x0f = 10
+         │       src_reg = 0x1a >> 4 = 1
+         └─ code = 0x6b (BPF_STX | BPF_H | BPF_MEM)
+                        (STX=寄存器存储, H=halfword 2字节, MEM=内存)
+        
+        语义：*(u16 *)(r10 - 24) = r1  (写入 "%s" 到栈上)
+
+
+0x78:   18 | 01 | 00 00 | 65 78 65 63          指令 7 (宽指令第1部分)
+        ─┬   ─┬   ──┬──   ─────┬─────
+         │    │     │          └─ imm 低32位 = 0x63657865 (小端序 "exec")
+         │    │     └─ off = 0x0000
+         │    └─ regs = 0x01
+         │       dst_reg = 1, src_reg = 0
+         └─ code = 0x18 (BPF_LD | BPF_DW | BPF_IMM)
+                        (LD=load, DW=double word 64位, IMM=立即数)
+
+0x80:   00 | 00 | 00 00 | 76 65 3a 20          指令 7 (宽指令第2部分)
+        ─┬   ─┬   ──┬──   ─────┬─────
+         │    │     │          └─ imm 高32位 = 0x203a6576 (小端序 "ve: ")
+         │    │     └─ off = 0x0000
+         │    └─ regs = 0x00
+         └─ code = 0x00 (宽指令的延续标记)
+        
+        完整语义：r1 = 0x203a657665786365  (64位立即数，小端序 "execve: ")
+
+
+0x88:   7b | 1a | e0 ff | 00 00 00 00          指令 8
+        ─┬   ─┬   ──┬──   ─────┬─────
+         │    │     │          └─ imm = 0x00000000
+         │    │     └─ off = 0xffe0 (补码表示 -32)
+         │    └─ regs = 0x1a
+         │       dst_reg = 10, src_reg = 1
+         └─ code = 0x7b (BPF_STX | BPF_DW | BPF_MEM)
+                        (DW=double word 8字节)
+        
+        语义：*(u64 *)(r10 - 32) = r1  (写入 "execve: " 到栈上)
+
+
+0x90:   b7 | 01 | 00 00 | 00 00 00 00          指令 9
+        ─┬   ─┬   ──┬──   ─────┬─────
+         │    │     │          └─ imm = 0x00000000
+         │    │     └─ off = 0x0000
+         │    └─ regs = 0x01
+         │       dst_reg = 1, src_reg = 0
+         └─ code = 0xb7 (BPF_ALU64 | BPF_K | BPF_MOV)
+        
+        语义：r1 = 0
+
+
+0x98:   73 | 1a | ea ff | 00 00 00 00          指令 10
+        ─┬   ─┬   ──┬──   ─────┬─────
+         │    │     │          └─ imm = 0x00000000
+         │    │     └─ off = 0xffea (补码表示 -22)
+         │    └─ regs = 0x1a
+         │       dst_reg = 10, src_reg = 1
+         └─ code = 0x73 (BPF_STX | BPF_B | BPF_MEM)
+                        (B=byte 1字节)
+        
+        语义：*(u8 *)(r10 - 22) = r1  (写入 '\0' 字符串结束符)
+
+
+0xa0:   bf | a1 | 00 00 | 00 00 00 00          指令 11
+        ─┬   ─┬   ──┬──   ─────┬─────
+         │    │     │          └─ imm = 0x00000000
+         │    │     └─ off = 0x0000
+         │    └─ regs = 0xa1
+         │       dst_reg = 0xa1 & 0x0f = 1
+         │       src_reg = 0xa1 >> 4 = 10
+         └─ code = 0xbf (BPF_ALU64 | BPF_X | BPF_MOV)
+        
+        语义：r1 = r10
+
+
+0xa8:   07 | 01 | 00 00 | e0 ff ff ff          指令 12
+        ─┬   ─┬   ──┬──   ─────┬─────
+         │    │     │          └─ imm = 0xffffffe0 (补码表示 -32)
+         │    │     └─ off = 0x0000
+         │    └─ regs = 0x01
+         │       dst_reg = 1, src_reg = 0
+         └─ code = 0x07 (BPF_ALU64 | BPF_K | BPF_ADD)
+        
+        语义：r1 += -32  (r1 指向格式化字符串起始位置)
+
+
+0xb0:   b7 | 02 | 00 00 | 0b 00 00 00          指令 13
+        ─┬   ─┬   ──┬──   ─────┬─────
+         │    │     │          └─ imm = 0x0000000b (11)
+         │    │     └─ off = 0x0000
+         │    └─ regs = 0x02
+         │       dst_reg = 2, src_reg = 0
+         └─ code = 0xb7 (BPF_ALU64 | BPF_K | BPF_MOV)
+        
+        语义：r2 = 11  (字符串长度)
+
+
+0xb8:   bf | 63 | 00 00 | 00 00 00 00          指令 14
+        ─┬   ─┬   ──┬──   ─────┬─────
+         │    │     │          └─ imm = 0x00000000
+         │    │     └─ off = 0x0000
+         │    └─ regs = 0x63
+         │       dst_reg = 0x63 & 0x0f = 3
+         │       src_reg = 0x63 >> 4 = 6
+         └─ code = 0xbf (BPF_ALU64 | BPF_X | BPF_MOV)
+        
+        语义：r3 = r6  (r3 指向进程名缓冲区)
+
+
+0xc0:   85 | 00 | 00 00 | 06 00 00 00          指令 15
+        ─┬   ─┬   ──┬──   ─────┬─────
+         │    │     │          └─ imm = 0x00000006 (helper 函数 ID = 6)
+         │    │     └─ off = 0x0000
+         │    └─ regs = 0x00
+         │       dst_reg = 0, src_reg = 0
+         └─ code = 0x85 (BPF_JMP | BPF_CALL)
+        
+        语义：call 6  (调用 bpf_trace_printk helper)
+
+trace_printk 对应的函数编号是6
+
+
+0xc8:   b7 | 00 | 00 00 | 00 00 00 00          指令 16
+        ─┬   ─┬   ──┬──   ─────┬─────
+         │    │     │          └─ imm = 0x00000000
+         │    │     └─ off = 0x0000
+         │    └─ regs = 0x00
+         │       dst_reg = 0, src_reg = 0
+         └─ code = 0xb7 (BPF_ALU64 | BPF_K | BPF_MOV)
+        
+        语义：r0 = 0  (设置返回值)
+
+
+0xd0:   95 | 00 | 00 00 | 00 00 00 00          指令 17
+        ─┬   ─┬   ──┬──   ─────┬─────
+         │    │     │          └─ imm = 0x00000000
+         │    │     └─ off = 0x0000
+         │    └─ regs = 0x00
+         │       dst_reg = 0, src_reg = 0
+         └─ code = 0x95 (BPF_JMP | BPF_EXIT)
+        
+        语义：exit  (程序退出)
 ```
 
-### 2.3 二进制对比
-
-```
-#define BPF_ALU64       0x07    /* alu mode in double word width */
-#define         BPF_X           0x08
-#define BPF_MOV         0xb0    /* mov reg to reg */
-
-
-```
 
 
 ## 3. 内核代码分析
