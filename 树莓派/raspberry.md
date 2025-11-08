@@ -99,9 +99,10 @@ grep -n nfs4_state_manager HTML/fs/nfs/nfs4state.c.html | head
 grep -n '<a name="L2582"' HTML/fs/nfs/nfs4state.c.html
 
 
+lazy vim
 重新装一套系统，使用global自带的web服务
 格式化重试 —— nginx + global
-lazy vim
+
 
 
 
