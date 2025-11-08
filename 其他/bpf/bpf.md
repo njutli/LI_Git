@@ -8,6 +8,7 @@ https://blog.csdn.net/qq_17045267/article/details/103764320?utm_medium=distribut
 **用例执行步骤**
 ```
 ulimit -l unlimited
+gcc -O2 -Wall -pthread bpf_loader_v2.c -o bpf_loader_v2
 clang -O2 -target bpf -c bpf_simple.c -o bpf_simple.o
 ./bpf_loader_v2 bpf_simple.o
 ```
