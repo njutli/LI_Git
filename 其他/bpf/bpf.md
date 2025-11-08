@@ -1,11 +1,11 @@
-**相关链接**
+# 相关链接
 https://ebpf.io/zh-hans/what-is-ebpf/
 
 https://blog.csdn.net/legend050709/article/details/128387908
 
 https://blog.csdn.net/qq_17045267/article/details/103764320?utm_medium=distribute.pc_relevant.none-task-blog-2~default~baidujs_baidulandingword~default-1-103764320-blog-128387908.235^v43^pc_blog_bottom_relevance_base6&spm=1001.2101.3001.4242.2&utm_relevant_index=4
 
-**用例执行步骤**
+# 用例执行步骤
 ```
 ulimit -l unlimited
 gcc -O2 -Wall -pthread bpf_loader_v2.c -o bpf_loader_v2
@@ -13,7 +13,7 @@ clang -O2 -target bpf -c bpf_simple.c -o bpf_simple.o
 ./bpf_loader_v2 bpf_simple.o
 ```
 
-**为什么要两个文件**
+# 为什么要两个文件
 ```
 ┌─────────────────────────────────────┐
 │        用户空间 (User Space)         │
@@ -51,6 +51,99 @@ clang -O2 -target bpf -c bpf_simple.c -o bpf_simple.o
 ✅ bpftrace/bcc 脚本（Python/DSL）
 ❌ 纯 C 不现实（除非用非常复杂的构建系统）
 
+```
+
+# 代码与流程分析
+## 流程分析
+### 准备流程
+1. 加载ELF文件
+```
+// 1. 打开文件
+FILE *fp = fopen(argv[1], "rb");
+
+// 2. 读取 ELF，找到名为 "tracepoint/syscalls/sys_enter_execve" 的 section
+// 这个 section 包含 BPF 字节码指令
+
+// 3. 调用 bpf() 系统调用，把字节码加载到内核
+union bpf_attr attr = {
+    .prog_type = BPF_PROG_TYPE_TRACEPOINT,  // 类型：tracepoint
+    .insns = prog_instructions,              // BPF 字节码
+    .insn_cnt = instruction_count,
+    .license = "GPL",
+};
+int prog_fd = bpf(BPF_PROG_LOAD, &attr, sizeof(attr));
+```
+
+2. 内核验证并 JIT 编译
+```
+用户空间                    内核空间
+─────────────────────────────────────────────────
+  BPF 字节码                                   
+     ↓                                         
+ bpf() 系统调用  ──────→  ┌─────────────────┐
+                          │ BPF Verifier    │
+                          │ (安全检查)       │
+                          └────────┬────────┘
+                                   ↓
+                          ┌─────────────────┐
+                          │ JIT Compiler    │
+                          │ (编译成机器码)   │
+                          └────────┬────────┘
+                                   ↓
+                          ┌─────────────────┐
+                          │ 机器码存在内核   │
+                          │ 等待被触发       │
+                          └─────────────────┘
+```
+
+3. 附加到 tracepoint
+```
+// 加载器打开 tracepoint 事件
+int tp_fd = open("/sys/kernel/debug/tracing/events/syscalls/sys_enter_execve/id");
+
+// 调用 ioctl 把 BPF 程序附加到这个 tracepoint
+ioctl(tp_fd, PERF_EVENT_IOC_SET_BPF, prog_fd);
+ioctl(tp_fd, PERF_EVENT_IOC_ENABLE, 0);
+```
+
+### 抓取流程
+```
+用户空间                 内核空间
+─────────────────────────────────────────────────────
+
+$ ls                    
+  ↓
+  调用 execve()
+  系统调用
+       ↓
+   ┌────────┐            ┌──────────────────────┐
+   │        │  进入内核   │  sys_execve()        │
+   │  用户  │ ─────────→ │  (内核函数)          │
+   │  进程  │            └──────────┬───────────┘
+   └────────┘                       ↓
+                         ┌──────────────────────┐
+                         │ Tracepoint 触发点    │
+                         │ trace_sys_enter()    │
+                         └──────────┬───────────┘
+                                    ↓
+                         ┌──────────────────────┐
+                         │ 内核检查：有 BPF     │
+                         │ 程序附加在这里吗？    │
+                         └──────────┬───────────┘
+                                    ↓ 有！
+                         ┌──────────────────────┐
+                         │ 运行你的 BPF 程序:   │
+                         │ trace_execve()       │
+                         │   - 获取进程名       │
+                         │   - 调用 bpf_printk  │
+                         └──────────┬───────────┘
+                                    ↓
+                         ┌──────────────────────┐
+                         │ 写入 trace buffer    │
+                         └──────────────────────┘
+                                    ↑
+加载器读取 ──────────────────────┘
+/sys/kernel/debug/tracing/trace_pipe
 ```
 
 **系统调用参数**
