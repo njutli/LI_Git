@@ -3,7 +3,7 @@ https://ebpf.io/zh-hans/what-is-ebpf/
 
 https://blog.csdn.net/legend050709/article/details/128387908
 
-https://blog.csdn.net/qq_17045267/article/details/103764320?utm_medium=distribute.pc_relevant.none-task-blog-2~default~baidujs_baidulandingword~default-1-103764320-blog-128387908.235^v43^pc_blog_bottom_relevance_base6&spm=1001.2101.3001.4242.2&utm_relevant_index=4
+https://blog.csdn.net/qq_17045267/article/details/103764320
 
 # 二、用例执行步骤
 ```
