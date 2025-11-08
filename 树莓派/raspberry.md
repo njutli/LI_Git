@@ -32,14 +32,6 @@ sudo htags -fosa
 sudo htags -fosav --update
 
 
-| 场景      | 命令                                                                     | 说明       |
-| ------- | ---------------------------------------------------------------------- | -------- |
-| 只改样式或布局 | `htags --frame --alphabet --title "Linux Source Browser"`              | 不需要重建数据库 |
-| 改了源代码   | `gtags && htags --frame --alphabet --title "Linux Source Browser"`     | 全量重建     |
-| 改了部分源文件 | `global -u && htags --frame --alphabet --title "Linux Source Browser"` | 增量更新     |
-
-gtags && global -u && htags --frame --alphabet --title "Linux Source Browser"
-
 [root@szvphis18908837 ~]# cd /home/httpd/
 [root@szvphis18908837 httpd]# ls
 auto_update_code.sh  code  daily_update_code.sh  gitproxy.sh  nohup.out
@@ -65,15 +57,6 @@ sudo rm -f GPATH GRTAGS GTAGS
 sudo gtags
 sudo htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux-stable-5.10 -m 'start_kernel'
 
-
-# 1️⃣ 清理旧索引与HTML
-sudo rm -rf HTML GPATH GRTAGS GTAGS
-
-# 2️⃣ 重新生成索引数据库
-sudo gtags --gtagslabel=ctags --statistics
-
-# 3️⃣ 正确生成网页，指定有效起始函数
-sudo htags -DfFnvahoIstx --fixed-guide --auto-completion --symbol -t linux-stable-5.10 -m start_kernel
 
 
 升级版本？
@@ -116,7 +99,7 @@ grep -n nfs4_state_manager HTML/fs/nfs/nfs4state.c.html | head
 grep -n '<a name="L2582"' HTML/fs/nfs/nfs4state.c.html
 
 
-使用global自带的web服务
+重新装一套系统，使用global自带的web服务
 格式化重试 —— nginx + global
 lazy vim
 
