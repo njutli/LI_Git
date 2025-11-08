@@ -5,12 +5,42 @@ https://blog.csdn.net/legend050709/article/details/128387908
 
 https://blog.csdn.net/qq_17045267/article/details/103764320
 
-# 二、用例执行步骤
+# 二、用例执行
+### 执行步骤
 ```
 ulimit -l unlimited
 gcc -O2 -Wall -pthread bpf_loader_v2.c -o bpf_loader_v2
 clang -O2 -target bpf -c bpf_simple.c -o bpf_simple.o
-./bpf_loader_v2 bpf_simple.o
+终端1：./bpf_loader_v2 bpf_simple.o
+终端2：ls
+```
+### 执行结果
+```
+[root@fedora ebpf]# ./bpf_loader_v2 bpf_simple.o
+=== BPF Loader with Live Trace ===
+
+[1] Loading bpf_simple.o
+Found program section: tracepoint/syscalls/sys_enter_execve
+  Offset: 0x40
+  Size: 152 bytes
+  Instructions: 19
+Found license: GPL
+
+[2] Loading into kernel...
+SUCCESS! Program loaded, fd=3
+
+[3] Attaching to tracepoint...
+Tracepoint ID: 827
+Attached successfully!
+
+Monitoring execve calls... (Press Ctrl+C to stop)
+Trace output will appear below:
+────────────────────────────────────────
+
+
+=== BPF Trace Output ===
+           <...>-3815    [000] d... 92343.604776: bpf_trace_printk: execve: bash
+
 ```
 
 # 三、为什么要两个文件
@@ -376,31 +406,4 @@ enum bpf_func_id {
 ### 3.2 附加tracepoint
 
 
-**执行结果**
-```
-[root@fedora ebpf]# ./bpf_loader_v2 bpf_simple.o
-=== BPF Loader with Live Trace ===
 
-[1] Loading bpf_simple.o
-Found program section: tracepoint/syscalls/sys_enter_execve
-  Offset: 0x40
-  Size: 152 bytes
-  Instructions: 19
-Found license: GPL
-
-[2] Loading into kernel...
-SUCCESS! Program loaded, fd=3
-
-[3] Attaching to tracepoint...
-Tracepoint ID: 827
-Attached successfully!
-
-Monitoring execve calls... (Press Ctrl+C to stop)
-Trace output will appear below:
-────────────────────────────────────────
-
-
-=== BPF Trace Output ===
-           <...>-3815    [000] d... 92343.604776: bpf_trace_printk: execve: bash
-
-```
