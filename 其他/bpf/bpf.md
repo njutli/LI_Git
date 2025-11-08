@@ -1,11 +1,11 @@
-# 相关链接
+# 一、相关链接
 https://ebpf.io/zh-hans/what-is-ebpf/
 
 https://blog.csdn.net/legend050709/article/details/128387908
 
 https://blog.csdn.net/qq_17045267/article/details/103764320?utm_medium=distribute.pc_relevant.none-task-blog-2~default~baidujs_baidulandingword~default-1-103764320-blog-128387908.235^v43^pc_blog_bottom_relevance_base6&spm=1001.2101.3001.4242.2&utm_relevant_index=4
 
-# 用例执行步骤
+# 二、用例执行步骤
 ```
 ulimit -l unlimited
 gcc -O2 -Wall -pthread bpf_loader_v2.c -o bpf_loader_v2
@@ -13,7 +13,7 @@ clang -O2 -target bpf -c bpf_simple.c -o bpf_simple.o
 ./bpf_loader_v2 bpf_simple.o
 ```
 
-# 为什么要两个文件
+# 三、为什么要两个文件
 ```
 ┌─────────────────────────────────────┐
 │        用户空间 (User Space)         │
@@ -53,9 +53,9 @@ clang -O2 -target bpf -c bpf_simple.c -o bpf_simple.o
 
 ```
 
-# 代码与流程分析
-## 流程分析
-### 准备流程
+# 四、代码与流程分析
+## 1 流程分析
+### 1.1 准备流程
 1. 加载ELF文件
 ```
 // 1. 打开文件
@@ -106,7 +106,7 @@ ioctl(tp_fd, PERF_EVENT_IOC_SET_BPF, prog_fd);
 ioctl(tp_fd, PERF_EVENT_IOC_ENABLE, 0);
 ```
 
-### 抓取流程
+### 1.2 抓取流程
 ```
 用户空间                 内核空间
 ─────────────────────────────────────────────────────
@@ -146,6 +146,12 @@ $ ls
 /sys/kernel/debug/tracing/trace_pipe
 ```
 
+## 2. 内核代码分析
+### 2.1 加载bpf程序
+
+### 2.2 附加tracepoint
+
+## 3. 二进制分析
 **系统调用参数**
 ```
 bpf(BPF_PROG_LOAD, 
