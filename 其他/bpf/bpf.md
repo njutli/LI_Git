@@ -146,12 +146,14 @@ $ ls
 /sys/kernel/debug/tracing/trace_pipe
 ```
 
-## 2. 内核代码分析
-### 2.1 加载bpf程序
+## 2. 系统调用参数分析
 
-### 2.2 附加tracepoint
+> bpf程序是以什么形式传递给内核的？
+>
+> 编译出的二进制和C程序怎么对应的？
+> 
 
-## 3. 系统调用参数分析
+### 2.1 系统调用参数
 ```
 bpf(BPF_PROG_LOAD, 
 {
@@ -314,11 +316,21 @@ bpf(BPF_PROG_LOAD,
 144) = 3
 ```
 
+### 2.2 内核实现
 ```
+struct bpf_insn {
+	__u8	code;		/* opcode */
+	__u8	dst_reg:4;	/* dest register */
+	__u8	src_reg:4;	/* source register */
+	__s16	off;		/* signed offset */
+	__s32	imm;		/* signed immediate constant */
+};
+
 enum bpf_func_id {
 	__BPF_FUNC_MAPPER(__BPF_ENUM_FN)
 	__BPF_FUNC_MAX_ID,
 };
+
 #define __BPF_FUNC_MAPPER(FN)		\
 	FN(unspec),			\
 	FN(map_lookup_elem),		\
@@ -340,6 +352,23 @@ enum bpf_func_id {
 	FN(get_cgroup_classid),		\
 ...
 ```
+
+### 2.3 二进制对比
+
+```
+#define BPF_ALU64       0x07    /* alu mode in double word width */
+#define         BPF_X           0x08
+#define BPF_MOV         0xb0    /* mov reg to reg */
+
+
+```
+
+
+## 3. 内核代码分析
+### 3.1 加载bpf程序
+
+### 3.2 附加tracepoint
+
 
 **执行结果**
 ```
