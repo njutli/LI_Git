@@ -105,38 +105,5 @@ lazy vim -- https://fanlumaster.github.io/2023/11/25/Lazyvim-configure-from-scra
 
 
 
-多套代码，只有一套代码函数定义查询跳转正常：
-```
-原因：
-raspberrypi@raspberrypi:~/code $ ls -ld /home /home/raspberrypi /home/raspberrypi/code
-drwxr-xr-x 3 root root 4096 Jul 4 2024 /home
-drwx------ 10 raspberrypi raspberrypi 4096 Nov 9 11:17 /home/raspberrypi
-drwxr-xr-x 8 www-data www-data 4096 Nov 2 20:23 /home/raspberrypi/code
-raspberrypi@raspberrypi:~/code $
-
-/home/raspberrypi/code 被 www-data（Apache 的运行用户） 拥有。
-这意味着所有你在这个目录下执行的命令（包括 gtags、htags）在文件写入、软链接、相对路径计算上，都落在一个“非预期用户”的权限边界内。
-而 www-data 并不是你当前登录用户，也不是 sudo 默认切换的 root，因此在生成索引和 HTML 时，会导致一系列细微但灾难性的偏差。
-
-
-解决办法：
-sudo chown -R raspberrypi:raspberrypi /home/raspberrypi/code
-sudo chmod -R u+rwX /home/raspberrypi/code
-cd /home/raspberrypi/code/linux-stable
-rm -f GPATH GRTAGS GTAGS
-rm -rf HTML/
-gtags
-htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux-stable-6.6 -m 'start_kernel'
-
-raspberrypi@raspberrypi:~/code/linux-stable $ ls -ld /home /home/raspberrypi /home/raspberrypi/code
-drwxr-xr-x  3 root        root        4096 Jul  4  2024 /home
-drwx-----x 11 raspberrypi raspberrypi 4096 Nov  9 15:56 /home/raspberrypi
-drwxrwxr-x  9 raspberrypi raspberrypi 4096 Nov  9 13:48 /home/raspberrypi/code
-raspberrypi@raspberrypi:~/code/linux-stable $
-
-```
-
-
-
 
 
