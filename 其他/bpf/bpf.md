@@ -198,6 +198,7 @@ $ ls
 [bpf_simple二进制解析.md](https://github.com/njutli/LI_Git/blob/master/%E5%85%B6%E4%BB%96/bpf/bpf_simple%E4%BA%8C%E8%BF%9B%E5%88%B6%E8%A7%A3%E6%9E%90.md)
 
 ### 2.2 加载bpf程序指令到内核
+#### 2.2.1 内核加载流程
 ```
 // kernel/bpf/syscall.c
 static int bpf_prog_load(union bpf_attr *attr, bpfptr_t uattr)
@@ -246,6 +247,7 @@ __sys_bpf // BPF_PROG_LOAD
 
 ```
 
+#### 2.2.2 指令解析
 > 已知：<br>
 > bpf程序是以什么形式传递给内核的？<br>
 >     —— 通过一系列的bpf_insn指令
@@ -419,7 +421,6 @@ bpf(BPF_PROG_LOAD,
 144) = 3
 ```
 
-### 2.2 参数解析
 ```
 内核指令格式定义：
 struct bpf_insn {
