@@ -231,7 +231,8 @@ __sys_bpf // BPF_PROG_LOAD
   bpf_check // 校验 bpf 程序
   bpf_prog_select_runtime
    bpf_int_jit_compile // 不同的CPU架构有各自的实现
-    do_jit
+    bpf_jit_binary_alloc // 分配镜像，保存在 prog->aux->jit_data->image 和 prog->bpf_func 中
+    do_jit // 将指令编码到 image 中
   bpf_prog_alloc_id // 插入全局的 prog_idr 树，并获取对应的id
   bpf_prog_kallsyms_add
    bpf_prog_ksym_set_addr // 根据 bpf_func 在 ksym 上设置二进制的地址
