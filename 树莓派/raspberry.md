@@ -94,12 +94,14 @@ sudo vim /etc/apache2/sites-available/000-default.conf
 sudo systemctl reload apache2
 
 
-在6.6和主线代码目录下分别检查锚点
-grep -n nfs4_state_manager HTML/fs/nfs/nfs4state.c.html | head
-grep -n '<a name="L2582"' HTML/fs/nfs/nfs4state.c.html
 
 
-lazy vim -- https://fanlumaster.github.io/2023/11/25/Lazyvim-configure-from-scratch/
+
+https://www.cnblogs.com/wzc0066/p/9920769.html
+在源码目录下执行 sudo htags-server –b ip地址 端口号，使用GLOBAL 自带的 HTTP SERVER
+https://blog.csdn.net/gatieme/article/details/78819740
+
+
 重新装一套系统，使用global自带的web服务
 格式化重试 —— nginx + global
 
