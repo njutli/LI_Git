@@ -4,6 +4,7 @@
 4. 遍历 Section Headers → 根据 sh_type 和名称查找目标 Section
 5. 提取指令信息 → 使用 sh_offset 和 sh_size 定位 BPF 指令
 
+```
 [root@fedora ebpf]# hexdump -C bpf_simple.o
 /// ELF Header (64 字节)
 typedef struct elf64_hdr {
@@ -130,3 +131,4 @@ sh_offset    = 0x40   bpf指令所在偏移是0x40
 000003c0  18 00 00 00 00 00 00 00                           |........|
 000003c8
 [root@fedora ebpf]#
+```
