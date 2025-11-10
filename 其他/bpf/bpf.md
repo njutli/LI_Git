@@ -14,6 +14,9 @@ clang -O2 -target bpf -c bpf_simple.c -o bpf_simple.o
 终端1：./bpf_loader_v2 bpf_simple.o
 终端2：ls
 ```
+[bpf_loader_v2.c](https://github.com/njutli/LI_Git/blob/master/%E5%85%B6%E4%BB%96/bpf/bpf_loader_v2.c)
+
+
 ### 执行结果
 ```
 [root@fedora ebpf]# ./bpf_loader_v2 bpf_simple.o
