@@ -645,8 +645,31 @@ trace_printk 对应的函数编号是6
 
 
 ## 3. 内核代码分析
-### 3.1 加载bpf程序
+### 3.1 加载bpf程序到内核
 ```
+// kernel/bpf/syscall.c
+static int bpf_prog_load(union bpf_attr *attr, bpfptr_t uattr)
+{
+    // 1. 创建 BPF 程序对象
+    prog = bpf_prog_alloc(...);
+    
+    // 2. 验证程序
+    err = bpf_check(&prog, attr, uattr);
+    
+    // 3. JIT 编译
+    bpf_prog_select_runtime(prog, &err);
+    
+    // 4. 添加到符号表
+    bpf_prog_kallsyms_add(prog);
+    
+    // 5. 注册到 perf 子系统？ ← 与用户态程序的 PERF_EVENT_IOC_SET_BPF 调用互补
+    perf_event_bpf_event(prog, PERF_BPF_EVENT_PROG_LOAD, 0);
+
+    // 6. 返回文件描述符
+    return bpf_prog_new_fd(prog, ...);
+}
+
+// 返回 bpf_prog 对应的fd
 __sys_bpf // BPF_PROG_LOAD
  bpf_prog_load
   bpf_prog_size // 计算可以包含所有指令的 bpf_prog 需要多大空间
@@ -654,10 +677,20 @@ __sys_bpf // BPF_PROG_LOAD
   copy_from_bpfptr // 将指令从 attr->insns 拷贝到 prog->insns
   bpf_check // 校验 bpf 程序
   bpf_prog_select_runtime
-   bpf_int_jit_compile
+   bpf_int_jit_compile // 不同的CPU架构有各自的实现
     do_jit
-  bpf_prog_alloc_id
+  bpf_prog_alloc_id // 插入全局的 prog_idr 树，并获取对应的id
+  bpf_prog_kallsyms_add
+   bpf_prog_ksym_set_addr // 根据 bpf_func 在 ksym 上设置二进制的地址
+    // start = prog->bpf_func
+	// end = addr + hdr->pages * PAGE_SIZE
+   bpf_prog_ksym_set_name // 设置二进制的名字
+   bpf_ksym_add // 将二进制添加到全局链表 bpf_kallsyms 和全局树 bpf_tree
+  perf_event_bpf_event // 注册到 perf 子系统
   bpf_prog_new_fd
+   anon_inode_getfd
+    anon_inode_getfile // 为匿名inode分配 file
+	fd_install // 关联 file 与 fd
 
 ```
 ### 3.2 附加tracepoint
