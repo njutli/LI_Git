@@ -43,20 +43,22 @@ style.css
 [root@szvphis18908837 httpd]#
 
 #global -u
-sudo rm -f GPATH GRTAGS GTAGS
-sudo gtags
-sudo htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux -m 'start_kernel'
+rm -rf GPATH GRTAGS GTAGS HTML
+gtags
+htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux -m 'start_kernel'
+sudo htags-server -b 0.0.0.0 8618
 
 # 6.6
-rm -f GPATH GRTAGS GTAGS
+rm -rf GPATH GRTAGS GTAGS HTML
 gtags
 htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux-stable-6.6 -m 'start_kernel'
+sudo htags-server -b 0.0.0.0 8606
 
 # 5.10
-rm -f GPATH GRTAGS GTAGS
+rm -rf GPATH GRTAGS GTAGS HTML
 gtags
 htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux-stable-5.10 -m 'start_kernel'
-
+sudo htags-server -b 0.0.0.0 8510
 
 
 升级版本？
@@ -101,6 +103,8 @@ https://www.cnblogs.com/wzc0066/p/9920769.html
 在源码目录下执行 sudo htags-server –b ip地址 端口号，使用GLOBAL 自带的 HTTP SERVER
 https://blog.csdn.net/gatieme/article/details/78819740
 
+
+sudo htags-server -b 0.0.0.0 8080
 
 重新装一套系统，使用global自带的web服务
 格式化重试 —— nginx + global
