@@ -703,7 +703,7 @@ trace_printk 对应的函数编号是6
         语义：exit  (程序退出)
 ```
 
-### 获取tracepoint ID
+### 2.3 获取tracepoint ID
 要抓取的是系统调用execve，因此读取文件"/sys/kernel/debug/tracing/events/syscalls/sys_enter_execve/id"获取对应的tracepoint ID
 
 
