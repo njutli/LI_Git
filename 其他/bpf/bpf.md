@@ -191,6 +191,8 @@ $ ls
 1. 解析ELF文件
 2. 获取指令地址
 
+[bpf_simple二进制解析.md](https://github.com/njutli/LI_Git/blob/master/%E5%85%B6%E4%BB%96/bpf/bpf_simple%E4%BA%8C%E8%BF%9B%E5%88%B6%E8%A7%A3%E6%9E%90.md)
+
 ### 2.2 加载bpf程序指令到内核
 ```
 // kernel/bpf/syscall.c
