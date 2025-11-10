@@ -1,8 +1,37 @@
+1. 读取 ELF Header → 获取 Section Header Table 位置
+2. 定位 Section Header Table → 获取所有 Section 的元信息
+3. 获取字符串表 → 用于解析 Section 名称
+4. 遍历 Section Headers → 根据 sh_type 和名称查找目标 Section
+5. 提取指令信息 → 使用 sh_offset 和 sh_size 定位 BPF 指令
+
 [root@fedora ebpf]# hexdump -C bpf_simple.o
+/// ELF Header (64 字节)
+typedef struct elf64_hdr {
+  unsigned char e_ident[EI_NIDENT];     /* ELF "magic number" */ // 魔数：0x7f 'E' 'L' 'F' ...
+  Elf64_Half e_type;            // 文件类型：ET_REL (可重定位文件)
+  Elf64_Half e_machine;          // 架构：EM_BPF (247)
+  Elf64_Word e_version;          // 版本
+  Elf64_Addr e_entry;           /* Entry point virtual address */ // 入口地址（BPF 为 0）
+  Elf64_Off e_phoff;            /* Program header table file offset */ // Program Header 偏移（BPF 为 0）
+  Elf64_Off e_shoff;            /* Section header table file offset */ // Section Header 偏移
+  Elf64_Word e_flags;          // 标志
+  Elf64_Half e_ehsize;          // ELF Header 大小
+  Elf64_Half e_phentsize;      // Program Header 大小
+  Elf64_Half e_phnum;          // Program Header 数量
+  Elf64_Half e_shentsize;      // Section Header 大小
+  Elf64_Half e_shnum;          // Section Header 数量
+  Elf64_Half e_shstrndx;        // 字符串表索引
+} Elf64_Ehdr;
+
 00000000  7f 45 4c 46 02 01 01 00  00 00 00 00 00 00 00 00  |.ELF............|
 00000010  01 00 f7 00 01 00 00 00  00 00 00 00 00 00 00 00  |................|
 00000020  00 00 00 00 00 00 00 00  c8 01 00 00 00 00 00 00  |................|
 00000030  00 00 00 00 40 00 00 00  00 00 40 00 08 00 01 00  |....@.....@.....|
+（1）解析得到 Section Header Table 偏移和字符表索引，得到 Header[1] 偏移 0x208
+ehdr->e_shoff = 0x01c8      // Section Header Table 偏移 = 456 字节
+ehdr->e_shnum = 8           // 共 8 个 Section
+ehdr->e_shstrndx = 1        // 字符串表索引 = Section 1
+
 00000040  bf a6 00 00 00 00 00 00  07 06 00 00 f0 ff ff ff  |................|
 00000050  bf 61 00 00 00 00 00 00  b7 02 00 00 10 00 00 00  |.a..............|
 00000060  85 00 00 00 10 00 00 00  b7 01 00 00 25 73 00 00  |............%s..|
@@ -19,7 +48,10 @@
 00000110  00 00 00 00 00 00 00 00  3a 00 00 00 12 00 03 00  |........:.......|
 00000120  00 00 00 00 00 00 00 00  98 00 00 00 00 00 00 00  |................|
 00000130  47 00 00 00 11 00 05 00  00 00 00 00 00 00 00 00  |G...............|
-00000140  04 00 00 00 00 00 00 00  02 03 00 2e 74 65 78 74  |............text|
+00000140  04 00 00 00 00 00 00 00  02 03 
+
+
+0000014a                                 00 2e 74 65 78 74  |............text|
 00000150  00 2e 6c 6c 76 6d 5f 61  64 64 72 73 69 67 00 74  |..llvm_addrsig.t|
 00000160  72 61 63 65 70 6f 69 6e  74 2f 73 79 73 63 61 6c  |racepoint/syscal|
 00000170  6c 73 2f 73 79 73 5f 65  6e 74 65 72 5f 65 78 65  |ls/sys_enter_exe|
@@ -27,22 +59,59 @@
 00000190  00 5f 6c 69 63 65 6e 73  65 00 62 70 66 5f 73 69  |._license.bpf_si|
 000001a0  6d 70 6c 65 2e 63 00 2e  73 74 72 74 61 62 00 2e  |mple.c..strtab..|
 000001b0  73 79 6d 74 61 62 00 2e  72 6f 64 61 74 61 2e 73  |symtab..rodata.s|
-000001c0  74 72 31 2e 31 00 00 00  00 00 00 00 00 00 00 00  |tr1.1...........|
+000001c0  74 72 31 2e 31 00 00 00  
+
+// Section Header Table
+typedef struct elf64_shdr {
+  Elf64_Word sh_name;           /* Section name, index in string tbl */
+  Elf64_Word sh_type;           /* Type of section */
+  Elf64_Xword sh_flags;         /* Miscellaneous section attributes */
+  Elf64_Addr sh_addr;           /* Section virtual addr at execution */
+  Elf64_Off sh_offset;          /* Section file offset */
+  Elf64_Xword sh_size;          /* Size of section in bytes */
+  Elf64_Word sh_link;           /* Index of another section */
+  Elf64_Word sh_info;           /* Additional section information */
+  Elf64_Xword sh_addralign;     /* Section alignment */
+  Elf64_Xword sh_entsize;       /* Entry size if section holds table */
+} Elf64_Shdr;
+// 大小为 0x40
+
+（3）从第一个section开始遍历
+// Header [0]
+000001c8                           00 00 00 00 00 00 00 00  |tr1.1...........|
 000001d0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
 *
-00000200  00 00 00 00 00 00 00 00  5d 00 00 00 03 00 00 00  |........].......|
+00000200  00 00 00 00 00 00 00 00  
+
+// Header [1]
+sh_name    = 0x5d
+sh_offset  = 0x14a   (数据在文件中的位置)
+（2）解析得到数据在文件中的位置，后续遍历所有section时，要把section名和0x14a偏移的这段数据比较
+00000208                           5d 00 00 00 03 00 00 00  |........].......|
 00000210  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
 00000220  4a 01 00 00 00 00 00 00  7c 00 00 00 00 00 00 00  |J.......|.......|
 00000230  00 00 00 00 00 00 00 00  01 00 00 00 00 00 00 00  |................|
-00000240  00 00 00 00 00 00 00 00  01 00 00 00 01 00 00 00  |................|
+00000240  00 00 00 00 00 00 00 00  
+
+// Header [2]
+00000248                           01 00 00 00 01 00 00 00  |................|
 00000250  06 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
 00000260  40 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |@...............|
 00000270  00 00 00 00 00 00 00 00  04 00 00 00 00 00 00 00  |................|
-00000280  00 00 00 00 00 00 00 00  15 00 00 00 01 00 00 00  |................|
+00000280  00 00 00 00 00 00 00 00  
+
+// Header [3] ———— 0x14a偏移0x15位置就是 section "tracepoint/syscalls/sys_enter_execve"
+sh_offset    = 0x40   bpf指令所在偏移是0x40
+（4）遍历到 Header[3]时，0x14a 开始 0x15 偏移位置的section名称能对应，找到目标secion
+（5）解析指令偏移 0x40，后续向内核加载时就是加载这一部分指令数据
+00000288                           15 00 00 00 01 00 00 00  |................|
 00000290  06 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
 000002a0  40 00 00 00 00 00 00 00  98 00 00 00 00 00 00 00  |@...............|
 000002b0  00 00 00 00 00 00 00 00  08 00 00 00 00 00 00 00  |................|
-000002c0  00 00 00 00 00 00 00 00  6d 00 00 00 01 00 00 00  |........m.......|
+000002c0  00 00 00 00 00 00 00 00  
+
+// Header [4]
+000002c8                           6d 00 00 00 01 00 00 00  |........m.......|
 000002d0  32 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |2...............|
 000002e0  d8 00 00 00 00 00 00 00  0b 00 00 00 00 00 00 00  |................|
 000002f0  00 00 00 00 00 00 00 00  01 00 00 00 00 00 00 00  |................|
