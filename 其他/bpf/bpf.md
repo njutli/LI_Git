@@ -191,7 +191,7 @@ $ ls
 1. 解析ELF文件
 2. 获取指令地址
 
-### 2.2 加载bpf程序到内核
+### 2.2 加载bpf程序指令到内核
 ```
 // kernel/bpf/syscall.c
 static int bpf_prog_load(union bpf_attr *attr, bpfptr_t uattr)
