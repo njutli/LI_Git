@@ -706,6 +706,7 @@ trace_printk 对应的函数编号是6
 ### 2.3 获取tracepoint ID
 要抓取的是系统调用execve，因此读取文件"/sys/kernel/debug/tracing/events/syscalls/sys_enter_execve/id"获取对应的tracepoint ID
 
+[tracepoint.md](https://github.com/njutli/LI_Git/edit/master/%E5%85%B6%E4%BB%96/bpf/tracepoint.md)
 
 
 
