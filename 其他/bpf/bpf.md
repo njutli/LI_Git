@@ -708,5 +708,7 @@ trace_printk 对应的函数编号是6
 
 [tracepoint.md](https://github.com/njutli/LI_Git/edit/master/%E5%85%B6%E4%BB%96/bpf/tracepoint.md)
 
+### 2.4 attach tracepoint
+
 
 
