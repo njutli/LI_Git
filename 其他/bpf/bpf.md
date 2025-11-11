@@ -709,6 +709,34 @@ trace_printk 对应的函数编号是6
 [tracepoint.md](https://github.com/njutli/LI_Git/edit/master/%E5%85%B6%E4%BB%96/bpf/tracepoint.md)
 
 ### 2.4 attach tracepoint
+#### 2.4.1 创建perf事件
 
+1. 从用户空间复制属性
+2. 分配并初始化 perf_event
+3. 根据 attr.type 找到对应的 PMU (Performance Monitoring Unit)
+4. 调用 PMU 的 event_init 回调初始化 perf_event
+5. 安装文件描述符
+
+```
+// 创建 perf_event ，关联对应的 trace_event_call
+perf_event_open
+ perf_copy_attr // 将 perf_event_attr 由用户态拷贝到内核态
+ get_unused_fd_flags // 获取空闲 fd --> event_fd
+ perf_event_alloc
+  kzalloc // 分配 perf_event
+  event->attr = *attr // 关联 perf_event 和 perf_event_attr
+ perf_init_event // 根据 type 找到 pmu (PERF_TYPE_TRACEPOINT --> perf_tracepoint)
+  perf_try_init_event
+   event->pmu = pmu // 关联 perf_event 和 pmu
+   perf_tp_event_init // pmu->event_init 初始化 perf_event
+    perf_trace_init
+	 list_for_each_entry // 遍历 ftrace_events ，根据 attr.config 即 tracepoint ID 获取 trace_event_call
+	 perf_trace_event_init
+	  perf_trace_event_reg
+	   p_event->tp_event = tp_event // 关联 perf_event 和 trace_event_call
+ anon_inode_getfile // 通过匿名inode分配file --> event_file
+					// f_op --> perf_fops; private_data --> perf_event
+ fd_install // 绑定 event_fd 与 event_file
+```
 
 
