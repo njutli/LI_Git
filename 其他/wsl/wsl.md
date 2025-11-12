@@ -5,4 +5,12 @@ wsl -l -v
 wsl -d FedoraLinux-43
 // windowns对应目录
 \\wsl$\Ubuntu\home\
+
+
+# 可复制当前WSL2内核配置作为基础
+cp /proc/config.gz .
+gunzip config.gz
+mv config .config
+# 运行菜单式配置界面（可选）
+make menuconfig
 ```
