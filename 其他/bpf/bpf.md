@@ -710,33 +710,138 @@ trace_printk 对应的函数编号是6
 
 ### 2.4 attach tracepoint
 #### 2.4.1 创建perf事件
-
+流程：<br>
 1. 从用户空间复制属性
 2. 分配并初始化 perf_event
-3. 根据 attr.type 找到对应的 PMU (Performance Monitoring Unit)
-4. 调用 PMU 的 event_init 回调初始化 perf_event
-5. 安装文件描述符
+3. 安装文件描述符
+
+关键点：<br>
+perf_event 关联 trace_event_call <br>
+perf_event 加入 trace_event_call 的 perf_events 链表中
 
 ```
-// 创建 perf_event ，关联对应的 trace_event_call
+// 创建 perf_event ，关联对应的 trace_event_call ，跨CPU使能 perf_event
 perf_event_open
  perf_copy_attr // 将 perf_event_attr 由用户态拷贝到内核态
  get_unused_fd_flags // 获取空闲 fd --> event_fd
  perf_event_alloc
   kzalloc // 分配 perf_event
   event->attr = *attr // 关联 perf_event 和 perf_event_attr
- perf_init_event // 根据 type 找到 pmu (PERF_TYPE_TRACEPOINT --> perf_tracepoint)
-  perf_try_init_event
-   event->pmu = pmu // 关联 perf_event 和 pmu
-   perf_tp_event_init // pmu->event_init 初始化 perf_event
-    perf_trace_init
-	 list_for_each_entry // 遍历 ftrace_events ，根据 attr.config 即 tracepoint ID 获取 trace_event_call
-	 perf_trace_event_init
-	  perf_trace_event_reg
-	   p_event->tp_event = tp_event // 关联 perf_event 和 trace_event_call
+  perf_init_event // 根据 type 找到 pmu (PERF_TYPE_TRACEPOINT --> perf_tracepoint)
+   perf_try_init_event
+    event->pmu = pmu // 关联 perf_event 和 pmu
+    perf_tp_event_init // pmu->event_init 初始化 perf_event
+     perf_trace_init
+	  list_for_each_entry // 遍历 ftrace_events ，根据 attr.config 即 tracepoint ID 获取 trace_event_call
+	  perf_trace_event_init
+	   perf_trace_event_reg
+	    p_event->tp_event = tp_event // 关联 perf_event 和 trace_event_call
+ find_get_context // 查找或者重新分配 perf_event_context
  anon_inode_getfile // 通过匿名inode分配file --> event_file
 					// f_op --> perf_fops; private_data --> perf_event
+ perf_install_in_context // 触发指定CPU的中断 event->cpu
+  smp_store_release
+   event->ctx // 将 perf_event_context 保存到 perf_event 中
+  cpu_function_call // 在指定CPU上运行 __perf_install_in_context
+   smp_call_function_single // 触发 IPI (Inter-Processor Interrupt) 中断
  fd_install // 绑定 event_fd 与 event_file
 ```
 
+**指定CPU使能perf_event**
+```
+__perf_install_in_context
+ ctx_resched
+  perf_event_sched_in
+   ctx_sched_in
+    ctx_flexible_sched_in
+	 visit_groups_merge
+	  merge_sched_in // func(*evt, data)
+	   group_sched_in
+	    event_sched_in
+		 perf_event_set_state // 设置 perf_event 状态 PERF_EVENT_STATE_ACTIVE
+		 perf_trace_add // event->pmu->add
+		  syscall_enter_register // tp_event->class->reg
+		  hlist_add_head_rcu // 将 perf_event 加入 trace_event_call 的 perf_events 链表中
+```
+
+
+#### 2.4.2 绑定bpf程序
+流程：<br>
+1. 根据 prog_fd 获取 BPF 程序
+2. 保存 BPF 程序到 perf_event
+
+关键点：<br>
+bpf程序保存在event的prog_array数组中。<br>
+系统调用发生时，通过 trace_event_call 的 perf_events 链表获取 perf_event ，再根据 perf_event 的 prog_array 数组获取bpf程序执行
+
+```
+// 根据 prog_fd 获取 bpf_prog，关联 bpf_prog 和 perf_event
+perf_ioctl // PERF_EVENT_IOC_SET_BPF
+ _perf_ioctl
+  perf_event_set_bpf_prog
+   bpf_prog_get // 根据 prog_fd 获取 bpf_prog
+   perf_event_attach_bpf_prog
+    bpf_prog_array_copy
+	 bpf_prog_array_alloc // 分配新的 bpf_prog 数组
+	  array->items[new_prog_idx++].prog = existing->prog; // 已有的 bpf_prog 复制到新数组
+	  array->items[new_prog_idx++].prog = include_prog // 新的 bpf_prog 加入新数组
+    rcu_assign_pointer // 新数组保存在 event->tp_event->prog_array
+	event->prog = prog // 关联 bpf_prog 和 perf_event
+```
+
+### 2.5 bpf程序执行
+
+**bpf程序是怎么执行的？**
+
+```
+perf_syscall_enter
+ test_bit // 检测当前系统调用的编号 syscall_nr 是否被设置在 enabled_perf_enter_syscalls 中，没有设置则退出
+ syscall_nr_to_meta // 根据系统调用号获取 syscall_metadata
+ perf_call_bpf_enter // 根据 syscall_metadata 获取对应的 trace_event_call --> sys_data->enter_event
+  trace_call_bpf // 根据 trace_event_call 获取对应的 bpf_prog 数组 --> call->prog_array
+   BPF_PROG_RUN_ARRAY_CHECK
+    __BPF_PROG_RUN_ARRAY // 遍历 prog_array 数组，执行bpf程序
+```
+
+
+**perf_syscall_enter 是怎么调过来的？**
+
+> 1. perf_syscall_enter 是怎么注册进系统的？
+```
+// 将 perf_syscall_enter 注册到系统调用的跟踪点 __tracepoint_sys_enter
+// 由 sys_perf_event_open 调用触发
+perf_event_alloc
+ perf_init_event
+  perf_try_init_event
+   perf_tp_event_init // pmu->event_init
+    perf_trace_init
+	 perf_trace_event_init
+	  perf_trace_event_reg
+	   syscall_enter_register // tp_event->class->reg
+	    perf_sysenter_enable
+		 set_bit // enabled_perf_enter_syscalls 设置系统调用号，使得该系统调用触发时会触发事件检测
+		 register_trace_sys_enter // perf_syscall_enter
+
+register_trace_sys_enter 在 include\trace\events\syscalls.h 中，由
+TRACE_EVENT_FN(sys_enter,
+...
+);定义
+
+        static inline int                                               \
+        register_trace_##name(void (*probe)(data_proto), void *data)    \
+        {                                                               \
+                return tracepoint_probe_register(&__tracepoint_##name,  \
+                                                (void *)probe, data);   \
+        }                                                               \
+
+tracepoint_probe_register // __tracepoint_sys_enter/perf_syscall_enter/NULL
+ tracepoint_probe_register_prio // __tracepoint_sys_enter/perf_syscall_enter/NULL/TRACEPOINT_DEFAULT_PRIO
+  tracepoint_add_func
+   rcu_dereference_protected // 获取 tracepoint 对应的 funcs 指针（指向 tracepoint_func 数组）
+   func_add // 类似于添加 bpf_prog ，将新的 tracepoint_func 和已有的 tracepoint_func 加入新数组
+   release_probes // 释放老数组
+
+```
+
+> 2. perf_syscall_enter 的调用路径是怎样的？
 
