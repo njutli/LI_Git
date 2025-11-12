@@ -176,12 +176,12 @@ int main(int argc, char **argv) {
         perror("ioctl PERF_EVENT_IOC_SET_BPF");
         return 1;
     }
-
+/*
     if (ioctl(event_fd, PERF_EVENT_IOC_ENABLE, 0) < 0) {
         perror("ioctl PERF_EVENT_IOC_ENABLE");
         return 1;
     }
-
+*/
     printf("Attached successfully!\n\n");
 
     // 5. 启动线程读取 trace_pipe
