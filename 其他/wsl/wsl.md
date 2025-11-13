@@ -7,6 +7,9 @@ wsl -d FedoraLinux-43
 \\wsl$\Ubuntu\home\
 
 
+密码
+6-#a5258
+
 # 可复制当前WSL2内核配置作为基础
 cp /proc/config.gz .
 gunzip config.gz
