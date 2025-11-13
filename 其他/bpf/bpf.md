@@ -934,6 +934,51 @@ tracepoint_add_func
 因此，static_call 的回调是由 perf_event 注册流程(sys_perf_event_open)触发的
 ```
 
+# 五、关系图
+
+```mermaid
+graph TB
+    subgraph "用户空间"
+        A[perf_event_open系统调用]
+        B[ioctl PERF_EVENT_IOC_SET_BPF]
+    end
+    
+    subgraph "内核空间"
+        C[struct perf_event]
+        D[struct trace_event_call<br/>sys_enter_execve]
+        E[struct tracepoint<br/>__tracepoint_sys_enter]
+        F[struct bpf_prog]
+        G[struct bpf_prog_array]
+        H[perf_events链表]
+        I[tracepoint_func数组]
+        J[struct pmu<br/>perf_tracepoint]
+    end
+    
+    A -->|创建| C
+    B -->|关联| F
+    
+    C -->|.pmu| J
+    C -->|.tp_event| D
+    C -->|.prog| F
+    C -->|.hlist_entry| H
+    
+    D -->|.perf_events| H
+    D -->|.prog_array| G
+    D -->|.class.reg| E
+    
+    E -->|.funcs| I
+    I -->|perf_syscall_enter| D
+    
+    G -->|items 0 .prog| F
+    
+    J -->|.event_init| D
+    
+    style C fill:#e1f5ff
+    style D fill:#ffe1e1
+    style E fill:#fff4e1
+    style F fill:#e1ffe1
+```
+
 # TODO
 bpf_trace_printk是输出到哪里让用户态读的？
 
