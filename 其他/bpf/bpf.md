@@ -6,6 +6,7 @@ https://blog.csdn.net/legend050709/article/details/128387908
 https://blog.csdn.net/qq_17045267/article/details/103764320
 
 # 二、用例执行
+**抓取系统调用execve**
 ### 执行步骤
 ```
 ulimit -l unlimited
