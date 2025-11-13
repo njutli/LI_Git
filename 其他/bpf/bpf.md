@@ -844,6 +844,7 @@ tracepoint_probe_register // __tracepoint_sys_enter/perf_syscall_enter/NULL
 ```
 
 > 2. perf_syscall_enter 的调用路径是怎样的？
+
 **从系统调用到 trace_sys_enter**
 ```
 do_syscall_64
