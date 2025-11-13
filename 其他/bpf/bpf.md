@@ -878,7 +878,7 @@ TRACE_EVENT_FN(sys_enter,
 其中 proto 是 TP_PROTO(struct pt_regs *regs, long id)
 ```
 
-**从 trace_sys_enter 到 perf_syscall_enter **
+**从 trace_sys_enter 到 perf_syscall_enter**
 ```
 trace_sys_enter
  __DO_TRACE // 参数是 TP_ARGS(regs, id)
