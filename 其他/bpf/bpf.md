@@ -935,3 +935,6 @@ tracepoint_add_func
 ```
 
 # TODO
+bpf_trace_printk是输出到哪里让用户态读的？
+
+eBPF maps是什么原理？
