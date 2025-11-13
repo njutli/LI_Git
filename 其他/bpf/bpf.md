@@ -844,4 +844,90 @@ tracepoint_probe_register // __tracepoint_sys_enter/perf_syscall_enter/NULL
 ```
 
 > 2. perf_syscall_enter 的调用路径是怎样的？
+**从系统调用到 trace_sys_enter**
+```
+do_syscall_64
+ syscall_enter_from_user_mode
+  __syscall_enter_from_user_work
+   syscall_trace_enter
+    trace_sys_enter // regs, syscall
+```
 
+**trace_sys_enter 定义**
+```
+由
+TRACE_EVENT_FN(sys_enter,
+...
+);定义
+
+#define __DECLARE_TRACE(name, proto, args, cond, data_proto)            \
+...
+        static inline void trace_##name(proto)                          \
+        {                                                               \
+                if (static_key_false(&__tracepoint_##name.key))         \
+                        __DO_TRACE(name,                                \
+                                TP_ARGS(args),                          \
+                                TP_CONDITION(cond), 0);                 \
+                if (IS_ENABLED(CONFIG_LOCKDEP) && (cond)) {             \
+                        WARN_ON_ONCE(!rcu_is_watching());               \
+                }                                                       \
+        }                                                               \
+...
+
+其中 proto 是 TP_PROTO(struct pt_regs *regs, long id)
+```
+
+**从 trace_sys_enter 到 perf_syscall_enter **
+```
+trace_sys_enter
+ __DO_TRACE // 参数是 TP_ARGS(regs, id)
+  __DO_TRACE_CALL
+   rcu_dereference_raw // 获取 __tracepoint_sys_enter 的 tracepoint_func 数组
+    static_call(tp_func_sys_enter) // perf_syscall_enter
+```
+
+**怎么通过 static_call 调用到 perf_syscall_enter**
+> 1. static_call 是什么
+```
+#define __DECLARE_TRACE(name, proto, args, cond, data_proto) 
+...
+	DECLARE_STATIC_CALL(tp_func_##name, __traceiter_##name);
+...
+
+extern struct static_call_key STATIC_CALL_KEY(name);
+	--> 定义 struct static_call_key __SCK__tp_func_sys_enter
+
+#define static_call(name)
+	--> (STATIC_CALL_KEY(name).func)
+		--> __SCK__tp_func_sys_enter.func
+
+因此，static_call(tp_func_sys_enter) 即 __SCK__tp_func_sys_enter.func
+
+```
+
+> 2. static_call 对应的回调怎么来的
+```
+#define DEFINE_TRACE_FN(_name, _reg, _unreg, proto, args)		\
+	static const char __tpstrtab_##_name[]				\
+	__section("__tracepoints_strings") = #_name;			\
+	extern struct static_call_key STATIC_CALL_KEY(tp_func_##_name);	\
+	int __traceiter_##_name(void *__data, proto);			\
+	struct tracepoint __tracepoint_##_name	__used			\
+	__section("__tracepoints") = {					\
+		.name = __tpstrtab_##_name,				\
+		.key = STATIC_KEY_INIT_FALSE,				\
+		.static_call_key = &STATIC_CALL_KEY(tp_func_##_name),	\
+		.static_call_tramp = STATIC_CALL_TRAMP_ADDR(tp_func_##_name), \
+		.iterator = &__traceiter_##_name,			\
+		.regfunc = _reg,					\
+		.unregfunc = _unreg,					\
+		.funcs = NULL };					\
+
+tracepoint_add_func
+ nr_func_state // 当前状态是只有一个func
+ tracepoint_update_call
+  __static_call_update
+   tp->static_call_key = func // 即 __SCK__tp_func_sys_enter.func = perf_syscall_enter
+
+因此，static_call 的回调是由 perf_event 注册流程(sys_perf_event_open)触发的
+```
