@@ -103,9 +103,9 @@ sudo umount /mnt
 // 启动虚拟机
 qemu-system-x86_64 \
   -enable-kvm -cpu host -m 4G \
-  -kernel /path/to/bzImage \
-  -append "root=/dev/sda console=ttyS0 rw selinux=0" \
-  -drive file=fedora-rootfs.img,format=raw,if=virtio \
+  -kernel /home/lilingfeng/code/open_kernel/kernel/arch/x86_64/boot/bzImage \
+  -append "root=/dev/vda console=ttyS0 rw selinux=0" \
+  -drive file=/home/lilingfeng/temp/fedora-rootfs.img,format=raw,if=virtio \
   -nographic
 
 // 设置密码
