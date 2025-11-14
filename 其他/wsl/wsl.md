@@ -32,13 +32,13 @@ make menuconfig
 https://ftp.riken.jp/Linux/fedora/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2
 
 ```
-wget https://download.fedoraproject.org/pub/fedora/linux/releases/40/Cloud/x86_64/images/Fedora-Cloud-Base-40-1.14.x86_64.qcow2
+wget https://ftp.riken.jp/Linux/fedora/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2
 
 qemu-system-x86_64 \
   -enable-kvm -cpu host -m 4G \
-  -kernel /home/lilingfeng/code/open_kernel/kernel/arch/x86_64/boot/bzImage \
+  -kernel /home/i_ingfeng/linux/arch/x86_64/boot/bzImage \
   -append "root=/dev/vda4 rw rootflags=subvol=root console=ttyS0 selinux=0" \
-  -drive file=/home/lilingfeng/temp/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2,if=virtio \
+  -drive file=/home/i_ingfeng/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2,if=virtio \
   -nographic
 ```
 
