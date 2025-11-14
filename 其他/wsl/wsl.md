@@ -37,11 +37,9 @@ wget https://download.fedoraproject.org/pub/fedora/linux/releases/40/Cloud/x86_6
 qemu-system-x86_64 \
   -enable-kvm -cpu host -m 4G \
   -kernel /home/lilingfeng/code/open_kernel/kernel/arch/x86_64/boot/bzImage \
-  -append "root=/dev/vda4 rw console=ttyS0 selinux=0" \
+  -append "root=/dev/vda4 rw rootflags=subvol=root console=ttyS0 selinux=0" \
   -drive file=/home/lilingfeng/temp/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2,if=virtio \
   -nographic
-
-
 ```
 
 **2. 通用 rootfs tarball启动**
