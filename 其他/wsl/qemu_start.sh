@@ -1,0 +1,28 @@
+qemu-system-x86_64 \
+        -enable-kvm \
+        -smp cpus=16 \
+        -m 64g,maxmem=128g \
+        -kernel /home/lilingfeng/code/open_kernel/kernel/arch/x86_64/boot/bzImage \
+        -net nic,model=virtio,macaddr=DE:AD:BE:EF:9F:6E \
+                -net bridge,br=qemu_lbk \
+        -device virtio-scsi-pci \
+        -initrd /home/lilingfeng/qemu/rootfs/wzzbb.rootfs.gz \
+        -drive file=/home/lilingfeng/qemu/rootfs/wzzbase.raw,if=none,cache=none,format=raw,id=root \
+        -device virtio-blk,drive=root,id=d_root \
+        -drive file=/home/lilingfeng/qemu/disk/mydisk_20G_2,if=none,format=raw,id=ds_1 \
+        -device scsi-hd,drive=ds_1,id=disk_1 \
+        -drive file=/home/lilingfeng/qemu/disk/mydisk_20G_3,if=none,format=raw,id=ds_2 \
+        -device scsi-hd,drive=ds_2,id=disk_2 \
+        -drive file=/home/lilingfeng/qemu/disk/kernel_test_1,if=none,format=raw,id=ds_3 \
+        -device scsi-hd,drive=ds_3,id=disk_3 \
+        -drive file=/home/lilingfeng/qemu/disk/mydisk_20G_4,if=none,format=raw,id=ds_4 \
+        -device scsi-hd,drive=ds_4,id=disk_4 \
+        -drive file=/home/lilingfeng/qemu/disk/mydisk_120G,if=none,format=raw,id=ds_5 \
+        -device scsi-hd,drive=ds_5,id=disk_5 \
+        -fsdev local,security_model=passthrough,id=fsdev0,path=/home/lilingfeng/modules/lib/modules/ \
+        -device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hostshare \
+        -fsdev local,security_model=passthrough,id=fsdev1,path=/home/lilingfeng/code/tmp/ \
+        -device virtio-9p-pci,id=fs1,fsdev=fsdev1,mount_tag=tmp \
+        -append "crashkernel=512M console=ttyS0 IP=192.168.6.252 LOWER=/dev/vda1 rdinit=/sroot rw kmemleak=on iouring_enable oops=panic panic_on_oops=1 systemd.unified_cgroup_hie
+rarchy=1 cgroup_no_v1=all scsi_mod.use_blk_mq=0" \
+        -nographic
