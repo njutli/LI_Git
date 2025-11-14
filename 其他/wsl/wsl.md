@@ -1,5 +1,6 @@
 https://learn.microsoft.com/zh-cn/windows/wsl/install
 
+https://ftp.riken.jp/Linux/fedora/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2
 ```
 // 查看所有安装的版本
 wsl -l -v
