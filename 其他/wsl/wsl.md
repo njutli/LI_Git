@@ -40,6 +40,56 @@ qemu-system-x86_64 \
   -append "root=/dev/vda4 rw rootflags=subvol=root console=ttyS0 selinux=0" \
   -drive file=/home/i_ingfeng/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2,if=virtio \
   -nographic
+
+
+append参数添加 init=/bin/bash 来设置密码
+
+lilingfeng@LI-PC:/mnt/c/Users/Li Lingfeng$ openssl passwd -6
+Password:
+Verifying - Password:
+$6$VDpadMHtD235yXWD$hgaKF5wdstB6P7JW/vtAjPp4W0ZZWhheK5kXnMxStzXKLhOipLyZdUm6wQFyHe1ViAzLXmF/EfG7D3nou2ia20
+lilingfeng@LI-PC:/mnt/c/Users/Li Lingfeng$
+
+密码 6-#a5258
+
+bash: cannot set terminal process group (-1): Inappropriate ioctl for device
+bash: no job control in this shell
+bash-5.3# btrfs subvolume list /
+ID 256 gen 18 top level 5 path root
+ID 257 gen 9 top level 5 path home
+ID 258 gen 14 top level 5 path var
+bash-5.3# mount -o remount,rw /dev/vda4 /
+bash-5.3# btrfs subvolume list /
+ID 256 gen 18 top level 5 path root
+ID 257 gen 9 top level 5 path home
+ID 258 gen 14 top level 5 path var
+bash-5.3# mkdir /sysroot
+bash-5.3# mount -o subvol=root /dev/vda4 /sysroot
+[  498.586200] BTRFS info: devid 1 device path /dev/root changed to /dev/vda4 scanned )
+bash-5.3# ls /sysroot
+afs   config.partids  grub2  lib64  opt   run   sys      usr
+bin   dev             home   media  proc  sbin  sysroot  var
+boot  etc             lib    mnt    root  srv   tmp
+bash-5.3# mount --bind /dev /sysroot/dev
+mount --bind /dev/pts /sysroot/dev/pts 2>/dev/null || true
+mount -t proc none /sysroot/proc
+mount -t sysfs none /sysroot/sys
+bash-5.3#
+bash-5.3# chroot /sysroot /bin/bash
+bash: cannot set terminal process group (1): Inappropriate ioctl for device
+bash: no job control in this shell
+bash-5.3# passwd -S root
+root L 2025-10-23 -1 -1 -1 -1
+bash-5.3# passwd -u root
+passwd: unlocking the password would result in a passwordless account.
+You should set a password with usermod -p to unlock the password of this account.
+bash-5.3# passwd -S root
+bash-5.3# usermod -p '$6$VDpadMHtD235yXWD$hgaKF5wdstB6P7JW/vtAjPp4W0ZZWhheK5kXnMxStzXKLhOipLyZdUm6wQFyHe1ViAzLXmF/EfG7D3nou2ia20' root
+bash-5.3# pLyZdUm6wQFyHe1ViAzLXmF/EfG7D3nou2ia20wdstB6P7JW/vtAjPp4W0ZZWhheK5kXnMx
+bash-5.3#
+bash-5.3# passwd -S root
+root P 2025-11-14 -1 -1 -1 -1
+bash-5.3#
 ```
 
 **2. 通用 rootfs tarball启动**
