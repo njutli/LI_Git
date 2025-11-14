@@ -1,3 +1,5 @@
+https://learn.microsoft.com/zh-cn/windows/wsl/install
+
 ```
 // 查看所有安装的版本
 wsl -l -v
