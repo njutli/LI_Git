@@ -39,7 +39,7 @@ qemu-system-x86_64 \
   -kernel /home/i_ingfeng/linux/arch/x86_64/boot/bzImage \
   -append "root=/dev/vda4 rw rootflags=subvol=root console=ttyS0 selinux=0" \
   -drive file=/home/i_ingfeng/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2,if=virtio \
-  -netdev user,id=n0 \
+  -netdev user,id=n0,hostfwd=tcp::10022-:22 \
   -device virtio-net-pci,netdev=n0 \
   -nographic
 
@@ -139,6 +139,23 @@ Upgrading:
 dnf install gcc
 dnf install vim
 
+
+通过其他shell登录Ubuntu
+login to Ubuntu shell
+
+通过Ubuntu连接Fedora
+在 Fedora 虚拟机里执行：
+nano /etc/ssh/sshd_config
+找到：
+#PermitRootLogin prohibit-password
+改成：
+PermitRootLogin yes
+PasswordAuthentication yes
+保存后重启 sshd：
+systemctl restart sshd
+
+Ubuntu串口执行：
+ssh -p 10022 root@localhost
 ```
 
 **2. 通用 rootfs tarball启动**
