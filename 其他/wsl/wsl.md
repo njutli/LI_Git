@@ -134,6 +134,11 @@ Upgrading:
  audit                                    x86_64 4.1.2-2.fc43                        updates                   500.5 KiB
 ...
 
+
+安装软件
+dnf install gcc
+dnf install vim
+
 ```
 
 **2. 通用 rootfs tarball启动**
