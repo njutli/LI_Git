@@ -193,6 +193,15 @@ FFFFFFFFFF601000 - FFFFFFFFFFE00000 (  8 MB)  保护空洞
 FFFFFFFFFFE00000 - FFFFFFFFFFFFFFFF (  2 MB)  固定映射区（Fixmap）
 ```
 
+既然有64TB的直接映射区，那在物理内存小于64TB的情况下，是不是可以直接通过FFFF880000000000 - FFFFC7FFFFFFFFFF访问到所有的内存
+
+只要你在内核态（包括加载的内核模块），就可以通过内核的直接映射区（linear mapping / physmap）访问几乎所有物理内存 ——前提是：<br>
+1) 物理内存小于 linear mapping 可覆盖的范围（x86-64 一般是 128 TB 左右，取决于 VA 位宽）；<br>
+2) 这些物理页没有因为热插拔、设备保留、iomem 等原因被屏蔽。
+
+
+
+
 
 ```
 系统（System）
