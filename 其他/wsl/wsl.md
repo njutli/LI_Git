@@ -39,8 +39,9 @@ qemu-system-x86_64 \
   -kernel /home/i_ingfeng/linux/arch/x86_64/boot/bzImage \
   -append "root=/dev/vda4 rw rootflags=subvol=root console=ttyS0 selinux=0" \
   -drive file=/home/i_ingfeng/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2,if=virtio \
+  -netdev user,id=n0 \
+  -device virtio-net-pci,netdev=n0 \
   -nographic
-
 
 append参数添加 init=/bin/bash 来设置密码
 
