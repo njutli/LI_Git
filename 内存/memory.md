@@ -193,6 +193,8 @@ FFFFFFFFFF601000 - FFFFFFFFFFE00000 (  8 MB)  保护空洞
 FFFFFFFFFFE00000 - FFFFFFFFFFFFFFFF (  2 MB)  固定映射区（Fixmap）
 ```
 
+
+```
 系统（System）
     └── 节点（Node/pg_data_t）
             ├── ZONE_DMA
@@ -204,7 +206,7 @@ FFFFFFFFFFE00000 - FFFFFFFFFFFFFFFF (  2 MB)  固定映射区（Fixmap）
                                     ├── order-1 (2页)
                                     ├── ...
                                     └── order-10 (1024页)
-
+```
 
 
 
