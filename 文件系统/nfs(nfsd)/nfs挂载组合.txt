@@ -1,0 +1,719 @@
+# remount不给superblock设置只读标记
+# 解决 /proc/self/mountstats 查出的是否只读显示不对问题
+
+当前修复方案：不给superblock设置只读标记
+
+三点考虑：
+1) 文件系统只读属性
+remount可以改变文件系统读写属性
+2) 不同路径挂载
+共享superblock，读写属性不能相互影响
+3) 相同路径挂载
+相同路径不能有多个挂载点生成
+
+（一）理论分析受影响场景
+superblock有两种：
+1) 只挂载根目录的情况下，只生成一个 superblock ，对应的 fc 会带有用户态传递的flag，如果用户态传递的是"ro"，则superblock带有"ro"
+不存在不同路径挂载点共享这个superblock的情况
+2) 其他挂载情况，会生成多个 superblock ，只有第一个 superblock 会带有用户态传递的flag，这个 superblock 会释放，实际使用的是最后创建的一个 superblock
+
+在当前修复方案：remount不给superblock设置只读标记
+1) 对于第一种 superblock
+在客户端上，对于一个服务端，只会有一个这样的挂载点，对应于这个唯一的superblock，不存在不同路径挂载点共享这个superblock的情况
+修复前，挂载操作会给superblock置只读标记，也能通过remount设置
+修复后，superblock永远不会被置只读标记
+2) 对于其他 superblock
+修复前，挂载操作不会给superblock置只读标记，只能通过remount设置
+修复后，superblock永远不会被置只读标记
+
+受影响的函数是 nfs_compare_mount_options
+if ((s->s_flags & NFS_SB_MASK) != (fc->sb_flags & NFS_SB_MASK))
+不考虑第一种superblock，fc不会带只读标记
+1) 原本条件满足的场景变成不满足（考虑不同路径挂载的相互影响）
+原本不共享的superblock变成共享，即原本superblock有只读标记，现在没有
+场景：读写挂载第一个nfs，remount成只读，挂载第二个nfs
+预期：共享superblock，第一个nfs只读，第二个nfs按只读或读写挂载时，对应读写属性是只读或读写
+2) 原本条件不满足的场景变成满足（考虑相同路径不会重复生成挂载点）
+原本共享的superblock变成不共享，即原本superblock没有只读标记，现在有
+不存在这种影响
+
+echo "/mnt/sdb *(rw,no_root_squash)" > /etc/exports
+echo "/mnt/sdb/test_dir1 *(rw,no_root_squash)" >> /etc/exports
+echo "/mnt/sdb/test_dir2 *(rw,no_root_squash)" >> /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs4
+echo 123 > /mnt/test_mp1/file1
+mount -t nfs -o remount,ro 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs4
+echo 456 > /mnt/test_mp1/file1
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs4
+echo 123 > /mnt/test_mp2/file2
+umount /mnt/test_mp2
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+echo 456 > /mnt/test_mp2/file2
+mount | grep nfs4
+
+（二）相关操作排列组合
+目录1挂载、目录2挂载、remount
+1) 单目录操作
+操作组合：原始mount属性 + remount属性 + 重新mount属性
+检查结果：读写属性 挂载点个数
+echo "/mnt *(rw,no_root_squash,fsid=0)" > /etc/exports
+echo "/mnt/sdb *(rw,no_root_squash,fsid=1)" >> /etc/exports
+systemctl restart nfs-server
+每次操作后都只有一个挂载点
+1.1 rw-rw-rw
+mount -t nfs -o rw,vers=4 127.0.0.1:/sdb /mnt/sdbb
+echo 123 > /mnt/sdbb/testfile # 写成功
+mount -t nfs -o remount,rw,vers=4 127.0.0.1:/sdb /mnt/sdbb
+echo 456 > /mnt/sdbb/testfile # 写成功
+mount -t nfs -o rw,vers=4 127.0.0.1:/sdb /mnt/sdbb # 挂载失败，EBUSY
+echo 789 > /mnt/sdbb/testfile # 写成功
+mount | grep nfs4
+umount /mnt/sdbb
+1.2 rw-rw-ro
+mount -t nfs -o rw,vers=4 127.0.0.1:/sdb /mnt/sdbb
+echo 123 > /mnt/sdbb/testfile # 写成功
+mount -t nfs -o remount,rw,vers=4 127.0.0.1:/sdb /mnt/sdbb
+echo 456 > /mnt/sdbb/testfile # 写成功
+mount -t nfs -o ro,vers=4 127.0.0.1:/sdb /mnt/sdbb # 挂载失败，EBUSY
+echo 789 > /mnt/sdbb/testfile # 写成功
+mount | grep nfs4
+umount /mnt/sdbb
+1.3 rw-ro-rw
+mount -t nfs -o rw,vers=4 127.0.0.1:/sdb /mnt/sdbb
+echo 123 > /mnt/sdbb/testfile # 写成功
+mount -t nfs -o remount,ro,vers=4 127.0.0.1:/sdb /mnt/sdbb
+echo 456 > /mnt/sdbb/testfile # 写失败
+mount -t nfs -o rw,vers=4 127.0.0.1:/sdb /mnt/sdbb # 挂载失败，EBUSY
+echo 789 > /mnt/sdbb/testfile # 写失败
+mount | grep nfs4
+umount /mnt/sdbb
+1.4 rw-ro-ro
+mount -t nfs -o rw,vers=4 127.0.0.1:/sdb /mnt/sdbb
+echo 123 > /mnt/sdbb/testfile # 写成功
+mount -t nfs -o remount,ro,vers=4 127.0.0.1:/sdb /mnt/sdbb
+echo 456 > /mnt/sdbb/testfile # 写失败
+mount -t nfs -o ro,vers=4 127.0.0.1:/sdb /mnt/sdbb # 挂载失败，EBUSY
+echo 789 > /mnt/sdbb/testfile # 写失败
+mount | grep nfs4
+umount /mnt/sdbb
+1.5 ro-rw-rw
+mount -t nfs -o ro,vers=4 127.0.0.1:/sdb /mnt/sdbb
+echo 123 > /mnt/sdbb/testfile # 写失败
+mount -t nfs -o remount,rw,vers=4 127.0.0.1:/sdb /mnt/sdbb
+echo 456 > /mnt/sdbb/testfile # 写成功
+mount -t nfs -o rw,vers=4 127.0.0.1:/sdb /mnt/sdbb # 挂载失败，EBUSY
+echo 789 > /mnt/sdbb/testfile # 写成功
+mount | grep nfs4
+umount /mnt/sdbb
+1.6 ro-rw-ro
+mount -t nfs -o ro,vers=4 127.0.0.1:/sdb /mnt/sdbb
+echo 123 > /mnt/sdbb/testfile # 写失败
+mount -t nfs -o remount,rw,vers=4 127.0.0.1:/sdb /mnt/sdbb
+echo 456 > /mnt/sdbb/testfile # 写成功
+mount -t nfs -o ro,vers=4 127.0.0.1:/sdb /mnt/sdbb # 挂载失败，EBUSY
+echo 789 > /mnt/sdbb/testfile # 写成功
+mount | grep nfs4
+umount /mnt/sdbb
+1.7 ro-ro-rw
+mount -t nfs -o ro,vers=4 127.0.0.1:/sdb /mnt/sdbb
+echo 123 > /mnt/sdbb/testfile # 写失败
+mount -t nfs -o remount,ro,vers=4 127.0.0.1:/sdb /mnt/sdbb
+echo 456 > /mnt/sdbb/testfile # 写失败
+mount -t nfs -o rw,vers=4 127.0.0.1:/sdb /mnt/sdbb # 挂载失败，EBUSY
+echo 789 > /mnt/sdbb/testfile # 写失败
+mount | grep nfs4
+umount /mnt/sdbb
+1.8 ro-ro-ro
+mount -t nfs -o rw,vers=4 127.0.0.1:/sdb /mnt/sdbb
+echo 123 > /mnt/sdbb/testfile # 写失败
+mount -t nfs -o remount,ro,vers=4 127.0.0.1:/sdb /mnt/sdbb
+echo 456 > /mnt/sdbb/testfile # 写失败
+mount -t nfs -o ro,vers=4 127.0.0.1:/sdb /mnt/sdbb # 挂载失败，EBUSY
+echo 789 > /mnt/sdbb/testfile # 写失败
+mount | grep nfs4
+umount /mnt/sdbb
+
+2) 多目录操作
+操作组合：目录1挂载属性 + 目录2挂载属性 + 目录1 remount属性 + 目录2 remount属性
+检查结果：两个目录的挂载点个数和属性
+mkfs.ext4 -F /dev/sdb
+mount /dev/sdb /mnt/sdb
+mkdir /mnt/sdb/test_dir1
+mkdir /mnt/sdb/test_dir2
+echo "/mnt/sdb *(rw,no_root_squash)" > /etc/exports
+echo "/mnt/sdb/test_dir1 *(ro,no_root_squash)" >> /etc/exports
+echo "/mnt/sdb/test_dir2 *(ro,no_root_squash)" >> /etc/exports
+systemctl restart nfs-server
+2.1 rw-rw-rw-rw
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 123 > /mnt/test_mp1/testfile # 写成功
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 123 > /mnt/test_mp2/testfile # 写成功
+mount -t nfs -o remount,rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 456 > /mnt/test_mp1/testfile # 写成功
+mount -t nfs -o remount,rw 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 456 > /mnt/test_mp2/testfile # 写成功
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+2.2 rw-rw-rw-ro
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 123 > /mnt/test_mp1/testfile # 写成功
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 123 > /mnt/test_mp2/testfile # 写成功
+mount -t nfs -o remount,rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 456 > /mnt/test_mp1/testfile # 写成功
+mount -t nfs -o remount,ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 456 > /mnt/test_mp2/testfile # 写失败
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+2.3 rw-rw-ro-rw
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 123 > /mnt/test_mp1/testfile # 写成功
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 123 > /mnt/test_mp2/testfile # 写成功
+mount -t nfs -o remount,ro 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 456 > /mnt/test_mp1/testfile # 写失败
+mount -t nfs -o remount,rw 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 456 > /mnt/test_mp2/testfile # 写成功
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+2.4 rw-rw-ro-ro
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 123 > /mnt/test_mp1/testfile # 写成功
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 123 > /mnt/test_mp2/testfile # 写成功
+mount -t nfs -o remount,ro 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 456 > /mnt/test_mp1/testfile # 写失败
+mount -t nfs -o remount,ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 456 > /mnt/test_mp2/testfile # 写失败
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+2.5 rw-ro-rw-rw
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 123 > /mnt/test_mp1/testfile # 写成功
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 123 > /mnt/test_mp2/testfile # 写失败
+mount -t nfs -o remount,rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 456 > /mnt/test_mp1/testfile # 写成功
+mount -t nfs -o remount,rw 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 456 > /mnt/test_mp2/testfile # 写成功
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+2.6 rw-ro-rw-ro
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 123 > /mnt/test_mp1/testfile # 写成功
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 123 > /mnt/test_mp2/testfile # 写失败
+mount -t nfs -o remount,rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 456 > /mnt/test_mp1/testfile # 写成功
+mount -t nfs -o remount,ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 456 > /mnt/test_mp2/testfile # 写失败
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+2.7 rw-ro-ro-rw
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 123 > /mnt/test_mp1/testfile # 写成功
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 123 > /mnt/test_mp2/testfile # 写失败
+mount -t nfs -o remount,ro 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 456 > /mnt/test_mp1/testfile # 写失败
+mount -t nfs -o remount,rw 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 456 > /mnt/test_mp2/testfile # 写成功
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+2.8 rw-ro-ro-ro
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 123 > /mnt/test_mp1/testfile # 写成功
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 123 > /mnt/test_mp2/testfile # 写失败
+mount -t nfs -o remount,ro 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 456 > /mnt/test_mp1/testfile # 写失败
+mount -t nfs -o remount,ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 456 > /mnt/test_mp2/testfile # 写失败
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+2.9 ro-rw-rw-rw
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 123 > /mnt/test_mp1/testfile # 写失败
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 123 > /mnt/test_mp2/testfile # 写成功
+mount -t nfs -o remount,rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 456 > /mnt/test_mp1/testfile # 写成功
+mount -t nfs -o remount,rw 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 456 > /mnt/test_mp2/testfile # 写成功
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+2.10 ro-rw-rw-ro
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 123 > /mnt/test_mp1/testfile # 写失败
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 123 > /mnt/test_mp2/testfile # 写成功
+mount -t nfs -o remount,rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 456 > /mnt/test_mp1/testfile # 写成功
+mount -t nfs -o remount,ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 456 > /mnt/test_mp2/testfile # 写失败
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+2.11 ro-rw-ro-rw
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 123 > /mnt/test_mp1/testfile # 写失败
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 123 > /mnt/test_mp2/testfile # 写成功
+mount -t nfs -o remount,ro 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 456 > /mnt/test_mp1/testfile # 写失败
+mount -t nfs -o remount,rw 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 456 > /mnt/test_mp2/testfile # 写成功
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+2.12 ro-rw-ro-ro
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 123 > /mnt/test_mp1/testfile # 写失败
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 123 > /mnt/test_mp2/testfile # 写成功
+mount -t nfs -o remount,ro 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 456 > /mnt/test_mp1/testfile # 写失败
+mount -t nfs -o remount,ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 456 > /mnt/test_mp2/testfile # 写失败
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+2.13 ro-ro-rw-rw
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 123 > /mnt/test_mp1/testfile # 写失败
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 123 > /mnt/test_mp2/testfile # 写失败
+mount -t nfs -o remount,rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 456 > /mnt/test_mp1/testfile # 写成功
+mount -t nfs -o remount,rw 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 456 > /mnt/test_mp2/testfile # 写成功
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+2.14 ro-ro-rw-ro
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 123 > /mnt/test_mp1/testfile # 写失败
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 123 > /mnt/test_mp2/testfile # 写失败
+mount -t nfs -o remount,rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 456 > /mnt/test_mp1/testfile # 写成功
+mount -t nfs -o remount,ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 456 > /mnt/test_mp2/testfile # 写失败
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+2.15 ro-ro-ro-rw
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 123 > /mnt/test_mp1/testfile # 写失败
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 123 > /mnt/test_mp2/testfile # 写失败
+mount -t nfs -o remount,ro 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 456 > /mnt/test_mp1/testfile # 写失败
+mount -t nfs -o remount,rw 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 456 > /mnt/test_mp2/testfile # 写成功
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+2.16 ro-ro-ro-ro
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 123 > /mnt/test_mp1/testfile # 写失败
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 123 > /mnt/test_mp2/testfile # 写失败
+mount -t nfs -o remount,ro 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 456 > /mnt/test_mp1/testfile # 写失败
+mount -t nfs -o remount,ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 456 > /mnt/test_mp2/testfile # 写失败
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+
+（三）已有问题场景覆盖
+
+# setup
+mkfs.ext4 -F /dev/sdb
+mount /dev/sdb /mnt/sdb
+mkdir /mnt/sdb/test_dir1
+mkdir /mnt/sdb/test_dir2
+
+# 原始问题1
+# 预期只有一个挂载点，只读
+echo "/mnt *(rw,no_root_squash,fsid=0)" > /etc/exports
+echo "/mnt/sdb *(rw,no_root_squash,fsid=1)" >> /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o ro,vers=4 127.0.0.1:/sdb /mnt/sdbb
+mount -t nfs -o remount,ro,vers=4 127.0.0.1:/sdb /mnt/sdbb
+mount -t nfs -o ro,vers=4 127.0.0.1:/sdb /mnt/sdbb
+mount | grep nfs4
+echo 123 > /mnt/sdbb/testfile
+umount /mnt/sdbb
+umount /mnt/sdbb
+systemctl stop nfs-server
+
+# 原始问题2
+# 预期只有一个挂载点，只读（直接mount会失败，虽然用户态没有返回错误，通过remount能改变读写属性）
+# 这种情况每次在nfs_compare_super回调中比较的fc都带有用户态flag，生成的superblock也带有用户态flag
+mount /dev/sda /mnt2
+echo "/mnt2 *(rw,no_root_squash,fsid=0)" >/etc/exports
+systemctl restart nfs-server
+mount -t nfs -o ro,vers=4 127.0.0.1:/ /mnt/sdaa
+mount -t nfs -o rw,vers=4 127.0.0.1:/ /mnt/sdaa
+mount -t nfs -o ro,vers=4 127.0.0.1:/ /mnt/sdaa
+mount -t nfs -o rw,vers=4 127.0.0.1:/ /mnt/sdaa
+mount | grep nfs4
+echo 123 > /mnt/sdbb/testfile
+umount /mnt/sdaa
+umount /mnt/sdaa
+umount /mnt/sdaa
+umount /mnt/sdaa
+systemctl stop nfs-server
+是什么控制是否生成新的挂载点？
+当前挂载选项与之前一样，共享superblock时，生成的新mount会释放
+do_new_mount --> do_new_mount_fc --> do_add_mount --> -EBUSY
+
+
+# 原始问题2引申
+# 只生成一个superblock，只读挂载会带有ro标记，这个superblock会不会和其他rw挂载的挂载点共享
+# 只有挂载服务端根目录会生成一个superblock
+# 预期只有一个挂载点，只读
+mount /dev/sda /mnt2
+echo "/mnt2 *(rw,no_root_squash)" >/etc/exports
+systemctl restart nfs-server
+mount -t nfs -o ro,vers=4 127.0.0.1:/ /mnt/sdaa
+mount | grep nfs4
+mount -t nfs -o rw,vers=4 192.168.240.252:/ /mnt/sdaa
+mount | grep nfs4
+
+
+# 下游问题1
+# 预期第一个挂载点rw，第二个挂载点ro
+echo "/mnt/sdb *(rw,no_root_squash)" > /etc/exports
+echo "/mnt/sdb/test_dir2 *(ro,no_root_squash)" >> /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs4
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs4
+echo 123 > /mnt/test_mp1/testfile
+echo 123 > /mnt/test_mp2/testfile
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+systemctl stop nfs-server
+
+# 下游问题场景引申1
+# 预期第一个挂载点ro，第二个挂载点rw
+echo "/mnt/sdb *(rw,no_root_squash)" > /etc/exports
+echo "/mnt/sdb/test_dir2 *(ro,no_root_squash)" >> /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs
+echo 123 > /mnt/test_mp1/testfile
+echo 123 > /mnt/test_mp2/testfile
+# 由于两个挂载点共享superblock，会导致 test_mp1 也变只读
+mount -t nfs -o remount,ro,vers=4 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs
+echo 456 > /mnt/test_mp1/testfile
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+systemctl stop nfs-server
+
+echo "/mnt/sdb *(rw,no_root_squash)" > /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs4
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs4
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+
+echo "/mnt/sdb *(rw,no_root_squash)" > /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o ro 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs4
+mount -t nfs -o rw 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs4
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+
+
+
+
+
+
+原始问题：
+用户态的ro标记不会传递给submount流程中nfs的第二个sb
+remount后将ro标记设置到sb上
+再次mount时submount中fc(不带ro标记)和sb(带ro标记)比较不同，再次生成挂载点
+
+[Huawei] nfs: fix the loss of superblock's initialized flags
+[Huawei] nfs: pass flags to second superblock
+合入这两个补丁解决原始问题
+
+
+第二个问题：
+让submount流程中nfs的第二个sb带上用户态传递的ro标记后
+交叉ro/rw挂载会导致每次查找sb都失败(submount传递的flag和sb的flag不同)，每次都生成新的挂载点
+
+
+
+1) 回合补丁 52cb7f8f1778 ("nfs: ignore SB_RDONLY when mounting nfs")
+针对挂载服务端根目录，只生成一个superblock的情况，防止交叉rw/ro挂载的场景下生成多个挂载点
+2) 禁止remount给superblock设置ro标记
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -1006,6 +1006,7 @@ int nfs_reconfigure(struct fs_context *fc)
+
+        sync_filesystem(sb);
+
++       fc->sb_flags &= ~SB_RDONLY;
+        /*
+         * Userspace mount programs that send binary options generally send
+         * them populated with default values. We have no way to know which
+挂载点的读写属性仅由mount控制，针对ro挂载时superblock没有ro标记，remount加上ro标记后再挂载的场景，防止生成多个挂载点
+
+
+
+写文件操作生成新的挂载点
+[root@nfs_test2 test]# echo "/mnt2 *(rw,no_root_squash)" >/etc/exports
+[root@nfs_test2 test]# systemctl restart nfs-server
+[root@nfs_test2 test]# mount -t nfs -o ro,vers=4 127.0.0.1:/ /mnt/sdaa
+[root@nfs_test2 test]# mount | grep nfs4
+127.0.0.1:/ on /mnt/sdaa type nfs4 (ro,relatime,vers=4.2,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=127.0.0.1,local_lock=none,addr)
+[root@nfs_test2 test]# echo 123 > /mnt/sdaa/mnt2/testfile
+-bash: /mnt/sdaa/mnt2/testfile: Read-only file system
+[root@nfs_test2 test]# mount | grep nfs4
+127.0.0.1:/ on /mnt/sdaa type nfs4 (ro,relatime,vers=4.2,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=127.0.0.1,local_lock=none,addr)
+127.0.0.1:/mnt2 on /mnt/sdaa/mnt2 type nfs4 (ro,relatime,vers=4.2,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=127.0.0.1,local_lock=)
+[root@nfs_test2 test]#
+
+
+v3有问题，第二次读写挂载，还是生成只读挂载点
+# 下游问题场景引申 ———— 社区存在问题
+# 预期第一个挂载点ro，第二个挂载点rw
+echo "downstream issue 1-1"
+echo "/mnt/sdb *(rw,no_root_squash)" > /etc/exports
+echo "/mnt/sdb/test_dir2 *(ro,no_root_squash)" >> /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o ro,vers=3 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs # 一个挂载点
+mount -t nfs -o rw,vers=3 127.0.0.1:/mnt/sdb/test_dir1 /mnt/test_mp1
+mount | grep nfs # 两个挂载点
+echo 123 > /mnt/test_mp1/testfile # 写成功
+echo 123 > /mnt/test_mp2/testfile # 写失败
+mount -t nfs -o remount,ro,vers=3 127.0.0.1:/mnt/sdb/test_dir2 /mnt/test_mp2
+mount | grep nfs # 两个挂载点
+echo 456 > /mnt/test_mp1/testfile # 写成功
+echo 456 > /mnt/test_mp2/testfile # 写失败
+umount /mnt/test_mp1
+umount /mnt/test_mp2
+
+[root@nfs_test2 test]# mount /dev/sdb /mnt/sdb
+[root@nfs_test2 test]# systemctl restart nfs-server
+nt/test_mp2est2 test]# mount -t nfs -o ro,vers=3 127.0.0.1:/mnt/sdb/test_dir2 /mn
+[root@nfs_test2 test]# mount | grep nfs
+sunrpc on /var/lib/nfs/rpc_pipefs type rpc_pipefs (rw,relatime)
+nfsd on /proc/fs/nfsd type nfsd (rw,relatime)
+127.0.0.1:/mnt/sdb/test_dir2 on /mnt/test_mp2 type nfs (ro,relatime,vers=3,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=127.0.0.1,mou)
+nt/test_mp1est2 test]# mount -t nfs -o rw,vers=3 127.0.0.1:/mnt/sdb/test_dir1 /mn
+[root@nfs_test2 test]# mount | grep nfs
+sunrpc on /var/lib/nfs/rpc_pipefs type rpc_pipefs (rw,relatime)
+nfsd on /proc/fs/nfsd type nfsd (rw,relatime)
+127.0.0.1:/mnt/sdb/test_dir2 on /mnt/test_mp2 type nfs (ro,relatime,vers=3,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=127.0.0.1,mou)
+127.0.0.1:/mnt/sdb/test_dir1 on /mnt/test_mp1 type nfs (ro,relatime,vers=3,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=127.0.0.1,mou)
+[root@nfs_test2 test]#
+
+PUTROOTFH
+优先找fsid=0的导出点作为 rootfh，如果没有，将服务端的"/"作为rootfh
+
+1、导出"/"和"/mnt2"，挂载"/" ———— 一个superblock
+做一次PUTROOTFH，拿到服务端"/"对应的句柄
+mount /dev/sda /mnt2
+echo "/ *(rw,no_root_squash,fsid=0)" > /etc/exports
+echo "/mnt2 *(rw,no_root_squash,fsid=1)" >> /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o ro,vers=4 127.0.0.1:/ /mnt/sdaa
+
+2、导出"/mnt2"，挂载"/" ———— 一个superblock
+做一次PUTROOTFH，拿到服务端"/"对应的句柄
+mount /dev/sda /mnt2
+echo "/mnt2 *(rw,no_root_squash,fsid=1)" > /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o ro,vers=4 127.0.0.1:/ /mnt/sdaa
+
+3、导出"/mnt2"，挂载"/mnt2" ———— 两个superblock
+做一次PUTROOTFH，拿到服务端"/"对应的句柄
+在"/"对应的句柄下做 LOOKUP ，拿到 "mnt2" 的句柄
+mount /dev/sda /mnt2
+echo "/mnt2 *(rw,no_root_squash,fsid=1)" > /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o ro,vers=4 127.0.0.1:/mnt2 /mnt/sdaa
+
+4、导出"/"和"/mnt2"，挂载"/mnt2"
+做一次PUTROOTFH，拿到服务端"/"对应的句柄
+在"/"对应的句柄下做 LOOKUP ，拿到 "mnt2" 的句柄
+mount /dev/sda /mnt2
+echo "/ *(rw,no_root_squash,fsid=0)" > /etc/exports
+echo "/mnt2 *(rw,no_root_squash,fsid=1)" >> /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o ro,vers=4 127.0.0.1:/mnt2 /mnt/sdaa
+
+5、导出"/mnt"和"/mnt2"，挂载"/mnt2" ———— 挂载失败
+做一次PUTROOTFH，拿到服务端"/mnt"对应的句柄（优先找fsid=0的导出点作为 rootfh，如果没有，将服务端的"/"作为rootfh）
+在"/mnt"对应的句柄下做 LOOKUP ，找不到 "mnt2" 
+mount /dev/sda /mnt2
+echo "/mnt *(rw,no_root_squash,fsid=0)" > /etc/exports
+echo "/mnt2 *(rw,no_root_squash,fsid=1)" >> /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o ro,vers=4 127.0.0.1:/mnt2 /mnt/sdaa
+
+6、导出"/mnt"和"/mnt/sdb"，挂载"/sdb"
+做一次PUTROOTFH，拿到服务端"/mnt"对应的句柄
+在"/mnt"对应的句柄下做 LOOKUP ，拿到 "/mnt/sdb" 的句柄
+mkfs.ext4 -F /dev/sdb
+mount /dev/sdb /mnt/sdb
+echo "/mnt *(rw,no_root_squash,fsid=0)" > /etc/exports
+echo "/mnt/sdb *(rw,no_root_squash,fsid=1)" >> /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o rw,vers=4 127.0.0.1:/sdb /mnt/sdbb
+
+7、导出"/mnt/sdb"，挂载"/sdb" ———— 挂载失败
+做一次PUTROOTFH，拿到服务端"/"对应的句柄
+在"/"对应的句柄下做 LOOKUP ，找不到 "sdb" 
+mkfs.ext4 -F /dev/sdb
+mount /dev/sdb /mnt/sdb
+echo "/mnt/sdb *(rw,no_root_squash,fsid=1)" > /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o rw,vers=4 127.0.0.1:/sdb /mnt/sdbb
+
+8、导出"/"和"/mnt/sdb"，挂载"/sdb" ———— 挂载失败
+做一次PUTROOTFH，拿到服务端"/"对应的句柄
+在"/"对应的句柄下做 LOOKUP ，找不到 "sdb" 
+mkfs.ext4 -F /dev/sdb
+mount /dev/sdb /mnt/sdb
+echo "/ *(rw,no_root_squash,fsid=0)" > /etc/exports
+echo "/mnt/sdb *(rw,no_root_squash,fsid=1)" >> /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o rw,vers=4 127.0.0.1:/sdb /mnt/sdbb
+
+9、导出"/"和"/mnt/sdb"，挂载"/mnt/sdb"
+做一次PUTROOTFH，拿到服务端"/"对应的句柄
+在"/"对应的句柄下做 LOOKUP ，拿到 "/mnt/" 的句柄
+在"/mnt"对应的句柄下做 LOOKUP ，拿到 "/mnt/sdb" 的句柄
+mkfs.ext4 -F /dev/sdb
+mount /dev/sdb /mnt/sdb
+echo "/ *(rw,no_root_squash,fsid=0)" > /etc/exports
+echo "/mnt/sdb *(rw,no_root_squash,fsid=1)" > /etc/exports
+systemctl restart nfs-server
+mount -t nfs -o rw,vers=4 127.0.0.1:/mnt/sdb /mnt/sdbb
+
+[root@nfs_test3 ~]# mount /dev/sda /mnt2
+[ 1436.208828][ T3052] sget_fc new sb ffff9af121adc000
+[ 1436.213203][ T3052] EXT4-fs (sda): warning: mounting fs with errors, running e2fsck is recommended
+[ 1436.221379][ T3052] vfs_create_mount alloc mnt ffff9af106cd7780
+[root@nfs_test3 ~]# echo "/mnt2 *(rw,no_root_squash)" >/etc/exports
+[root@nfs_test3 ~]# systemctl restart nfs-server
+[root@nfs_test3 ~]# mount -t nfs -o ro,vers=4 127.0.0.1:/ /mnt/sdaa
+[ 1447.035712][ T3108] sget_fc new sb ffff9af10d63c000
+[ 1447.036425][ T3108] nfs_get_tree_common get s ffff9af10d63c000 s->s_flags 0x1
+[ 1447.039815][ T3108] vfs_create_mount alloc mnt ffff9af106cd7280
+[ 1447.040891][ T3108] vfs_create_mount alloc mnt ffff9af106cd4300
+[root@nfs_test3 ~]# [ 1447.067397][   C11] free_vfsmnt free mnt ffff9af106cd7280
+[root@nfs_test3 ~]# mount | grep nfs4
+127.0.0.1:/ on /mnt/sdaa type nfs4 (ro,relatime,vers=4.2,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=127.0.0.1,local_lock=none,addr)
+[root@nfs_test3 ~]# ls /mnt/sdaa
+mnt2
+[root@nfs_test3 ~]# mount | grep nfs4
+127.0.0.1:/ on /mnt/sdaa type nfs4 (ro,relatime,vers=4.2,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=127.0.0.1,local_lock=none,addr)
+[root@nfs_test3 ~]# touch /mnt/sdaa/file0219
+touch: cannot touch '/mnt/sdaa/file0219': Read-only file system
+[root@nfs_test3 ~]# mount | grep nfs4
+127.0.0.1:/ on /mnt/sdaa type nfs4 (ro,relatime,vers=4.2,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=127.0.0.1,local_lock=none,addr)
+[root@nfs_test3 ~]# touch /mnt/sdaa/mnt2/file0219
+[ 1513.151782][ T3139] nfs_d_automount fc for submount fc->sb_flags 0x0
+[ 1513.155023][ T3139] sget_fc new sb ffff9af1218e4000
+[ 1513.155663][ T3139] nfs_get_tree_common get s ffff9af1218e4000 s->s_flags 0x0
+[ 1513.158326][ T3139] vfs_create_mount alloc mnt ffff9af106cd7280
+touch: cannot touch '/mnt/sdaa/mnt2/file0219': Read-only file system
+[root@nfs_test3 ~]# mount | grep nfs4
+127.0.0.1:/ on /mnt/sdaa type nfs4 (ro,relatime,vers=4.2,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=127.0.0.1,local_lock=none,addr)
+127.0.0.1:/mnt2 on /mnt/sdaa/mnt2 type nfs4 (ro,relatime,vers=4.2,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=127.0.0.1,local_lock=)
+[root@nfs_test3 ~]#
+
+
+[root@nfs_test3 bpftrace]# bpftrace nfs3.bt
+Attaching 1 probe...
+@y[
+    nfs_d_automount+5
+    __traverse_mounts+146
+    step_into+445
+    link_path_walk.part.0.constprop.0+363
+    path_openat+134
+    do_filp_open+199
+    do_sys_openat2+148
+    __x64_sys_open+83
+    do_syscall_64+114
+    entry_SYSCALL_64_after_hwframe+118
+, touch]: 1
