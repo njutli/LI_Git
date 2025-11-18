@@ -27,6 +27,7 @@ https://blog.csdn.net/gatieme/category_6393814.html
 9. 栈对应的物理内存是怎么分配的？<br>
 答： 栈的虚拟地址空间在进程启动时预留（如 8MB），但物理内存采用按需分配（Demand Paging）：声明栈变量时只预留虚拟地址，第一次访问时触发缺页中断才分配物理页框，大大提高了内存利用率。
 
+```
 每个进程的虚拟地址空间（32位 Linux）：
 
 0x00000000 ┌─────────────────────────────────┐
@@ -62,7 +63,9 @@ https://blog.csdn.net/gatieme/category_6393814.html
            │  FIX_KMAP_BEGIN 等              │ 编译时确定
 0xFFFFFFFF └─────────────────────────────────┘
 
+```
 1. 用户空间（0x00000000 - 0xC0000000）的映射
+```
 每个进程独立、延迟映射、按需分页
 
 时刻 T1: malloc(4096) 返回后
@@ -79,8 +82,9 @@ https://blog.csdn.net/gatieme/category_6393814.html
 0x08000000 ──→ [Present=1] ────→  0x12345000
                [PFN=0x12345]
                [User=1, RW=1]
-
+```
 2. ZONE_NORMAL（低端内存）
+```
 // 物理内存：0 - 896MB (x86-32)
 // 内核虚拟地址：0xC0000000 - 0xF7C00000
 // 映射关系：简单的线性映射
@@ -91,8 +95,9 @@ https://blog.csdn.net/gatieme/category_6393814.html
 // 内核可以直接访问，无需额外操作
 void *kernel_addr = __va(phys_addr);  // 简单的加法！
 phys_addr_t phys = __pa(kernel_addr); // 简单的减法！
-
+```
 3. ZONE_HIGHMEM（高端内存）
+```
 每个进程独立、延迟映射、按需分页
 
 访问 0xF7C00000 - 0xFFFFFFFF 时：
@@ -112,13 +117,13 @@ phys_addr_t phys = __pa(kernel_addr); // 简单的减法！
 4) 如果是固定映射区 (0xFFC00000 - 0xFFFFFFFF)：
    → 映射的是**特殊用途的物理地址**
    → 如硬件寄存器、BIOS 数据等
+```
 
-
-低端内存只有800多M，是所有进程共享的吗，例如进程1访问0xC1000000和进程2访问0xC1000000是访问的同一块地址吗
+低端内存只有800多M，是所有进程共享的吗，例如进程1访问0xC1000000和进程2访问0xC1000000是访问的同一块地址吗<br>
 所有进程的内核空间（0xC0000000-0xFFFFFFFF）映射完全相同，包括 pkmap、kmap_atomic、vmalloc 区域，都在内核页表中，所有进程看到相同的映射
 
 
-如果分配高端内存返回的虚拟地址是0xFFFFFFF0，而分配的内存大小是0x20，超出0xFFFFFFFF范围的内存怎么访问
+如果分配高端内存返回的虚拟地址是0xFFFFFFF0，而分配的内存大小是0x20，超出0xFFFFFFFF范围的内存怎么访问<br>
 所有内核内存分配都是页对齐的（4KB），永久映射区、临时映射区都预留了足够空间
 
 
@@ -126,10 +131,8 @@ phys_addr_t phys = __pa(kernel_addr); // 简单的减法！
 
 
 
-
-
 以上讨论都是基于32位系统，对于64位系统，内存布局是怎样的
-
+```
 // 理论上的64位地址空间
 理论地址空间 = 2^64 = 16 EB (Exabytes)
             = 16,777,216 TB
@@ -157,7 +160,6 @@ phys_addr_t phys = __pa(kernel_addr); // 简单的减法！
 // 0x0000800000000000 - 0xFFFF7FFFFFFFFFFF
 // 这个区域称为"规范地址空洞"（Canonical Hole）
 // 访问会触发 #GP (General Protection Fault)
-
 
 
 // Linux x86-64 内存布局（48位）
@@ -189,7 +191,7 @@ FFFFFFFFFF000000 - FFFFFFFFFF5FFFFF (  6 MB)  保护空洞
 FFFFFFFFFF600000 - FFFFFFFFFF600FFF (  4 KB)  vsyscall 页（传统）
 FFFFFFFFFF601000 - FFFFFFFFFFE00000 (  8 MB)  保护空洞
 FFFFFFFFFFE00000 - FFFFFFFFFFFFFFFF (  2 MB)  固定映射区（Fixmap）
-
+```
 
 系统（System）
     └── 节点（Node/pg_data_t）
