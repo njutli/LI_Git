@@ -90,6 +90,49 @@ bash-5.3#
 bash-5.3# passwd -S root
 root P 2025-11-14 -1 -1 -1 -1
 bash-5.3#
+
+// 配置网络后测试
+[root@localhost ~]# ping -c 8.8.8.8
+ping: invalid argument: '8.8.8.8'
+[root@localhost ~]# ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host noprefixroute
+       valid_lft forever preferred_lft forever
+2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 52:54:00:12:34:56 brd ff:ff:ff:ff:ff:ff
+    altname enp0s3
+    altname enx525400123456
+    inet 10.0.2.15/24 brd 10.0.2.255 scope global dynamic noprefixroute ens3
+       valid_lft 86267sec preferred_lft 86267sec
+    inet6 fec0::924f:a848:434a:479/64 scope site dynamic noprefixroute
+       valid_lft 86269sec preferred_lft 14269sec
+    inet6 fe80::5910:ab77:4cf:67d1/64 scope link noprefixroute
+       valid_lft forever preferred_lft forever
+[root@localhost ~]# ping -c 3 8.8.8.8
+PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=255 time=226 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=255 time=174 ms
+64 bytes from 8.8.8.8: icmp_seq=3 ttl=255 time=204 ms
+
+--- 8.8.8.8 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2012ms
+rtt min/avg/max/mdev = 174.107/201.343/225.807/21.197 ms
+[root@localhost ~]# dnf update
+Updating and loading repositories:
+ Fedora 43 openh264 (From Cisco) - x86_64                                       100% | 510.0   B/s |   5.8 KiB |  00m12s
+ Fedora 43 - x86_64                                                             100% |   1.6 MiB/s |  35.4 MiB |  00m22s
+ Fedora 43 - x86_64 - Updates                                                   100% | 975.6 KiB/s |  10.5 MiB |  00m11s
+Repositories loaded.
+Package                                   Arch   Version                             Repository                     Size
+Upgrading:
+ alternatives                             x86_64 1.33-3.fc43                         updates                    62.2 KiB
+   replacing alternatives                 x86_64 1.33-2.fc43                         0853d1013d5f4fe6901181b2c  62.2 KiB
+ audit                                    x86_64 4.1.2-2.fc43                        updates                   500.5 KiB
+...
+
 ```
 
 **2. 通用 rootfs tarball启动**
