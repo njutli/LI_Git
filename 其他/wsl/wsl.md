@@ -156,6 +156,14 @@ systemctl restart sshd
 
 Ubuntu串口执行：
 ssh -p 10022 root@localhost
+
+rm -rf GPATH GRTAGS GTAGS HTML
+gtags
+htags -DfFnvahoIstx --fixed-guide --auto-completion -t linux -m 'start_kernel'
+htags-server -b 0.0.0.0 8618 // 不能加sudo
+
+在 Windows 浏览器访问：
+http://<WSL的eth0地址>:8618
 ```
 
 **2. 通用 rootfs tarball启动**
