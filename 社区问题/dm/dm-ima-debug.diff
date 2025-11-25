@@ -1,0 +1,59 @@
+diff --git a/drivers/md/dm-ima.c b/drivers/md/dm-ima.c
+index b90f34259fbb..c2bc51f74d13 100644
+--- a/drivers/md/dm-ima.c
++++ b/drivers/md/dm-ima.c
+@@ -15,6 +15,7 @@
+ #include <crypto/hash.h>
+ #include <linux/crypto.h>
+ #include <crypto/hash_info.h>
++#include <linux/delay.h>
+ 
+ #define DM_MSG_PREFIX "ima"
+ 
+@@ -339,6 +340,7 @@ void dm_ima_measure_on_table_load(struct dm_table *table, unsigned int status_fl
+ 	if (table->md->ima.active_table.hash != table->md->ima.inactive_table.hash)
+ 		kfree(table->md->ima.inactive_table.hash);
+ 
++	printk("%s alloc buf %px, set to inactive_table.hash\n", __func__, digest_buf);
+ 	table->md->ima.inactive_table.hash = digest_buf;
+ 	table->md->ima.inactive_table.hash_len = strlen(digest_buf);
+ 	table->md->ima.inactive_table.num_targets = num_targets;
+@@ -388,9 +390,14 @@ void dm_ima_measure_on_device_resume(struct mapped_device *md, bool swap)
+ 	l += md->ima.dm_version_str_len;
+ 
+ 	if (swap) {
+-		if (md->ima.active_table.hash != md->ima.inactive_table.hash)
++		if (md->ima.active_table.hash != md->ima.inactive_table.hash) {
++			printk("%s free active_table.hash %px\n", __func__, md->ima.active_table.hash);
+ 			kfree(md->ima.active_table.hash);
++		}
+ 
++		printk("%s sleep before set active_table.hash %px to NULL...\n", __func__, md->ima.active_table.hash);
++		mdelay(10 * 1000);
++		printk("%s slee done.\n", __func__);
+ 		md->ima.active_table.hash = NULL;
+ 		md->ima.active_table.hash_len = 0;
+ 
+@@ -403,6 +410,7 @@ void dm_ima_measure_on_device_resume(struct mapped_device *md, bool swap)
+ 		md->ima.active_table.num_targets = 0;
+ 
+ 		if (md->ima.inactive_table.hash) {
++			printk("%s set md->ima.inactive_table.hash %px to md->ima.active_table.hash\n", __func__, md->ima.inactive_table.hash);
+ 			md->ima.active_table.hash = md->ima.inactive_table.hash;
+ 			md->ima.active_table.hash_len = md->ima.inactive_table.hash_len;
+ 			md->ima.inactive_table.hash = NULL;
+@@ -588,10 +596,13 @@ void dm_ima_measure_on_device_remove(struct mapped_device *md, bool remove_all)
+ 	    md->ima.inactive_table.device_metadata)
+ 		kfree(md->ima.inactive_table.device_metadata);
+ 
++	printk("%s free active_table.hash %px\n", __func__, md->ima.active_table.hash);
+ 	kfree(md->ima.active_table.hash);
+ 
+-	if (md->ima.active_table.hash != md->ima.inactive_table.hash)
++	if (md->ima.active_table.hash != md->ima.inactive_table.hash) {
++		printk("%s free inactive_table.hash %px\n", __func__, md->ima.inactive_table.hash);
+ 		kfree(md->ima.inactive_table.hash);
++	}
+ 
+ 	dm_ima_reset_data(md);
+ 
