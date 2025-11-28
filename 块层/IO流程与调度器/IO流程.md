@@ -39,3 +39,22 @@ blk_start_plug
 io_submit_one // 遍历用户提交的 iocb
 blk_finish_plug
 ```
+
+# IO合并
+## plug 合并
+1. 后向合并
+bio的尾等于req的头
+```
+ELEVATOR_BACK_MERGE
+blk_rq_pos(rq) + blk_rq_sectors(rq) == bio->bi_iter.bi_sector
+```
+
+2. 前向合并
+bio的头等于req的尾
+```
+ELEVATOR_FRONT_MERGE
+blk_rq_pos(rq) - bio_sectors(bio) == bio->bi_iter.bi_sector
+```
+
+## 调度器合并
+
