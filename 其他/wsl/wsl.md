@@ -29,6 +29,8 @@ make menuconfig
 **1. 完整镜像启动**
 
 完整fedora镜像<br>
+https://www.fedoraproject.org/server/download
+
 https://ftp.riken.jp/Linux/fedora/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2
 
 ```
