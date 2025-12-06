@@ -2,6 +2,8 @@
 
 [Linux 通用块层之IO合并](https://mp.weixin.qq.com/s?__biz=Mzg2OTc0ODAzMw==&mid=2247502091&idx=1&sn=68b81ad43c3e54f03771d7fb05069444&source=41&poc_token=HBTIJ2mj_oXQ54vboFJqkhWQ7QRxRS2EaWdTgfVf)
 
+[文件读写（BIO）波澜壮阔的一生](https://mp.weixin.qq.com/s?__biz=Mzg2OTc0ODAzMw==&mid=2247502042&idx=1&sn=6bb3a9ba76fb40221c719412b5bddc17&source=41&poc_token=HH7JJ2mjw5wuch-TIMLeCOAs1Bt1ZL7XqhUbLBFg)
+
 # plug unplug
 蓄流的主要目的就是为了增加请求合并的机会。
 
@@ -57,4 +59,8 @@ blk_rq_pos(rq) - bio_sectors(bio) == bio->bi_iter.bi_sector
 ```
 
 ## 调度器合并
+
+
+
+
 
