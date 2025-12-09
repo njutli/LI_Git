@@ -1,0 +1,123 @@
+diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
+index e2b9472e5c78..7749f938dad1 100644
+--- a/fs/nfsd/nfs4recover.c
++++ b/fs/nfsd/nfs4recover.c
+@@ -859,14 +859,14 @@ cld_pipe_downcall(struct file *filp, const char __user *src, size_t mlen)
+        int16_t status;
+
+        if (mlen != nn->client_tracking_ops->msglen) {
+-               dprintk("%s: got %zu bytes, expected %zu\n", __func__, mlen,
++               printk("%s: got %zu bytes, expected %zu\n", __func__, mlen,
+                        nn->client_tracking_ops->msglen);
+                return -EINVAL;
+        }
+
+        /* copy just the xid so we can try to find that */
+        if (copy_from_user(&xid, &hdr->cm_xid, sizeof(xid)) != 0) {
+-               dprintk("%s: error when copying xid from userspace", __func__);
++               printk("%s: error when copying xid from userspace", __func__);
+                return -EFAULT;
+        }
+
+@@ -876,7 +876,7 @@ cld_pipe_downcall(struct file *filp, const char __user *src, size_t mlen)
+         * valid, not remove the upcall from the list)
+         */
+        if (get_user(status, &hdr->cm_status)) {
+-               dprintk("%s: error when copying status from userspace", __func__);
++               printk("%s: error when copying status from userspace", __func__);
+                return -EFAULT;
+        }
+
+@@ -895,10 +895,11 @@ cld_pipe_downcall(struct file *filp, const char __user *src, size_t mlen)
+
+        /* couldn't find upcall? */
+        if (!cup) {
+-               dprintk("%s: couldn't find upcall -- xid=%u\n", __func__, xid);
++               printk("%s: couldn't find upcall -- xid=%u\n", __func__, xid);
+                return -EINVAL;
+        }
+
++       printk("%s status %d\n", __func__, status);
+        if (status == -EINPROGRESS)
+                return __cld_pipe_inprogress_downcall(cmsg, nn);
+
+@@ -1420,12 +1421,14 @@ nfsd4_cld_grace_done(struct nfsd_net *nn)
+        struct cld_upcall *cup;
+        struct cld_net *cn = nn->cld_net;
+
++       printk("%s %d\n", __func__, __LINE__);
+        cup = alloc_cld_upcall(nn);
+        if (!cup) {
+                ret = -ENOMEM;
+                goto out_err;
+        }
+
++       printk("%s %d\n", __func__, __LINE__);
+        cup->cu_u.cu_msg.cm_cmd = Cld_GraceDone;
+        ret = cld_pipe_upcall(cn->cn_pipe, &cup->cu_u.cu_msg, nn);
+        if (!ret)
+@@ -1433,6 +1436,10 @@ nfsd4_cld_grace_done(struct nfsd_net *nn)
+
+        free_cld_upcall(cup);
+ out_err:
++       printk("%s %d\n", __func__, __LINE__);
++       printk("%s sleep before release reclaim...\n", __func__);
++       msleep(5 * 1000);
++       printk("%s sleep before release reclaim done\n", __func__);
+        nfs4_release_reclaim(nn);
+        if (ret)
+                printk(KERN_ERR "NFSD: Unable to end grace period: %d\n", ret);
+@@ -1447,6 +1454,7 @@ nfs4_cld_state_init(struct net *net)
+        nn->reclaim_str_hashtbl = kmalloc_array(CLIENT_HASH_SIZE,
+                                                sizeof(struct list_head),
+                                                GFP_KERNEL);
++       printk("%s get nn->reclaim_str_hashtbl %px\n", __func__, nn->reclaim_str_hashtbl);
+        if (!nn->reclaim_str_hashtbl)
+                return -ENOMEM;
+
+@@ -1465,7 +1473,12 @@ nfs4_cld_state_shutdown(struct net *net)
+        struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+
+        nn->track_reclaim_completes = false;
++       printk("%s free nn->reclaim_str_hashtbl %px\n", __func__, nn->reclaim_str_hashtbl);
+        kfree(nn->reclaim_str_hashtbl);
++       printk("%s free nn->reclaim_str_hashtbl %px done\n", __func__, nn->reclaim_str_hashtbl);
++       printk("%s sleep after free...\n", __func__);
++       msleep(10 * 1000);
++       printk("%s sleep done\n", __func__);
+ }
+
+ static bool
+@@ -2079,8 +2092,11 @@ nfsd4_client_record_check(struct nfs4_client *clp)
+ void
+ nfsd4_record_grace_done(struct nfsd_net *nn)
+ {
+-       if (nn->client_tracking_ops)
++       printk("%s %d\n", __func__, __LINE__);
++       if (nn->client_tracking_ops) {
++               printk("%s %d\n", __func__, __LINE__);
+                nn->client_tracking_ops->grace_done(nn);
++       }
+ }
+
+ static int
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 8a6960500217..5ca63c53a685 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -6592,6 +6592,7 @@ nfsd4_renew(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
+ void
+ nfsd4_end_grace(struct nfsd_net *nn)
+ {
++       printk("%s %d\n", __func__, __LINE__);
+        /* do nothing if grace period already ended */
+        if (nn->grace_ended)
+                return;
+@@ -6604,6 +6605,7 @@ nfsd4_end_grace(struct nfsd_net *nn)
+         * even if it hasn't yet had a chance to reclaim state this time.
+         *
+         */
++       printk("%s %d\n", __func__, __LINE__);
+        nfsd4_record_grace_done(nn);
+        /*
+         * At this point, NFSv4 clients can still reclaim.  But if the
