@@ -55,6 +55,10 @@ path_getxattr
 	   __nfs4_get_acl_uncached
 	    kmalloc_array // 分配保存结果的 pages
 		args.acl_pages // 将 pages 保存在 acl_pages 中
+	    nfs4_call_sync // 远程调用
+		nfs4_write_cached_acl // 从缓存 pages 里拷出数据
+		 _copy_from_pages // 拷贝数据
+		 nfs4_set_cached_acl // 保存到 nfsi->nfs4_acl 中
 
 call_encode
  rpc_xdr_encode
@@ -108,6 +112,7 @@ nfsd4_encode_getattr
 > 数据是怎么接收的，接收的数据是怎么填充到page中的
 
 #### 1.3.1 网络中断触发 transport->recv_worker 的第一次运行
+```
 @x[
     xs_data_ready+1
     tcp_rcv_established+1605
@@ -138,8 +143,10 @@ nfsd4_encode_getattr
     cpu_startup_entry+25
     secondary_startup_64_no_verify+195
 , swapper/7]: 2
+```
 
 #### 1.3.2 recv_worker 会一直运行到网络关闭
+```
 xs_stream_data_receive_workfn
  xs_stream_data_receive
   xs_read_stream
@@ -162,13 +169,41 @@ xs_stream_data_receive_workfn
  2) 继续
  xs_poll_check_readable
   queue_work // transport->recv_worker
+```
+
+## 2. nfs4_getfacl
+### 2.1 客户端发起请求
+```
+path_setxattr
+ setxattr
+  vfs_setxattr
+   __vfs_setxattr_locked
+    __vfs_setxattr_noperm
+	 __vfs_setxattr
+	  nfs4_xattr_set_nfs4_acl
+	   nfs4_proc_set_acl
+	    __nfs4_proc_set_acl
+		 nfs4_buf_to_pages_noslab
+		  // 分配 pages ，将用户态传递的数据保存在pages中并用 acl_pages 保存 pages 指针数组地址
+
+call_encode
+ rpc_xdr_encode
+  rpcauth_wrap_req
+   rpcauth_wrap_req_encode // ops->crwrap_req
+    nfs4_xdr_enc_setacl // NFSPROC4_CLNT_SETACL
+	 encode_setacl // 操作码 OP_SETATTR； map FATTR4_WORD0_ACL； acl_pages 保存到 xdr 中
+
+```
+
+### 2.2 服务端响应请求
+```
+nfsd4_decode_setattr
+ nfsd4_decode_fattr4
+  nfsd4_decode_bitmap4 // 获取bitmap FATTR4_WORD0_ACL
+  nfsd4_decode_acl
 
 
-
-
-
-
-
+```
 
 
 
