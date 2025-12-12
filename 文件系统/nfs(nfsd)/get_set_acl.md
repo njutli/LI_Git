@@ -1,4 +1,5 @@
 # 操作步骤
+```
 mkfs.ext4 -F /dev/sdb
 mount /dev/sdb /mnt/sdb
 echo "/mnt *(rw,no_root_squash,fsid=0)" > /etc/exports
@@ -27,6 +28,7 @@ A::1000:tcy
 A::GROUP@:rtcy
 A::EVERYONE@:rtcy
 [root@fedora ~]#
+```
 
 # 系统调用
 ## 1. nfs4_getfacl
