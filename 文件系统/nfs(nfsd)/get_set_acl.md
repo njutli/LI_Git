@@ -200,11 +200,17 @@ call_encode
 nfsd4_decode_setattr
  nfsd4_decode_fattr4
   nfsd4_decode_bitmap4 // 获取bitmap FATTR4_WORD0_ACL
-  nfsd4_decode_acl
+  nfsd4_decode_acl // 获取用户传递的 acl 以 nfs4_acl 的格式保存在 setattr->sa_acl 中
 
+
+nfsd4_setattr
+ nfsd4_acl_to_attr
+  nfs4_acl_nfsv4_to_posix
+   nfs4_acl_nfsv4_to_posix
+    process_one_v4_ace
+	 // case ACL_USER:
+	 // 对一个普通用户设置deny bit时也会对owner设置
 
 ```
-
-
 
 
