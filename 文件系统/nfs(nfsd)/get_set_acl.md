@@ -1,5 +1,5 @@
 # 现象
-`给普通用户新增一个r全新的deny条目，影响了owner`
+`给普通用户新增一个r权限的deny条目，影响了owner`
 # 操作步骤
 ```
 mkfs.ext4 -F /dev/sdb
