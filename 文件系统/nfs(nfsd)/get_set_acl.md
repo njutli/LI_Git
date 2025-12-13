@@ -287,4 +287,35 @@ nfsd4_setattr
 
 ```
 
+# 结论
+非内核问题，参考`process_one_v4_ace`的实现，给普通用户设置deny bit时也会设置owner的deny bit。
+```
+static void process_one_v4_ace(struct posix_acl_state *state,
+                                struct nfs4_ace *ace)
+{
+        u32 mask = ace->access_mask;
+        int i;
+
+        state->empty = 0;
+
+        switch (ace2type(ace)) {
+...
+        case ACL_USER:
+                i = find_uid(state, ace->who_uid);
+                if (ace->type == NFS4_ACE_ACCESS_ALLOWED_ACE_TYPE) {
+                        allow_bits(&state->users->aces[i].perms, mask);
+                } else {
+                        deny_bits(&state->users->aces[i].perms, mask);
+                        mask = state->users->aces[i].perms.deny;
+                        deny_bits(&state->owner, mask);
+                }
+                break;
+...
+        }
+}
+```
+
+NFSv4 语义里，owner 通常应由 OWNER@ 表达；但兼容性世界很混沌：某些客户端会发出 “who = <owner-uid>” 的 ACE（也就是 ACL_USER），而不是 OWNER@。
+如果服务器在转换时“只把 deny 记在 named user 上，不影响 owner”，那当这个 UID 恰好就是文件 owner 时，就会发生语义漂移：客户端明确 deny 的位，owner 却可能因为 owner@/mode 折叠被允许。
+所以这里把 ACL_USER 的 deny 也压到 state->owner.deny，等价于说：如果这个 UID 最终是 owner，绝不能让 owner 获得它被 deny 的权限
 
