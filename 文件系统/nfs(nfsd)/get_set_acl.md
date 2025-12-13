@@ -1,3 +1,8 @@
+# 背景
+[Linux ACL （访问控制列表）权限管理举例详解](https://blog.csdn.net/Zheng__Huang/article/details/107743768)
+- mode bits：简单、快、所有系统/工具都理解，适合绝大多数场景
+- ACL：当你需要“给某个用户单独开绿灯/拉黑”而又不想改 owner/group 或创建新组时，它非常实用
+
 # 现象
 `给普通用户新增一个r权限的deny条目，影响了owner`
 # 操作步骤
