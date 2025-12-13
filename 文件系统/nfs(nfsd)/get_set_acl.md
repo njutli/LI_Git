@@ -3,6 +3,73 @@
 - mode bits：简单、快、所有系统/工具都理解，适合绝大多数场景
 - ACL：当你需要“给某个用户单独开绿灯/拉黑”而又不想改 owner/group 或创建新组时，它非常实用
 
+```
+// acl权限检查
+inode_permission
+ do_inode_permission
+  generic_permission
+   acl_permission_check
+    check_acl
+	 get_inode_acl // 获取acl
+	 posix_acl_permission // 检查权限
+	  // 如果acl中有一条记录是普通用户 case ACL_USER
+	  // make_vfsuid 获取acl中的用户vfsuid
+	  // 与当前用户的uid current_fsuid() 比较
+	  // 相同的话直接跳转检查这条记录对这个用户的权限规定，运行访问返回0，否则返回 -EACCES
+
+static int acl_permission_check(struct mnt_idmap *idmap,
+                                struct inode *inode, int mask)
+{
+        unsigned int mode = inode->i_mode;
+        vfsuid_t vfsuid;
+
+        if (!((mask & 7) * 0111 & ~mode)) {
+                if (no_acl_inode(inode))
+                        return 0;
+                if (!IS_POSIXACL(inode))
+                        return 0;
+        }
+		// 如果这个文件对 所有人 都已经满足请求权限（例如要读而 mode 至少是 ?r? ?r? ?r?），并且 inode 上也没有需要看的 ACL，那就直接允许。
+
+        /* Are we the owner? If so, ACL's don't matter */
+		// 获取文件owner对应的 vfsuid
+        vfsuid = i_uid_into_vfsuid(idmap, inode);
+        // 将文件的owner的 vfsuid 与当前用户的 fsuid 比较，确认当前用户是否是文件所有者
+		if (likely(vfsuid_eq_kuid(vfsuid, current_fsuid()))) {
+		// 如果是文件所有者，不考虑acl，只考虑mode
+                mask &= 7;
+                mode >>= 6;
+                return (mask & ~mode) ? -EACCES : 0;
+        }
+
+        /* Do we have ACL's? */
+        if (IS_POSIXACL(inode) && (mode & S_IRWXG)) {
+                int error = check_acl(idmap, inode, mask);
+                if (error != -EAGAIN)
+                        return error;
+        }
+
+        /* Only RWX matters for group/other mode bits */
+        mask &= 7;
+
+        /*
+         * Are the group permissions different from
+         * the other permissions in the bits we care
+         * about? Need to check group ownership if so.
+         */
+        if (mask & (mode ^ (mode >> 3))) {
+				// 当前用户属于文件的group，取出group用户权限
+                vfsgid_t vfsgid = i_gid_into_vfsgid(idmap, inode);
+                if (vfsgid_in_group_p(vfsgid))
+                        mode >>= 3;
+        }
+
+        /* Bits in 'mode' clear that we require? */
+        return (mask & ~mode) ? -EACCES : 0;
+}
+
+```
+
 # 现象
 `给普通用户新增一个r权限的deny条目，影响了owner`
 # 操作步骤
