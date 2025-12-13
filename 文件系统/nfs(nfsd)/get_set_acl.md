@@ -245,7 +245,7 @@ xs_stream_data_receive_workfn
   queue_work // transport->recv_worker
 ```
 
-## 2. nfs4_getfacl
+## 2. nfs4_setfacl
 ### 2.1 客户端发起请求
 ```
 path_setxattr
