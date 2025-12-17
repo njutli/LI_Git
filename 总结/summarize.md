@@ -874,7 +874,7 @@ https://lore.kernel.org/all/20250619111806.3546162-1-yi.zhang@huaweicloud.com/
 ##### 1.2) 关键流程
 ```
 /*
- * entries -- 指定SQ的规模，CQ规模为SQ两倍
+ * entries -- 指定SQ的规模，CQ规模为SQ两倍 ———— 针对用户态偶发的提交请求速度比获取请求结果的速度快的场景，用户提交SQE，内核完成后填充CQE，用户继续提交SQE，没有及时处理CQE
  *				io_uring_queue_init_params 可通过 IORING_SETUP_CQSIZE 标记指定CQ规模
  * ring -- io_uring 指针，创建出的io_uring实例
  * flags -- IORING_SETUP_IOPOLL/IORING_SETUP_SQPOLL 等
