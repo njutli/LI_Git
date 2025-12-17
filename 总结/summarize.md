@@ -485,7 +485,7 @@ __alloc_disk_node
 	 INIT_DELAYED_WORK // &wb->dwork wb_workfn
 
 后台回写进程怎么跑起来的：
-1) buffer write 写完数据后 queue work
+1) buffer write 写完数据后 queue_delayed_work
 generic_perform_write
  ...
  a_ops->write_end
