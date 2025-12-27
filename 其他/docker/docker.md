@@ -205,7 +205,8 @@ mount 参数 --make-slave
 从当前peer group中剔除，不传播，只接受master mount事件
 ```
 
-# docker结构
+# docker
+## 整体架构
 ![docker架构](https://www.runoob.com/wp-content/uploads/2016/07/docker-architecture.webp)
 - docker client（CLI）：就是你敲 docker ps / run 的那个命令行程序。它不负责创建容器，只负责把请求发给 API。
 - docker server（dockerd）：长期运行的守护进程，监听 Docker API（默认是本机 Unix socket），接到请求后再去驱动 containerd/runc 把容器落到内核里。
@@ -218,7 +219,41 @@ mount 参数 --make-slave
 
 > Docker 的 client/server 主要是为了把“用户接口”和“系统级操作权限”分离：CLI 只是发 API，真正需要 root 权限和系统操作的部分在 dockerd（以及后面的 containerd/runc）。它们通常同机部署，通过 Unix socket 通信，也支持远程连接
 
-# k8s结构
+## 软件组件
+`docker CLI  →  dockerd  →  containerd  →  containerd-shim  →  runc  →  Linux kernel`
+- dockerd：长期运行的守护进程，负责管理 Docker 对象（镜像、容器、网络、卷…），并监听 API 请求。
+- containerd：更底层、更通用的容器运行时守护进程，负责镜像、快照、容器生命周期等“容器核心能力”。Docker 现在就是把很多底层能力下沉给它。
+- containerd-shim：夹在 containerd 和 runc 之间的“垫片进程”，每个容器（或每个 sandbox）会有对应 shim；shim 负责调用 runc，并在 runc 退出后继续托管容器的生命周期/stdio/退出码等。
+- runc：OCI 运行时，真正去调用内核能力创建容器（namespaces/cgroups/mount/exec）。shim 会用 runc 来 create/start/stop。
+
+```
+          你（用户态）
+             |
+             v
+        docker CLI
+             |
+     REST API (unix socket)
+             |
+             v
+        dockerd  ──────────────── 管理：images/containers/networks/volumes
+             |
+             v
+        containerd ────────────── 管理：images + snapshotters + task lifecycle
+             |
+             v
+     per-container shim (containerd-shim) ── 托管容器进程/stdio/退出码
+             |
+             v
+            runc ─────────────── 生成 namespaces/cgroups/mount/seccomp 并 exec
+             |
+             v
+         Linux kernel ─────────── namespaces/cgroups/VFS/net/LSM…
+             |
+             v
+      真实硬件：CPU/内存/网卡/磁盘
+```
+
+# k8s
 ![master结点](https://pic4.zhimg.com/v2-7fa63b292368c8f21bd4582861a6983d_1440w.jpg)
 
 Master节点包括API Server、Scheduler、Controller manager、etcd。
@@ -304,10 +339,15 @@ k8s --> namespace --> chatgpt
 
 
 
-k8s的master创建pod分配给worker执行，pod是个怎样的实体，可以理解是master将要做的事和启动docker的参数等打包成一个数据包，发送给worker，worker解析后创建对应的docker运行业务吗
 
-以mount namespace为例，在unshare前有一个目录树，unshare后复制这个目录树共隔离环境使用，在隔离环境外对某个目录再做mount，隔离环境内是不是看不到新增的这个挂载点
+
+
 
 容器内创建的文件在容器外看不到，那容器退出后文件会丢失吗 ———— 丢了
 
+
 从内核代码或者数据结构角度讲，unshare后隔离环境内外对目录树的改动互不感知是怎么实现的
+
+clone() 和 unshare() 什么差别
+
+
