@@ -205,6 +205,19 @@ mount 参数 --make-slave
 从当前peer group中剔除，不传播，只接受master mount事件
 ```
 
+# docker结构
+![docker架构](https://www.runoob.com/wp-content/uploads/2016/07/docker-architecture.webp)
+- docker client（CLI）：就是你敲 docker ps / run 的那个命令行程序。它不负责创建容器，只负责把请求发给 API。
+- docker server（dockerd）：长期运行的守护进程，监听 Docker API（默认是本机 Unix socket），接到请求后再去驱动 containerd/runc 把容器落到内核里。
+
+这两者最常见的部署方式就是同机：
+- docker CLI 在 shell 里跑一下就退出；
+- dockerd 常驻；
+
+两者通过本机的 /var/run/docker.sock 通信。
+
+> Docker 的 client/server 主要是为了把“用户接口”和“系统级操作权限”分离：CLI 只是发 API，真正需要 root 权限和系统操作的部分在 dockerd（以及后面的 containerd/runc）。它们通常同机部署，通过 Unix socket 通信，也支持远程连接
+
 # k8s结构
 ![master结点](https://pic4.zhimg.com/v2-7fa63b292368c8f21bd4582861a6983d_1440w.jpg)
 
@@ -223,7 +236,7 @@ Pod是Kubernetes最基本的操作单元。一个Pod代表着集群中运行的�
 4. Fluentd，主要负责日志收集、存储与查询。
 
 # 疑问
-1) k8s pod 是什么
+## 1) k8s pod 是什么
 Pod 是 Kubernetes API 里的一个资源对象（API object），核心是两部分：
 - metadata：名字、namespace、labels、annotations…
 - spec（PodSpec）：你希望它长什么样（跑哪些容器、镜像、命令、端口、卷、资源限制、探针、安全策略…）
@@ -231,7 +244,7 @@ Pod 是 Kubernetes API 里的一个资源对象（API object），核心是两�
 
 它的本质更像“数据库里的一行记录 + 期望状态”
 
-2) master 端到底做了什么？
+## 2) master 端到底做了什么？
 你可以把 control plane 想成“写规则 + 做分配”，不直接执行容器。
 
 典型链路（从你 kubectl apply -f pod.yaml 开始）：
@@ -244,18 +257,42 @@ Pod 是 Kubernetes API 里的一个资源对象（API object），核心是两�
 
 > 到这一步，master 只做了“把 Pod 这个对象写入并决定它应该去哪台机器”，并没有在节点上执行任何东西。
 
-3) 
+## 3) worker 是怎么“拿到任务”并执行的？
+关键点：worker 不是等 master 推送一个包，而是 kubelet 自己 watch apiserver。
+
+1. kubelet watch apiserver
+每个节点上的 kubelet 会持续 watch：
+“有哪些 Pod 的 spec.nodeName 是我？”
+一旦发现新增/变更，就进入 reconciliation（调谐）循环：把本机状态变成 spec 想要的样子。
+
+2. kubelet 调用容器运行时（CRI）
+kubelet 不再直接拼 docker run（早就不是那个架构了）。它通过 CRI（Container Runtime Interface） 的 gRPC 接口调用运行时（常见是 containerd + runc）。
+
+3. 先创建 Pod sandbox，再创建容器
+kubelet 先让 runtime 创建 PodSandbox（你可以理解为“Pod 的运行壳”，最重要的是网络命名空间等共享资源）。历史上这经常对应一个 “pause” 容器来持有 netns。
+然后再为 Pod 里的每个 container 创建并启动容器。
+
+4. 回写 status
+kubelet 把容器状态、IP、探针结果等更新回 apiserver 的 Pod status。
+
+> master 把 Pod 的“期望状态”写入 apiserver/etcd，并由 scheduler 把它绑定到某个 worker；worker 上的 kubelet watch 到这个绑定后，生成运行时配置，通过 CRI 驱动容器运行时创建 sandbox 和容器来跑业务。
+
+## 4) PodSpec 和 “docker run 参数”是什么关系？
+PodSpec ≈ 更高层的抽象，它确实覆盖了你在 docker run 里会关心的大多数东西，但表达更“平台化”：
+kubelet 会把这些字段转换成 CRI 请求（再由 runtime 转成 OCI 配置），最终才变成你熟悉的那套：namespaces / cgroups / mount / seccomp / capabilities / execve
+
+## 5) Pod 为什么是 Pod，而不是一堆容器？
+Pod 的核心价值是：把“一组需要共享某些内核隔离域的进程”打包成一个调度与管理单位。
+
+同一个 Pod 里的容器通常共享：
+- 网络命名空间（同 IP、localhost 互通）
+- IPC 命名空间（可选）
+- 卷（volume）（共享目录）
+
+所以 Pod 更像“一个小型的进程组/服务单元”，而不是“容器的集合”。
 
 
-docker
 
-k8s
-
-bpf
-
-
-namespace
-	Mount Namespace：提供文件系统的隔离，确保每个容器只能访问分配给它的文件系统
 
 UnionFS
 	COW 镜像分层
