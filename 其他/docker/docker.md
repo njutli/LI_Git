@@ -14,10 +14,10 @@ read_bps_device/write_bps_device/read_iops_device/write_iops_device 都整合到
 
 
 v1
-systemd.unified_cgroup_hierarchy=0
+`systemd.unified_cgroup_hierarchy=0`
 
 v2
-systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all
+`systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all`
 
 cgroup和cgroup2是怎么决定的？
 	用户态根据配置挂载的时候决定的，内核根据文件系统名"cgroup"或"cgroup2"查找对应的 file_system_type (cgroup_fs_type/cgroup2_fs_type)
@@ -64,6 +64,7 @@ blkio.throttle.io_serviced_recursive
 
 v2
 所有子系统共用一个挂载点
+```
 [root@fedora ~]# mount | grep cgroup
 cgroup2 on /sys/fs/cgroup type cgroup2 (rw,nosuid,nodev,noexec,relatime,nsdelegate,memory_recursiveprot)
 [root@fedora ~]# 
@@ -140,7 +141,7 @@ cgroup_init
 // 创建子cgroup子目录
 cgroup_mkdir
  cgroup_apply_control_enable
-
+```
 
 父 cgroup 限制 60% ，子 cgroup 限制 60% ，真实的子 cgroup 限制是 36% ？
 
@@ -169,7 +170,7 @@ bind mount 不新增dentry，新增 mount
 
 mount 参数 --make-shared
 将该挂载点设置为shared状态，创建全局唯一的group id，通过unshare新建的挂载点可以新增到该group中。后续该group中任一mount点下mount与umount事件均会传播
-
+```
 // 隔离环境外挂载 sda 到 /mnt/sda
 [root@fedora ~]# mount /dev/sda /mnt/sda
 
@@ -200,10 +201,14 @@ logout
 
 mount 参数 --make-slave
 从当前peer group中剔除，不传播，只接受master mount事件
+```
 
+# k8s结构
+[master结点](https://pic4.zhimg.com/v2-7fa63b292368c8f21bd4582861a6983d_1440w.jpg)
+[node结点](https://picx.zhimg.com/v2-8cb338cd8923fa0e6857f45facc8f00f_1440w.jpg)
 
 # 疑问
-1、k8s pod 是什么
+1) k8s pod 是什么
 Pod 是 Kubernetes API 里的一个资源对象（API object），核心是两部分：
 - metadata：名字、namespace、labels、annotations…
 - spec（PodSpec）：你希望它长什么样（跑哪些容器、镜像、命令、端口、卷、资源限制、探针、安全策略…）
@@ -211,7 +216,21 @@ Pod 是 Kubernetes API 里的一个资源对象（API object），核心是两�
 
 它的本质更像“数据库里的一行记录 + 期望状态”
 
-2、
+2) master 端到底做了什么？
+你可以把 control plane 想成“写规则 + 做分配”，不直接执行容器。
+
+典型链路（从你 kubectl apply -f pod.yaml 开始）：
+1. kubectl → apiserver
+你提交 YAML（Pod/Deployment 等）。apiserver 做鉴权/准入（admission），然后把对象写进 etcd（集群状态存储）。
+2. 控制器（controller-manager）
+如果你创建的是 Deployment，它会创建 ReplicaSet，再创建 Pod（让“期望副本数”成立）。
+3. 调度器（scheduler）
+调度器看所有“还没绑定节点”的 Pod（spec.nodeName 为空），计算资源/亲和/污点等，选一个 node，最后做一个 bind：把 Pod 的 spec.nodeName=<某个worker> 写回 apiserver。
+
+> 到这一步，master 只做了“把 Pod 这个对象写入并决定它应该去哪台机器”，并没有在节点上执行任何东西。
+
+3) 
+
 
 docker
 
