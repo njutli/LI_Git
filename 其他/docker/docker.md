@@ -1,15 +1,15 @@
 # cgroup
 
 v1与v2的差别：
-1、统一层级：v2 是 single hierarchy（不再像 v1 那样每个 controller 一棵树）
+1. 统一层级：v2 是 single hierarchy（不再像 v1 那样每个 controller 一棵树）
 v1 每个子系统一个挂载点
 v2 所有子系统共用一个挂载点
 
-2、controller 需要显式 enable：看 cgroup.controllers，写 cgroup.subtree_control 开启 
+2. controller 需要显式 enable：看 cgroup.controllers，写 cgroup.subtree_control 开启 
 
-3、接口风格更一致：比如 cpu.max / memory.max / io.max 这种统一命名风格
+3. 接口风格更一致：比如 cpu.max / memory.max / io.max 这种统一命名风格
 
-4、控制接口更集中（blk-cgroup）
+4. 控制接口更集中（blk-cgroup）
 read_bps_device/write_bps_device/read_iops_device/write_iops_device 都整合到 io.max
 
 
@@ -28,6 +28,7 @@ cgroup和cgroup2在文件系统层面的差别？
 
 v1
 每个子系统一个挂载点
+```
 [root@localhost ~]# mount | grep cgroup
 tmpfs on /sys/fs/cgroup type tmpfs (ro,nosuid,nodev,noexec,size=4096k,nr_inodes=1024,mode=755)
 cgroup on /sys/fs/cgroup/systemd type cgroup (rw,nosuid,nodev,noexec,relatime,xattr,release_agent=/usr/lib/systemd/systemd-cgroups-agent,name=systemd)
@@ -61,6 +62,7 @@ blkio.throttle.io_service_bytes_recursive  release_agent
 blkio.throttle.io_serviced                 tasks
 blkio.throttle.io_serviced_recursive
 [root@localhost ~]#
+```
 
 v2
 所有子系统共用一个挂载点
