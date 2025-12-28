@@ -26,6 +26,12 @@ export https_proxy="http://192.168.0.109:4780"
 export http_proxy="http://192.168.0.100:4780"
 export https_proxy="http://192.168.0.100:4780"
 
+// wsl 下载代码
+export http_proxy="http://172.18.144.1:4780"
+export https_proxy="http://172.18.144.1:4780"
+
+curl -I https://git.kernel.org/
+
 sudo global -u -v
 sudo htags -v
 sudo htags -fosa

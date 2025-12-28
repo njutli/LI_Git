@@ -279,7 +279,7 @@ Pod 是 Kubernetes API 里的一个资源对象（API object），核心是两�
 
 它的本质更像“数据库里的一行记录 + 期望状态”
 
-## 2) master 端到底做了什么？
+## 2) k8s master 端到底做了什么？
 你可以把 control plane 想成“写规则 + 做分配”，不直接执行容器。
 
 典型链路（从你 kubectl apply -f pod.yaml 开始）：
@@ -292,7 +292,7 @@ Pod 是 Kubernetes API 里的一个资源对象（API object），核心是两�
 
 > 到这一步，master 只做了“把 Pod 这个对象写入并决定它应该去哪台机器”，并没有在节点上执行任何东西。
 
-## 3) worker 是怎么“拿到任务”并执行的？
+## 3) k8s worker 是怎么“拿到任务”并执行的？
 关键点：worker 不是等 master 推送一个包，而是 kubelet 自己 watch apiserver。
 
 1. kubelet watch apiserver
@@ -326,7 +326,29 @@ Pod 的核心价值是：把“一组需要共享某些内核隔离域的进程�
 
 所以 Pod 更像“一个小型的进程组/服务单元”，而不是“容器的集合”。
 
+## 6) 容器内创建的文件在容器外看不到，那容器退出后文件会丢失吗
+问：
+```
+[root@fedora ~]# ls /mnt/sda
+lost+found  testdir
+[root@fedora ~]# unshare --mount --fork /bin/bash
+[root@fedora ~]# echo 123 > /mnt/sda/file
+[root@fedora ~]#
+exit
+[root@fedora ~]# ls /mnt/sda
+file  lost+found  testdir
+[root@fedora ~]#
+```
+> 如上，我通过unshare进入隔离环境，创建的新文件后退出，新文件仍可以看到，这种操作和容器有什么差别，容器在基于新的namesapce写文件的情况下，文件不会直接写入宿主机磁盘吗
 
+答：
+> 你用 unshare 只创建了 mount namespace，但没有改变挂载树或 rootfs，所以写的还是同一个挂载点，当然宿主机可见。容器在 mount namespace 基础上还会构造独立 rootfs（常用 overlayfs）并 pivot_root/chroot，使写入落到容器的可写层（宿主机磁盘上的另一个目录）。只有当你把宿主机目录 bind mount 进容器时，容器写入才会直接反映到宿主机那个目录。
+
+## 7) 从内核代码或者数据结构角度讲，unshare后隔离环境内外对目录树的改动互不感知是怎么实现的
+> unshare(CLONE_NEWNS) 让进程获得独立的 mnt_namespace，本质是复制一份 struct mount 挂载树结构；mount/umount 修改的是这棵树，因此默认不会影响其他 namespace。它不隔离文件系统内容，内容是否可见取决于两边是否仍引用同一 superblock。要避免 mount 事件传播，需要把 / 设为 rprivate。
+
+## 8) clone() 和 unshare() 什么差别
+> clone() 决定“创建新任务时共享还是隔离”；unshare() 决定“当前任务把共享的内核上下文拆成私有副本”。两者都能创建新 namespace，但一个把子进程放进去，一个把自己放进去
 
 
 UnionFS
@@ -335,19 +357,8 @@ UnionFS
 docker 存储机制？
 
 
-k8s --> namespace --> chatgpt
 
 
 
-
-
-
-
-容器内创建的文件在容器外看不到，那容器退出后文件会丢失吗 ———— 丢了
-
-
-从内核代码或者数据结构角度讲，unshare后隔离环境内外对目录树的改动互不感知是怎么实现的
-
-clone() 和 unshare() 什么差别
 
 
