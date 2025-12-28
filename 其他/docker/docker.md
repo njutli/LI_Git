@@ -145,8 +145,6 @@ cgroup_mkdir
  cgroup_apply_control_enable
 ```
 
-父 cgroup 限制 60% ，子 cgroup 限制 60% ，真实的子 cgroup 限制是 36% ？
-
 task_struct -- css_set
 n:1
 
@@ -158,8 +156,17 @@ cgroup_mkdir
 
 SUBSYS(io) --> io_cgrp_subsys
 
+# cgroup 疑问
+问：
+父 cgroup 限制 60% ，子 cgroup 限制 60% ，真实的子 cgroup 限制是 36% ？
 
-
+答：
+**父 cgroup 的 `cpu.max` 限制的是“父这个子树整体最多能吃多少 CPU”。**
+**子 cgroup 的 `cpu.max` 限制的是“这个子组最多能吃多少 CPU（但仍然不能突破父组总闸门）”。**
+所以：
+* 父 60%，子 60% ⇒ 子的有效上限仍然是 **60%**（因为父允许到 60%，子也允许到 60%，取更小还是 60）
+* 父 60%，子 30% ⇒ 子有效上限 **30%**
+* 父 30%，子 60% ⇒ 子有效上限 **30%**（父更严）
 
 # namespace
 
@@ -270,7 +277,7 @@ Pod是Kubernetes最基本的操作单元。一个Pod代表着集群中运行的�
 3. Kube-proxy，主要负责为Pod对象提供代理。
 4. Fluentd，主要负责日志收集、存储与查询。
 
-# 疑问
+# k8s & docker 疑问
 ## 1) k8s pod 是什么
 Pod 是 Kubernetes API 里的一个资源对象（API object），核心是两部分：
 - metadata：名字、namespace、labels、annotations…
