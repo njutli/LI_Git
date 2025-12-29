@@ -99,3 +99,5 @@ zone设备 dm-zone
 zoned storage
 
 https://zonedstorage.io/docs/introduction
+
+hungtask/softlockup/rcu原理
