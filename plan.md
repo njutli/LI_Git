@@ -103,3 +103,6 @@ https://zonedstorage.io/docs/introduction
 hungtask/softlockup/rcu原理
 
 nfs挂载流程
+
+不同nfs版本的差别
+samba
