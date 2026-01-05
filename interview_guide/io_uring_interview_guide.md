@@ -164,5 +164,50 @@ io_uring 是 Linux 5.1 引入的异步 I/O 框架，由 Jens Axboe 设计，用�
 当前客户端通过getattr，重新open，或者缓存超时来判断当前缓存数据是旧的（Linux NFS 客户端对 inode 维护一组时间点/有效期）
 
 # 内存拷贝的时候为什么要内存对齐，用户态通过系统调用传递给内核的数据为什么要有一次拷贝动作
+> 为什么要对齐
+1. 不对齐的地址拷贝可能使得本来一次就能全部拷贝的数据要分两次拷贝
+2. 未对齐会导致多映射/多段，硬件散列表（scatter-gather）条目变多（NVME获取主机侧缓存数据？）
+- 让 CPU/设备/IOMMU 用最省事的方式搬数据，很多时候是 DMA 的硬门槛
+
+> 用户态数据为什么要拷贝
+1. 安全考虑，确保数据内容在整个系统调用期间稳定
+2. 声明周期考虑，异步IO可以在系统调用返回后，用户态释放内存的情况下继续执行IO操作（针对小数据或不方便 pin page的场景）
+- 是内核在安全、生命周期、硬件限制之间做的折衷；零拷贝不是默认，而是满足一堆条件后才能拿到的奖励
+
+
+# 介绍一下hungtask的原理
+khungtaskd
+1. 周期性扫描系统里的任务列表（所有进程/线程）
+2. 对每个 task：
+- 看它是不是处于“我关心的阻塞态”（D / killable 等）
+- 看它有没有调度运行过
+- 看它在这个状态里已经持续多久
+如果长时间处于D状态且没有调度运行过，就打印警告
+
+## 如果一个进程在R和D状态之间切换，每次khungtaskd扫描的时候刚好在D状态，也会触发hungtask吗
+不会因为“每次扫描刚好看到 D”就触发；触发通常意味着：在超时时间内它没有被调度运行过（没进展），而不只是“那一刻在 D”。
+task_struct 里面有调度次数的记录，可以根据这个记录确认进程是否调度过
+
+`sysctl_hung_task_detect_count` 检查hungtask进程数
+
+
+# 介绍一下soft lockup的原理
+看门狗线程watchdog是由内核创建的percpu线程，创建后一直睡眠，然后等待htimer周期性的唤醒自己。被唤醒后watchdog线程就会去“喂狗”，即将当前时间戳写入到percpu变量watchdog_touch_ts中。
+percpu变量watchdog_touch_ts的更新和softlockup的检测是两种方式：
+1. watchdog_touch_ts更新
+通过异步进程更新，如果当前CPU没有softlockup，就可以异步执行更新函数来更新 watchdog_touch_ts ，否则 watchdog_touch_ts 无法更新
+2. softlockup检测
+由于定时器是通过中断触发每个CPU执行percpu线程，因此即使发生了softlockup，也可以进行检查。如果发生了 softlockup ，前面无法异步更新 watchdog_touch_ts ，那么此时就检测到 softlockup ，否则检查通过
+
+
+# 介绍一下hard lockup的原理
+不能正常响应NMI中断
+1. NMI能进来，但CPU不能处理
+通过perf event检测
+2. NMI不能进来
+通过其他正常的CPU检测
+
+
+# 介绍一下rcu的原理（rcu stall）
 
 
