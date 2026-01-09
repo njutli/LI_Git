@@ -260,14 +260,11 @@ rcu stall 原理？
 **怎么证实**：
 
 * 先找出当前业务主要的进程，然后用 `strace -T -tt -p <pid>` 抓进程的系统调用，从系统调用角度看是不是有对大量文件做stat/open/close操作，是不是有大量的read/write且IO数据量小，是不是有大量的fsync/fdatasync操作，是不是有大量的futex这样的等锁操作
-* 看 IOPS 大小分布（大部分是很小的 IO 就很可疑）
+* 看 IOPS 大小分布（大部分是很小的 IO 就很可疑），用每秒数据量除以每秒IO数，看评价IO大小是不是很小
+* 用blktrace看IO大小
 
 **怎么解决**：
-
-
-## 怎么确认问题
-已有工具：
-https://huatuo.tech/blog/2026-01-07-the-new-feature-full-stack-observation-of-linux-kernel-io/
+* 并发度太低 ———— 修改用户态逻辑
 
 # 介绍一下dm-pcache
 
