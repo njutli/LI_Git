@@ -246,25 +246,20 @@ rcu stall 原理？
    线程没有阻塞，反而不断运行、不断重试、不断“礼让”，但因为策略/时序问题，总在互相干扰，导致系统整体没有进展。常见于：trylock + 失败就立刻释放/重试；冲突检测后双方都回滚并同时重试
 
 # 关于IO慢的现象，可能是什么原因，要怎么定位，展开说说
-## 理论上哪些地方可能有问题
-1. 应用层
-**症状**：磁盘/网络看起来不忙，但应用就是慢。
-**典型原因**：
 
-* 并发度太低（单线程读写，没把 pipeline 跑起来）
-* 小 IO 太多（4K/8K 到处飞），系统调用/上下文切换成本占主导
-* 小文件海量：目录遍历、stat/open/close 成千上万 → 变成“元数据瓶颈”
-* 频繁 `fsync()`/`fdatasync()`（数据库、checkpoint、某些日志写）
-* 读写被应用层锁串行化（你以为在跑并发，实际在等锁）
+```
+定位工具 iostat blktrace strace 火焰图 bpftrace vmstat 
+业务自身问题： 
+   业务逻辑：并发度太低，小IO太多，小文件海量
+系统状态问题：
+   内存：内存不足，脏页回写占IO带宽，缓存未命中 
+   文件系统：元数据争用，日志提交，overlayfs copy-up 
+   块层：设备参数（nr_request，调度器），cgroup限速 
+   设备层：RAID重建，dm-thin-pool空间不足，碎片化严重
+```
 
-**怎么证实**：
-
-* 先找出当前业务主要的进程，然后用 `strace -T -tt -p <pid>` 抓进程的系统调用，从系统调用角度看是不是有对大量文件做stat/open/close操作，是不是有大量的read/write且IO数据量小，是不是有大量的fsync/fdatasync操作，是不是有大量的futex这样的等锁操作
-* 看 IOPS 大小分布（大部分是很小的 IO 就很可疑），用每秒数据量除以每秒IO数，看评价IO大小是不是很小
-* 用blktrace看IO大小
-
-**怎么解决**：
-* 并发度太低 ———— 修改用户态逻辑
+# 介绍一下nfs的挂载流程
+先 EXCHANGE_ID 建立 client identity 并获得 clientid/能力协商；再 CREATE_SESSION（以及可能的 BIND_CONN_TO_SESSION）建立 session/slot 的并发控制与 callback/backchannel 能力；然后从 PUTROOTFH 进入 v4 的 pseudo-fs 命名空间，沿 export path LOOKUP 到导出点并 GETFH，拿到导出根句柄作为后续 pathname 解析与文件操作的起点
 
 # 介绍一下dm-pcache
 
@@ -274,7 +269,7 @@ rcu stall 原理？
 
 
 # 介绍一下blk-wbt原理
-
+持续观测读请求完成延迟，并用反馈控制动态调整允许的写入并发度
 
 
 
