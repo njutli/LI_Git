@@ -261,6 +261,12 @@ rcu stall 原理？
 # 介绍一下nfs的挂载流程
 先 EXCHANGE_ID 建立 client identity 并获得 clientid/能力协商；再 CREATE_SESSION（以及可能的 BIND_CONN_TO_SESSION）建立 session/slot 的并发控制与 callback/backchannel 能力；然后从 PUTROOTFH 进入 v4 的 pseudo-fs 命名空间，沿 export path LOOKUP 到导出点并 GETFH，拿到导出根句柄作为后续 pathname 解析与文件操作的起点
 
+# 介绍一下blk-wbt原理
+持续观测读请求完成延迟，并用反馈控制动态调整允许的写入并发度
+
+# 介绍一下spdk/dpdk
+SPDK 走用户态 NVMe 驱动路径：通过内核把 PCIe 设备 BAR 映射到用户态，并完成 DMA 内存映射；数据面由用户态直接管理 NVMe 队列、提交/回收命令，数据用 DMA 直接进出用户态内存，从而绕开内核块层与系统调用/中断等开销，获得更低延迟与更高吞吐（代价是常常需要专用 CPU 核做轮询）
+
 # 介绍一下dm-pcache
 
 
@@ -268,8 +274,7 @@ rcu stall 原理？
 
 
 
-# 介绍一下blk-wbt原理
-持续观测读请求完成延迟，并用反馈控制动态调整允许的写入并发度
+
 
 
 
