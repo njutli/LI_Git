@@ -269,6 +269,13 @@ SPDK 走用户态 NVMe 驱动路径：通过内核把 PCIe 设备 BAR 映射到�
 
 DPDK 通过用户态直接操作网卡 PCIe 设备来完成收发包，依赖内核提供的控制面接口（例如 VFIO/UIO、hugepage、IOMMU 等）来完成设备映射与安全隔离。数据收发主要基于 DMA 将报文直接搬运到用户态预分配的内存缓冲区（mbuf），再配合轮询（polling）方式从网卡队列收包/发包，从而减少中断、减少内核协议栈处理开销，并显著降低用户态/内核态切换与系统调用带来的性能损耗，实现更高吞吐和更低时延。
 
+<img width="1005" height="681" alt="image" src="https://github.com/user-attachments/assets/e3c5f93c-8474-4bac-b99c-b4423e2b2e78" />
+SPDK层次：
+第一层：应用协议层，如iscsi，对外提供iscsi设备？
+第二层：存储服务层，如raid-0，整合底层设备？
+第三层：抽象了通用的块存储设备bdev
+第四层：驱动层，SPDK实现了用户态驱动用来加速各类存储应用
+
 # 介绍一下dm-pcache
 
 
