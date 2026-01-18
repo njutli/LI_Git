@@ -61,11 +61,6 @@ dm层
 2.2 通过 nfs_writepages (后台回写等操作触发)， 发送 NFSPROC4_CLNT_WRITE 请求
 
 
-
-NFSD 需求
-	重点问题 ———— 社区补丁分析
-
-
 https://lore.kernel.org/all/tencent_6A84D2E177043C91217A1CF6@qq.com/
 
 https://www.cpolar.com/blog/ubuntu-users-install-cpolar
@@ -89,8 +84,6 @@ GPU视频
 
 调度基础
 
-wsl配置linux虚拟机启动qemu虚拟机调试内核流程
-
 以nfsd为例分析slab缓存回收机制(shrinker)
 
 zone设备 dm-zone
@@ -99,7 +92,6 @@ zoned storage
 
 https://zonedstorage.io/docs/introduction
 
-hungtask/softlockup/rcu原理
 
 nfs挂载流程
 
@@ -108,6 +100,6 @@ samba
 
 dpdk/spdk
 
-透明大页
-
 leetcode动态规划问题
+
+linux驱动模型

@@ -276,6 +276,28 @@ SPDK层次：
 第三层：抽象了通用的块存储设备bdev
 第四层：驱动层，SPDK实现了用户态驱动用来加速各类存储应用
 
+## SPDK rpc client/server
+SPDK 很多时候是“一个跑起来的服务进程”,典型代表就是 spdk_tgt（SPDK target framework）。它启动后会一直跑着，里面可以挂：NVMe-oF target（对外提供 NVMe over Fabrics）, iSCSI target等
+RPC client 很多时候是scripts/rpc.py 这种管理工具。
+SPDK 的 RPC client/server 是为了控制面：用来动态配置、管理、监控 SPDK target 进程；真正的数据读写 I/O 不走 RPC
+
+## SPDK的reactor、events、poller和io channel机制
+SPDK 的运行时可以理解成 **per-core reactor + poller 驱动的数据面**：每个 CPU 核上跑一个 **reactor 事件循环**，循环里会处理一次性的 **events（初始化/调度/配置动作）**，以及持续运行的 **pollers（轮询 NVMe completion、推进状态机）**。为了避免锁竞争，SPDK 用 **I/O channel** 把模块的 I/O 上下文做成 **per-thread 私有**（例如每个 thread 绑定自己的 NVMe qpair），这样一次 I/O 的提交和完成收割通常都在同一个 thread 上闭环，既减少了内核态/用户态切换，也减少了共享数据结构加锁带来的开销和抖动。
+
+## SPDK线程模型
+SPDK 的线程模型可以理解成一句话：**“OS 线程跑在 CPU 核上轮询，SPDK thread 是用户态的逻辑线程，靠消息和 poller 协作式执行”**。
+更具体一点：
+* **reactor（每核一个）**：SPDK 通常把一个 OS 线程绑到一个 CPU 核上，这个线程运行 reactor 循环，不停执行 poller（poller 逻辑上归 SPDK thread 管，物理上由 reactor 的 OS 线程执行）、处理消息队列。它不是“睡眠等唤醒”，而是偏 **busy polling** 的模型。
+* **SPDK thread（逻辑线程，不等于 pthread）**：SPDK 自己实现了“线程”的概念，它不是内核调度的线程，而是一个**执行上下文/调度域**。一个 reactor 上可以挂多个 SPDK thread，reactor 在循环里把 CPU 时间片分给它们执行（协作式，不抢占）。
+* **消息传递代替共享锁**：SPDK 强调“数据归属某个 thread”。跨 thread 操作通常不直接加锁改共享结构，而是用 `spdk_thread_send_msg()` 把函数投递到目标 thread 去执行，保证回调在确定的上下文里跑，减少锁竞争。
+* **I/O channel（per-thread 资源）**：为了进一步减少共享，很多模块会给每个 SPDK thread 分配自己的 io channel（比如绑定自己的 NVMe qpair），让 I/O 提交与 completion 回调尽量都在同一个 SPDK thread 内闭环完成。
+所以 SPDK 的整体效果是：**用“绑核轮询 + 用户态逻辑线程 + 消息驱动 + per-thread channel”换来极低的延迟抖动和极高吞吐**，代价是需要专用 CPU 核、对 NUMA/绑核/hugepage 等更敏感。
+
+# 介绍一下透明大页
+透明大页（THP, Transparent Huge Pages）可以理解成内核在“尽量不让你操心”的前提下，自动把普通 4KB 页合并成更大的页（比如 2MB）来映射内存，从而减少 TLB miss、降低页表开销，让内存访问更高效，尤其对大块连续内存读写、数据库、缓存这类负载更友好。它“透明”的意思是应用不用显式申请 hugepage，内核会在合适时机做分配/合并（以及必要时拆分），但代价也可能出现：为了凑出连续大页会触发内存整理（compaction）带来抖动，或者在频繁写入/分裂场景下引入额外开销，所以很多性能敏感业务会根据负载特征选择开启/关闭或只对特定内存区域启用。
+
+# 介绍一下不同nfs版本的差别
+
 # 介绍一下dm-pcache
 
 
