@@ -71,7 +71,6 @@ https://lore.kernel.org/all/tencent_6A84D2E177043C91217A1CF6@qq.com/
 https://www.cpolar.com/blog/ubuntu-users-install-cpolar
 
 
-leecode 滑动窗口问题 ———— 刷题
 编译链接？ ———— 程序员的自我修养
 
 raid基础？
@@ -110,3 +109,5 @@ samba
 dpdk/spdk
 
 透明大页
+
+leetcode动态规划问题
