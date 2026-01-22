@@ -297,6 +297,9 @@ SPDK 的线程模型可以理解成一句话：**“OS 线程跑在 CPU 核上�
 透明大页（THP, Transparent Huge Pages）可以理解成内核在“尽量不让你操心”的前提下，自动把普通 4KB 页合并成更大的页（比如 2MB）来映射内存，从而减少 TLB miss、降低页表开销，让内存访问更高效，尤其对大块连续内存读写、数据库、缓存这类负载更友好。它“透明”的意思是应用不用显式申请 hugepage，内核会在合适时机做分配/合并（以及必要时拆分），但代价也可能出现：为了凑出连续大页会触发内存整理（compaction）带来抖动，或者在频繁写入/分裂场景下引入额外开销，所以很多性能敏感业务会根据负载特征选择开启/关闭或只对特定内存区域启用。
 
 # 介绍一下不同nfs版本的差别
+* **4.0：统一状态与语义**（open/lock/lease、compound、delegation、ACL、安全）
+* **4.1：会话与并行**（sessions/slot、trunking、pNFS）
+* **4.2：存储 offload 与高级语义**（COPY/CLONE、READ_PLUS、ALLOCATE/DEALLOCATE、SEEK、labels、pNFS 增强）
 
 # 介绍一下dm-pcache
 
