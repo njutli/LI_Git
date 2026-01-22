@@ -177,6 +177,8 @@ bind mount
 
 bind mount 不新增dentry，新增 mount
 
+Docker 容器有独立的 mount namespace，并且会切换到镜像的 rootfs，因此宿主机上已有的挂载并不会“自动出现在容器视图里”。如果希望容器稳定访问宿主机某个目录/文件或挂载点，就需要用 bind mount（docker -v 或 --mount type=bind）把它显式挂进容器。是否能看到宿主机后续新增挂载还与 mount propagation（shared/private）有关。
+
 mount 参数 --make-shared
 将该挂载点设置为shared状态，创建全局唯一的group id，通过unshare新建的挂载点可以新增到该group中。后续该group中任一mount点下mount与umount事件均会传播
 ```
