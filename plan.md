@@ -103,3 +103,11 @@ dpdk/spdk
 leetcode动态规划问题
 
 linux驱动模型
+
+
+影石面试，再回顾一下中断，启动流程等
+https://jaminzhang.github.io/linux/Linux-boot-process/
+https://cloud.tencent.com/developer/article/1114481
+http://www.wowotech.net/irq_subsystem/interrupt_subsystem_architecture.html
+https://blog.csdn.net/Luckiers/article/details/123854874
+http://www.wowotech.net/irq_subsystem/irq_handle_procedure.html
