@@ -111,3 +111,6 @@ https://cloud.tencent.com/developer/article/1114481
 http://www.wowotech.net/irq_subsystem/interrupt_subsystem_architecture.html
 https://blog.csdn.net/Luckiers/article/details/123854874
 http://www.wowotech.net/irq_subsystem/irq_handle_procedure.html
+
+UFS?
+UBIFS?
