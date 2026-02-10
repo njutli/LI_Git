@@ -123,4 +123,14 @@ S3协议
 Prometheus/Grafana/ELK/Jaeger
 K8s/Operator部署，IaC工具
 
-
+高级嵌入式工程师(LINUX SDK)工作职责
+-相关外设的验证、驱动开发以及相关应用业务
+-确保相关模块的读写带宽性能达标；
+-解决稳定性问题，做到提供快速诊断和修复；
+工作要求
+-至少是EE，CE，CS或同等专业的学士，有1年以上linux开发经验为佳；
+-有Linux或者rtos驱动开发经验，拥有bootrom启动，uboot、USB、EMMC、SD卡、SDIO、PCIE、DDR、SPI、I2C等其中一种或多种开发经验；
+-了解Linux或者rtos内核内存管理、调度、中断、文件系统等基本知识；
+-了解arm架构，有panic，内存踩踏，软硬件hang死等问题调试经验优先；
+-有linux/rtos解决系统性能经验者优先；
+-良好的编码实践能力，良好的学习能力及团队合作能力，喜欢挑战。
