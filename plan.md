@@ -111,9 +111,16 @@ http://www.wowotech.net/irq_subsystem/irq_handle_procedure.html
 
 Ceph
 
-mutex锁
-
 linux驱动模型
 UFS UBIFS
 
 wowotech 进程
+
+Ceph
+KV引擎原理（B-tree/LSM）,RocksDB/LevelDB
+CAP理论
+S3协议
+Prometheus/Grafana/ELK/Jaeger
+K8s/Operator部署，IaC工具
+
+
