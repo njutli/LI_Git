@@ -15,7 +15,13 @@ i_ingfeng@LI-PC:/mnt/c/Users/Li Lingfeng$ cat .wslconfig
 networkingMode=mirroredi_ingfeng@LI-PC:/mnt/c/Users/Li Lingfeng$
 
 使用云翼加速代理
+git config --global http.proxy http://127.0.0.1:17890
+git config --global https.proxy http://127.0.0.1:17890
 
+查看宿主机IP
+i_ingfeng@LI-PC:~/win_code$ awk '/nameserver/ {print $2}' /etc/resolv.conf
+10.255.255.254
+i_ingfeng@LI-PC:~/win_code$
 
 
 密码
