@@ -9,6 +9,15 @@ wsl -d FedoraLinux-43
 \\wsl$\Ubuntu\home\
 
 
+配置网络共享
+i_ingfeng@LI-PC:/mnt/c/Users/Li Lingfeng$ cat .wslconfig
+[wsl2]
+networkingMode=mirroredi_ingfeng@LI-PC:/mnt/c/Users/Li Lingfeng$
+
+使用云翼加速代理
+
+
+
 密码
 6-#a5258
 

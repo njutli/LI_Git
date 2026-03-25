@@ -13,6 +13,15 @@ thunderbird 专用密码
 bjev mdml xyff oupb
 bjevmdmlxyffoupb
 
+
+云翼加速代理：
+git config --global http.proxy http://127.0.0.1:17890
+git config --global https.proxy http://127.0.0.1:17890
+
+git config --global http.proxy http://10.255.255.254:17890
+git config --global https.proxy http://10.255.255.254:17890
+
+
 配置 PC 作为外网访问代理
 export http_proxy="http://192.168.43.192:4780"
 export https_proxy="http://192.168.43.192:4780"
