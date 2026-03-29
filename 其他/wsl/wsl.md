@@ -7,7 +7,8 @@ wsl -l -v
 wsl -d FedoraLinux-43
 // windowns对应目录
 \\wsl$\Ubuntu\home\
-
+// 以root用户登录
+wsl -u root
 
 配置网络共享
 i_ingfeng@LI-PC:/mnt/c/Users/Li Lingfeng$ cat .wslconfig
@@ -23,6 +24,9 @@ i_ingfeng@LI-PC:~/win_code$ awk '/nameserver/ {print $2}' /etc/resolv.conf
 10.255.255.254
 i_ingfeng@LI-PC:~/win_code$
 
+
+opencode选择模型
+/models
 
 密码
 6-#a5258
